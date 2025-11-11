@@ -1,0 +1,102 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Цветовая палитра в литературной тематике */
+  --parchment: #f4f1e8;
+  --ink-dark: #2c2416;
+  --ink-medium: #4a4035;
+  --sepia: #8b7355;
+  --gold: #d4af37;
+  --gold-dark: #b8962f;
+  --burgundy: #722f37;
+  --burgundy-light: #9d4451;
+  --cream: #faf8f3;
+  --shadow: rgba(44, 36, 22, 0.1);
+  --shadow-strong: rgba(44, 36, 22, 0.2);
+}
+
+body {
+  font-family: 'PT Sans', 'EB Garamond', 'Crimson Text', Georgia, 'Times New Roman', sans-serif;
+  background: linear-gradient(135deg, var(--parchment) 0%, var(--cream) 100%);
+  color: var(--ink-dark);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Скрытие стрелок у input type="number" */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Общие стили */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+  color: var(--ink-dark);
+}
+
+button {
+  font-family: 'PT Sans', 'EB Garamond', Georgia, 'Times New Roman', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--parchment);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sepia);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-medium);
+}
+

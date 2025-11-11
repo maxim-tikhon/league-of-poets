@@ -1,0 +1,667 @@
+.poets-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 3rem;
+  margin-bottom: 0;
+  color: var(--burgundy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.title-icon {
+  font-size: 2.5rem;
+}
+
+.poets-count-inline {
+  font-size: 2.5rem;
+}
+
+/* Панель сортировки (стиль как на PersonalRanking) */
+.sorting-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid var(--sepia);
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.sorting-controls span {
+  font-weight: 600;
+  color: var(--ink-dark);
+}
+
+.sort-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--sepia);
+  background: white;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink-dark);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.sort-btn:hover {
+  background: var(--parchment);
+  border-color: var(--gold);
+}
+
+.sort-btn.active {
+  background: var(--burgundy);
+  color: white;
+  border-color: var(--burgundy);
+  font-weight: 600;
+}
+
+.btn-add-poet {
+  background: var(--burgundy);
+  color: white;
+  border: 2px solid var(--burgundy);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.btn-add-poet:hover {
+  background: var(--burgundy-light);
+  border-color: var(--burgundy-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-strong);
+}
+
+/* Toggle для показа оценок */
+.ratings-toggle-inline {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+  border-left: 2px solid var(--sepia);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background: var(--sepia);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-checkbox:checked + .toggle-switch {
+  background: var(--gold);
+}
+
+.toggle-checkbox:checked + .toggle-switch::after {
+  left: 22px;
+}
+
+.toggle-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-dark);
+}
+
+.error-message {
+  color: #c41e3a;
+  font-size: 1rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--cream);
+  border-radius: 12px;
+  border: 2px dashed var(--sepia);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  color: var(--ink-medium);
+  margin: 0.5rem 0;
+}
+
+.empty-hint {
+  font-style: italic;
+  color: var(--sepia) !important;
+}
+
+.poets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.poet-card {
+  position: relative;
+  background: var(--ink-dark);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  aspect-ratio: 3 / 4; /* Пропорции как на скриншоте */
+}
+
+.poet-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.6);
+}
+
+.poet-card-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.poet-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.poet-card:hover .poet-card-image img {
+  transform: scale(1.1);
+}
+
+/* Градиентный оверлей снизу для читаемости текста */
+.poet-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3rem 1rem 1.5rem 1rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+}
+
+.poet-card-name {
+  font-family: 'PT Sans', Georgia, 'Times New Roman', sans-serif;
+  margin: 0;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+  line-height: 0.6;
+  word-break: break-word;
+}
+
+/* Имя меньше фамилии */
+.poet-card-name .first-name {
+  font-size: 1rem;
+  font-weight: 400;
+  display: block;
+  margin-bottom: 0.1rem;
+}
+
+.poet-card-name .last-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: block;
+
+}
+
+/* Рейтинг поэта (показывается при наведении) */
+.poet-card-rating {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.poet-card:hover .poet-card-rating {
+  opacity: 1;
+}
+
+.poet-card-rating.always-visible {
+  opacity: 1;
+}
+
+/* Placeholder для поэтов без фото */
+.poet-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--parchment) 0%, var(--sepia) 100%);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.poet-card-placeholder .poet-card-name {
+  color: var(--ink-dark);
+  text-shadow: none;
+}
+
+/* Кнопка удаления - минималистичный крестик */
+.btn-delete-card {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 10;
+  transition: all 0.3s ease;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.poet-card:hover .btn-delete-card {
+  opacity: 1;
+}
+
+.btn-delete-card:hover {
+  color: rgba(20, 20, 20, 0.95);
+  transform: scale(1.2) rotate(90deg);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8));
+}
+
+/* Меняем эмодзи на символ крестика */
+.btn-delete-card::before {
+  content: '✕';
+  font-family: Arial, sans-serif;
+  font-weight: 400;
+}
+
+
+/* Стили модалки */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, var(--parchment) 0%, var(--cream) 100%);
+  border: 3px solid var(--gold);
+  border-radius: 20px;
+  padding: 2.5rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.4s ease;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.modal-close:hover {
+  background: var(--gold);
+  color: var(--ink-dark);
+  transform: rotate(90deg);
+}
+
+.modal-title {
+  font-family: 'PT Sans', Georgia, 'Times New Roman', sans-serif;
+  font-size: 2rem;
+  color: var(--ink-dark);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.poet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label-with-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-field label {
+  font-family: 'PT Sans', Georgia, 'Times New Roman', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--burgundy);
+}
+
+.btn-copy-prompt {
+  background: var(--gold);
+  color: var(--ink-dark);
+  border: 2px solid var(--gold-dark);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-copy-prompt:hover {
+  background: var(--gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+}
+
+.form-input,
+.form-textarea {
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  font-family: 'PT Sans', Georgia, 'Times New Roman', sans-serif;
+  border: 2px solid var(--sepia);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink-dark);
+  transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+.form-hint {
+  font-size: 0.9rem;
+  color: var(--sepia);
+  font-style: italic;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.btn-add-confirm {
+  background: var(--burgundy);
+  color: white;
+  border: 2px solid var(--burgundy);
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-add-confirm:hover {
+  background: #a01729;
+  border-color: #a01729;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+}
+
+/* Стили для модального окна подтверждения удаления */
+.delete-confirm-modal {
+  max-width: 500px;
+}
+
+.delete-title {
+  color: var(--burgundy);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.delete-message {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.delete-message p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--ink-dark);
+}
+
+.delete-poet-name {
+  font-weight: 700;
+  font-size: 1.3rem !important;
+  color: var(--burgundy);
+  margin: 1rem 0 !important;
+}
+
+.delete-warning {
+  font-size: 0.95rem !important;
+  font-style: italic;
+  color: var(--sepia);
+  margin-top: 1.5rem !important;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.btn-cancel {
+  background: white;
+  color: var(--ink-dark);
+  border: 2px solid var(--sepia);
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: var(--parchment);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.btn-delete-confirm {
+  background: var(--burgundy);
+  color: white;
+  border: 2px solid var(--burgundy);
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-delete-confirm:hover {
+  background: #a01729;
+  border-color: #a01729;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 2.2rem;
+  }
+  
+  .poets-count-inline {
+    font-size: 1.6rem;
+  }
+  
+  .sorting-controls {
+    justify-content: center;
+  }
+  
+  .poets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  
+  .poet-card-name .first-name {
+    font-size: 1rem;
+  }
+  
+  .poet-card-name .last-name {
+    font-size: 1.4rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .modal-title {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.8rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .poets-count-inline {
+    font-size: 1.4rem;
+  }
+  
+  .sorting-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sort-btn,
+  .btn-add-poet {
+    width: 100%;
+  }
+  
+  .poets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,0 +1,497 @@
+/* Overlay */
+.battle-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal */
+.battle-modal {
+  background: linear-gradient(135deg, #2c2416 0%, #4a4035 100%);
+  border-radius: 20px;
+  padding: 3rem;
+  max-width: 900px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 3px #d4af37;
+  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid #8b7355;
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.8) translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.battle-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.battle-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #d4af37;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+.battle-subtitle {
+  font-size: 1.3rem;
+  color: #f4f1e8;
+  margin-bottom: 0.5rem;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+.battle-subtitle strong {
+  color: #d4af37;
+  font-weight: 700;
+}
+
+.battle-description {
+  font-size: 1rem;
+  color: #8b7355;
+  font-style: italic;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+/* Arena */
+.battle-arena {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  position: relative;
+}
+
+.battle-prize {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.battle-prize-icon {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(212, 175, 55, 0.6));
+  animation: prizeFlip 3s ease-in-out infinite;
+}
+
+@keyframes prizeFlip {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes vsRotate {
+  0% {
+    transform: rotate(0deg);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), 0 8px 20px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.8), 0 8px 20px rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    transform: rotate(360deg);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), 0 8px 20px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes vsGlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Poet Cards */
+.battle-poet-card {
+  flex: 1;
+  max-width: 320px;
+  background: var(--ink-dark);
+  border: 1px solid #d4af37;
+  border-radius: 16px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  aspect-ratio: 3 / 4;
+}
+
+.battle-poet-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 35px rgba(212, 175, 55, 0.6);
+  border-color: #ffd700;
+}
+
+.battle-poet-card.left {
+  animation: slideInLeft 0.5s ease;
+}
+
+.battle-poet-card.right {
+  animation: slideInRight 0.5s ease;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Image container */
+.battle-poet-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.battle-poet-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.battle-poet-card:hover .battle-poet-image img {
+  transform: scale(1.1);
+}
+
+/* Gradient overlay for name */
+.battle-poet-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3rem 1rem 1.5rem 1rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.battle-poet-name {
+  font-family: 'PT Sans', Georgia, 'Times New Roman', sans-serif;
+  margin: 0;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+  line-height: 0.8;
+  word-break: break-word;
+  text-align: left;
+  width: 100%;
+}
+
+/* First name smaller */
+.battle-poet-name .first-name {
+  font-size: 1.2rem;
+  font-weight: 400;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+/* Last name larger */
+.battle-poet-name .last-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: block;
+}
+
+/* Placeholder for poets without image */
+.battle-poet-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--parchment) 0%, var(--sepia) 100%);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Close Button */
+.battle-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(114, 47, 55, 0.2);
+  border: 2px solid #722f37;
+  color: #722f37;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battle-close-btn:hover {
+  background: #722f37;
+  color: #f4f1e8;
+  transform: rotate(90deg);
+  box-shadow: 0 4px 12px rgba(114, 47, 55, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .battle-modal {
+    padding: 2rem 1.5rem;
+    width: 95%;
+  }
+  
+  .battle-title {
+    font-size: 1.8rem;
+  }
+  
+  .battle-arena {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .battle-prize {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .battle-prize-icon {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .battle-poet-card {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .battle-poet-name .first-name {
+    font-size: 1rem;
+  }
+  
+  .battle-poet-name .last-name {
+    font-size: 1.2rem;
+  }
+}
+
+/* 👑 ЭПИЧНАЯ ДУЭЛЬ ЗА ГЛАВНЫЙ ПРИЗ 👑 */
+.battle-modal.epic-duel {
+  max-width: 1100px;
+  padding: 4rem;
+  background: linear-gradient(135deg, #1a0e0a 0%, #3d2817 50%, #1a0e0a 100%);
+  border: 3px solid #d4af37;
+  box-shadow: 
+    0 30px 80px rgba(212, 175, 55, 0.3),
+    0 0 100px rgba(212, 175, 55, 0.2),
+    0 0 0 5px #8b7355,
+    inset 0 0 100px rgba(212, 175, 55, 0.1);
+  animation: epicEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes epicEntrance {
+  0% {
+    transform: scale(0.5) rotate(-5deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+.battle-title.epic {
+  font-size: 3.5rem;
+  background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: epicGlow 2s infinite alternate;
+  text-shadow: none;
+  filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)) 
+          drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+  letter-spacing: 4px;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes epicGlow {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)) 
+            drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+  }
+  100% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 40px rgba(255, 215, 0, 1)) 
+            drop-shadow(0 0 20px rgba(255, 215, 0, 0.7));
+  }
+}
+
+.battle-subtitle.epic {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.epic-glow {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.6),
+    0 0 30px rgba(255, 215, 0, 0.4);
+  animation: pulseGlow 1.5s infinite;
+  letter-spacing: 3px;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 20px rgba(255, 215, 0, 0.6),
+      0 0 30px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    text-shadow: 
+      0 0 20px rgba(255, 215, 0, 1),
+      0 0 40px rgba(255, 215, 0, 0.8),
+      0 0 60px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.battle-description.epic {
+  font-size: 1.3rem;
+  color: #d4af37;
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Увеличенные карточки для эпичной дуэли */
+.epic-duel .battle-poet-card {
+  transform: scale(1.1);
+  border: 3px solid #d4af37;
+  background: linear-gradient(135deg, #2c2416 0%, #3d2817 100%);
+}
+
+.epic-duel .battle-poet-card:hover {
+  transform: scale(1.15);
+  box-shadow: 
+    0 20px 60px rgba(212, 175, 55, 0.5),
+    0 0 50px rgba(212, 175, 55, 0.4);
+}
+
+/* Epic duel poet cards */
+.epic-duel .battle-poet-card {
+  max-width: 380px;
+  border: 4px solid #ffd700;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+}
+
+.epic-duel .battle-poet-card:hover {
+  box-shadow: 0 8px 35px rgba(255, 215, 0, 0.8);
+}
+
+/* Золотой текст для эпичной дуэли */
+.epic-duel .battle-poet-name {
+  color: #ffd700;
+  text-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.5),
+    2px 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.epic-duel .battle-poet-name .first-name {
+  font-size: 1.4rem;
+}
+
+.epic-duel .battle-poet-name .last-name {
+  font-size: 1.8rem;
+}
+
+.epic-duel .battle-prize {
+  width: 180px;
+  height: 180px;
+}
+
+.epic-duel .battle-prize-icon {
+  width: 180px;
+  height: 180px;
+  filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+  animation: epicPrizeFlip 3s ease-in-out infinite;
+}
+
+@keyframes epicPrizeFlip {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+
