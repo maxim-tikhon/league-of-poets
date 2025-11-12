@@ -15,8 +15,12 @@ const PoetsPage = () => {
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { poetId, poetName }
   const [showRatings, setShowRatings] = useState(false); // Показывать оценки всегда
+  const [isFirstLoad, setIsFirstLoad] = useState(true); // Флаг первой загрузки для анимации
+  const [showNotification, setShowNotification] = useState(false); // Нотификация о копировании
 
   const handleSort = (newSortBy) => {
+    setIsFirstLoad(false); // Убираем анимацию при изменении сортировки
+    
     if (sortBy === newSortBy) {
       // Переключаем порядок, если кликнули на ту же кнопку
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -79,37 +83,27 @@ const PoetsPage = () => {
   const copyPromptToClipboard = () => {
     const poetName = newPoetName.trim() || '[имя поэта]';
     const prompt = `Составь краткое досье на ${poetName} в виде списка (карточки) с полями (названия полей выдели жирным, каждое поле с новой строки - следуй формату):
-
 Полное имя
-
 Годы жизни
-
 Национальность и происхождение (например, русский, дворянское)
-
 Место рождения
-
 Место смерти (не только город, но и если известно место)
-
 Причина смерти
-
 Сделай ответ компактным, в виде списка, как карточку.
 
 Пример досье:
-
 Полное имя: Александр Сергеевич Пушкин
-
 Годы жизни: 6 июня 1799 - 10 февраля 1837 (37 лет) - в скобках укажи возраст на момент смерти
-
 Национальность и происхождение: русский, дворянское
-
 Место рождения: Москва, в родовом имении дворян Пушкиных
-
 Место смерти: Санкт-Петербург, в квартире на набережной Мойки
-
 Причина смерти: смертельное ранение на дуэли`;
 
     navigator.clipboard.writeText(prompt).then(() => {
-      alert('Промпт скопирован в буфер обмена!');
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 3000);
     }).catch(err => {
       console.error('Ошибка копирования:', err);
     });
@@ -167,39 +161,38 @@ const PoetsPage = () => {
 
   return (
     <div className="poets-page fade-in">
-      <div className="page-header">
+      {/* <div className="page-header">
         <h1 className="page-title">
           <span className="title-icon">📚</span>
           Поэты
           <span className="poets-count-inline">({poets.length})</span>
         </h1>
-      </div>
+      </div> */}
 
       <div className="sorting-controls">
-        <span>Сортировать по:</span>
         <button 
           className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
           onClick={() => handleSort('date')}
         >
-          Дате {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Дата {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'firstName' ? 'active' : ''}`}
           onClick={() => handleSort('firstName')}
         >
-          Имени {sortBy === 'firstName' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Имя {sortBy === 'firstName' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'lastName' ? 'active' : ''}`}
           onClick={() => handleSort('lastName')}
         >
-          Фамилии {sortBy === 'lastName' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Фамилия {sortBy === 'lastName' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'rating' ? 'active' : ''}`}
           onClick={() => handleSort('rating')}
         >
-          Рейтингу {sortBy === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Рейтинг {sortBy === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         
         <div className="ratings-toggle-inline">
@@ -211,7 +204,7 @@ const PoetsPage = () => {
               className="toggle-checkbox"
             />
             <span className="toggle-switch"></span>
-            <span className="toggle-text">Показать оценки</span>
+            <span className="toggle-text">Оценки</span>
           </label>
         </div>
 
@@ -234,7 +227,7 @@ const PoetsPage = () => {
             >
               ✕
             </button>
-            <h2 className="modal-title">📝 Новый поэт</h2>
+            <h2 className="modal-title">Новый поэт</h2>
             <form onSubmit={handleSubmit} className="poet-form">
               <div className="form-field">
                 <label htmlFor="poet-name">Имя и фамилия *</label>
@@ -272,7 +265,7 @@ const PoetsPage = () => {
                     className="btn-copy-prompt"
                     title="Скопировать промпт для получения досье"
                   >
-                    📋 Копировать промпт
+                    Промпт
                   </button>
                 </div>
                 <textarea
@@ -307,7 +300,7 @@ const PoetsPage = () => {
 
       {poets.length === 0 ? (
         <div className="empty-state">
-          <span className="empty-icon">📚</span>
+          <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           <p>Пока нет ни одного поэта в списке</p>
           <p className="empty-hint">Добавьте первого поэта, чтобы начать соревнование</p>
         </div>
@@ -318,7 +311,7 @@ const PoetsPage = () => {
             const hasRating = averageRating > 0;
             
             return (
-              <div key={poet.id} className="poet-card" onClick={() => navigate(`/poet/${poet.id}`)}>
+              <div key={poet.id} className={`poet-card ${isFirstLoad ? 'animate-in' : ''}`} onClick={() => navigate(`/poet/${poet.id}`)}>
                 <div className="poet-card-image">
                   {poet.imageUrl ? (
                     <>
@@ -348,7 +341,7 @@ const PoetsPage = () => {
                     </>
                   ) : (
                     <div className="poet-card-placeholder">
-                      <span className="placeholder-icon">📚</span>
+                      <img src="/images/poet.png" alt="Поэт" className="placeholder-icon" />
                       <h3 className="poet-card-name">{poet.name}</h3>
                     </div>
                   )}
@@ -372,10 +365,10 @@ const PoetsPage = () => {
         <div className="modal-overlay" onClick={cancelDelete}>
           <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
             <button onClick={cancelDelete} className="modal-close">✕</button>
-            <h2 className="modal-title delete-title">⚠️ Удаление поэта</h2>
+            <h2 className="modal-title delete-title">Удаление поэта</h2>
             <div className="delete-message">
-              <p>Вы уверены, что хотите удалить поэта</p>
-              <p className="delete-poet-name">"{deleteConfirm.poetName}"?</p>
+              <p>Вы уверены, что хотите удалить поэта <span className="delete-poet-name">"{deleteConfirm.poetName}"?</span></p>
+              {/* <p className="delete-poet-name">"{deleteConfirm.poetName}"?</p> */}
             </div>
             <div className="delete-actions">
               <button onClick={cancelDelete} className="btn-cancel">
@@ -386,6 +379,16 @@ const PoetsPage = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Нотификация о копировании */}
+      {showNotification && (
+        <div className="notification">
+          <svg className="notification-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>Промпт скопирован</span>
         </div>
       )}
     </div>

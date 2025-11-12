@@ -8,7 +8,7 @@ const MaximRankingPage = () => {
       raterId="maxim"
       title="Рейтинг Максима"
       icon="🧟‍♂️"
-      color="#722f37"
+      color="#7E3E45"
     />
   );
 };

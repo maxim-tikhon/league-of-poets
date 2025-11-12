@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import StarRating from '../components/StarRating';
 import DuelGame from '../components/DuelGame';
+import Tooltip from '../components/Tooltip';
 import './OverallRankingPage.css';
 
 const OverallRankingPage = () => {
+  const location = useLocation();
   const poetsContext = usePoets();
   const { 
     poets, 
@@ -21,16 +23,26 @@ const OverallRankingPage = () => {
   
   const [activeTab, setActiveTab] = useState('overall'); // 'overall' or category key
   const [expandedCards, setExpandedCards] = useState(new Set()); // ID развернутых карточек для overall
+  const [scoreSystem, setScoreSystem] = useState('five'); // 'five' or 'hundred'
   const [animatingPoet, setAnimatingPoet] = useState(null); // ID поэта, который анимируется
   const [showScore, setShowScore] = useState(false); // Показывать ли балл во время анимации
   const [animationStep, setAnimationStep] = useState(0); // Текущая позиция анимирующего поэта в списке (0 = первое место, N-1 = последнее место)
   const animatingCardRef = useRef(null); // Ref для анимирующейся карточки
-  const [showFireworks, setShowFireworks] = useState(false); // Показывать ли фейерверк
-  const [showCoffin, setShowCoffin] = useState(false); // Показывать ли гроб
-  const [showTears, setShowTears] = useState(false); // Показывать ли слезы
+  const [showFireworks, setShowFireworks] = useState(false); // Показывать ли анимацию победы
+  const [winningPoet, setWinningPoet] = useState(null); // Информация о победителе
+  const [showCoffin, setShowCoffin] = useState(false); // Показывать ли анимацию проигрыша
+  const [losingPoet, setLosingPoet] = useState(null); // Информация о проигравшем поэте
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
   const [isMusicPlaying, setIsMusicPlaying] = useState(false); // Флаг для отображения кнопки
   const audioRef = useRef(null); // Реф для хранения аудио объекта
+  
+  // Функция форматирования оценки в зависимости от выбранной системы
+  const formatScore = useCallback((score) => {
+    if (scoreSystem === 'five') {
+      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
+    }
+    return score.toFixed(1); // 100-балльная система
+  }, [scoreSystem]);
   
   // Получаем текущего пользователя из localStorage
   const currentUser = localStorage.getItem('currentUser');
@@ -412,6 +424,34 @@ const OverallRankingPage = () => {
       stopMusic();
     };
   }, []);
+
+  // Обработка перехода со страницы поэта (раскрытие карточки и скролл)
+  useEffect(() => {
+    if (location.state?.poetId) {
+      const poetId = location.state.poetId;
+      
+      // Переключаемся на вкладку overall
+      setActiveTab('overall');
+      
+      // Раскрываем карточку поэта
+      setExpandedCards(prev => {
+        const newSet = new Set(prev);
+        newSet.add(poetId);
+        return newSet;
+      });
+      
+      // Скроллим к карточке после небольшой задержки (чтобы DOM обновился)
+      setTimeout(() => {
+        const cardElement = document.querySelector(`[data-poet-id="${poetId}"]`);
+        if (cardElement) {
+          cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      
+      // Очищаем state после обработки
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   
   // Проверяем, показывали ли уже анимацию в этой сессии
   useEffect(() => {
@@ -527,9 +567,16 @@ const OverallRankingPage = () => {
         totalSteps += Math.abs(route[i + 1] - route[i]);
       }
       
-      // Фиксированная скорость: 5 шагов в секунду (медленнее)
+      // Фиксированная скорость: 3 шага в секунду
       const stepsPerSecond = 3;
-      const totalDuration = (totalSteps / stepsPerSecond) * 1000;
+      let totalDuration = (totalSteps / stepsPerSecond) * 1000;
+      
+      // Если поэтов мало (меньше 5), устанавливаем минимальную длительность анимации
+      // Это сделает анимацию медленнее, но без прыжков
+      if (totalPoets < 5) {
+        const minDuration = 3500; // минимум 3.5 секунды
+        totalDuration = Math.max(totalDuration, minDuration);
+      }
       
       // Через небольшую задержку запускаем движение
       setTimeout(() => {
@@ -589,30 +636,27 @@ const OverallRankingPage = () => {
         
         // Проверяем, попал ли поэт в топ-3
         if (poetIndex <= 2) {
-          // Запускаем фейерверк!
+          // Запускаем анимацию победы!
+          setWinningPoet(newestPoet);
           setShowFireworks(true);
           // Воспроизводим звук
           playFireworkSound();
-          // Убираем фейерверк через 5 секунд
+          // Убираем анимацию через 8 секунд (как при проигрыше)
           setTimeout(() => {
             setShowFireworks(false);
-          }, 5000);
+            setWinningPoet(null);
+          }, 8000);
         } else if (poetIndex === totalPoets - 1 && totalPoets > 3) {
-          // Если последнее место И больше 3 поэтов, показываем трагичную анимацию 😢⚰️
-          // Сначала показываем гроб
+          // Если последнее место И больше 3 поэтов, показываем анимацию проигрыша
+          setLosingPoet(newestPoet);
           setShowCoffin(true);
+          playSadMusic();
           
-          // Через 2 секунды запускаем слезы и музыку
-          setTimeout(() => {
-            setShowTears(true);
-            playSadMusic();
-          }, 2000);
-          
-          // Убираем всё через 7 секунд (2 сек гроб + 5 сек слезы)
+          // Убираем через 8 секунд
           setTimeout(() => {
             setShowCoffin(false);
-            setShowTears(false);
-          }, 7000);
+            setLosingPoet(null);
+          }, 8000);
         }
         
         setAnimatingPoet(null);
@@ -805,14 +849,14 @@ const OverallRankingPage = () => {
   if (poets.length === 0) {
     return (
       <div className="overall-ranking fade-in">
-        <div className="page-header-overall">
+        {/* <div className="page-header-overall">
           <h1 className="page-title-overall">
             <span className="title-icon">🏆</span>
             Общий Рейтинг
           </h1>
-        </div>
+        </div> */}
         <div className="empty-state">
-          <span className="empty-icon">📝</span>
+          <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           <p>Нет поэтов для отображения рейтинга</p>
           <p className="empty-hint">Добавьте поэтов на странице "Поэты"</p>
         </div>
@@ -839,13 +883,12 @@ const OverallRankingPage = () => {
     
     categoriesToShow.forEach(category => {
       if (categoryWinners[category] && categoryWinners[category].includes(poetId)) {
-        const categoryName = category === 'overall' ? 'Общий балл' : CATEGORIES[category].name;
+        const categoryName = category === 'overall' ? 'Лучшй поэт' : CATEGORIES[category].name;
         badges.push(
           <img 
             key={category}
             src={`/images/badges/${category}.png`}
-            alt={`Победитель: ${categoryName}`}
-            title={`🏆 Победитель: "${categoryName}"`}
+            alt={`Победитель в категории ${categoryName}`}
             className="winner-badge"
           />
         );
@@ -887,13 +930,13 @@ const OverallRankingPage = () => {
 
   return (
     <div className="overall-ranking fade-in">
-      <div className="page-header-overall">
+      {/* <div className="page-header-overall">
         <h1 className="page-title-overall">
         <span className="trophy-decoration">🏆</span>
 
           Общий Рейтинг
         </h1>
-      </div>
+      </div> */}
       
       {/* Кнопка остановки музыки в правом нижнем углу */}
       {isMusicPlaying && (
@@ -902,14 +945,15 @@ const OverallRankingPage = () => {
           onClick={stopMusic}
           title="Остановить музыку"
         >
-          🤫
+          <span className="music-icon">♫</span>
+          <span className="stop-line"></span>
         </button>
       )}
 
       {/* Блок конфликтов */}
       {detectConflicts.length > 0 && (
         <div className="conflicts-block">
-          <h3 className="conflicts-title">🎭 Конфликт чувств зафиксирован. Срочно требуется дуэль!</h3>
+          <h3 className="conflicts-title">Конфликт чувств зафиксирован. Срочно требуется дуэль!</h3>
           <p className="conflicts-subtitle">
           Критики не сошлись во мнении — пусть судьба решит.
           </p>
@@ -926,7 +970,7 @@ const OverallRankingPage = () => {
                   className="start-game-btn"
                   onClick={() => startDuelGame(conflict)}
                 >
-                  ⚔️ Дуэль
+                  Дуэль
                 </button>
               </div>
             ))}
@@ -939,30 +983,99 @@ const OverallRankingPage = () => {
           className={`tab-btn ${activeTab === 'overall' ? 'active' : ''}`}
           onClick={() => setActiveTab('overall')}
         >
-          <img 
+          {/* <img 
             src="/images/badges/overall.png" 
             alt="Общий балл"
             className="tab-category-icon"
-          />
+          /> */}
           Общий балл
         </button>
         {Object.entries(CATEGORIES).map(([key, cat]) => (
-          <button
-            key={key}
-            className={`tab-btn ${activeTab === key ? 'active' : ''}`}
-            onClick={() => setActiveTab(key)}
-          >
-            <img 
-              src={`/images/badges/${key}.png`} 
-              alt={cat.name}
-              className="tab-category-icon"
-            />
-            {cat.name}
-          </button>
+        
+            <button key={key}
+              className={`tab-btn ${activeTab === key ? 'active' : ''}`}
+              onClick={() => setActiveTab(key)}
+            >
+              {/* <img 
+                src={`/images/badges/${key}.png`} 
+                alt={cat.name}
+                className="tab-category-icon"
+              /> */}
+              {cat.name}
+            </button>
+      
         ))}
+        
+        {/* Вкладка "Награды" - отделена от других */}
+        <button
+          className={`tab-btn tab-btn-awards ${activeTab === 'awards' ? 'active' : ''}`}
+          onClick={() => setActiveTab('awards')}
+        >
+          Награды
+        </button>
+        
+        <div className="score-system-toggle-inline">
+          <label className="toggle-label">
+            <input 
+              type="checkbox" 
+              checked={scoreSystem === 'hundred'}
+              onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
+              className="toggle-checkbox"
+            />
+            <span className="toggle-switch"></span>
+            <span className="toggle-text">5⇄100</span>
+          </label>
+        </div>
       </div>
 
-      {activeTab === 'overall' ? (
+      {activeTab === 'awards' ? (
+        // Вкладка "Награды" - показываем всех поэтов с их наградами
+        <div className="awards-list">
+          {poets
+            .filter(poet => {
+              // Показываем только поэтов, у которых есть хотя бы одна награда
+              return ['overall', 'creativity', 'influence', 'drama', 'beauty'].some(category => 
+                categoryWinners[category] && categoryWinners[category].includes(poet.id)
+              );
+            })
+            .map(poet => {
+              // Собираем все награды поэта
+              const poetAwards = [];
+              if (categoryWinners.overall && categoryWinners.overall.includes(poet.id)) {
+                poetAwards.push({ category: 'overall', name: 'Лучшй поэт' });
+              }
+              Object.entries(CATEGORIES).forEach(([key, cat]) => {
+                if (categoryWinners[key] && categoryWinners[key].includes(poet.id)) {
+                  poetAwards.push({ category: key, name: cat.name });
+                }
+              });
+
+              return (
+                <div key={poet.id} className="award-card">
+                  {poet.imageUrl && (
+                    <div className="award-poet-avatar">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
+                  )}
+                  <Link to={`/poet/${poet.id}`} className="award-poet-name-link">
+                    <h3 className="award-poet-name">{poet.name}</h3>
+                  </Link>
+                  <div className="award-badges-container">
+                    {poetAwards.map((award, index) => (
+                      <Tooltip key={index} text={`Победитель в категории "${award.name}"`}>
+                        <img 
+                          src={`/images/badges/${award.category}.png`}
+                          alt={`Победитель в категории "${award.name}"`}
+                          className="award-badge"
+                        />
+                      </Tooltip>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      ) : activeTab === 'overall' ? (
         <div className="overall-list">
           {(() => {
             // Если идет анимация, переставляем нового поэта на нужную позицию
@@ -988,7 +1101,6 @@ const OverallRankingPage = () => {
             return displayRankings.map((item, index) => {
             const { poet, maximScore, olegScore, averageScore } = item;
             const rank = ranks[index];
-            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
             const isExpanded = expandedCards.has(poet.id);
@@ -1016,15 +1128,19 @@ const OverallRankingPage = () => {
                 <CardComponent 
                   key={poet.id}
                   {...cardProps}
+                  data-poet-id={poet.id}
                   className={`overall-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} expandable`}
                   onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
                 >
                   {(!isAnimating || showScore) ? (
-                    <div className="overall-rank compact">
-                      {medal || `#${rank}`}
-                    </div>
+                    <span className="overall-rank-number compact">#{rank}</span>
                   ) : (
-                    <div className="overall-rank compact" style={{ opacity: 0 }}>?</div>
+                    <span className="overall-rank-number compact" style={{ opacity: 0 }}>?</span>
+                  )}
+                  {poet.imageUrl && (
+                    <div className="overall-avatar compact">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
                   )}
                   <Link to={`/poet/${poet.id}`} className="overall-poet-name-link">
                     <h2 className="overall-poet-name compact">{poet.name}</h2>
@@ -1038,14 +1154,14 @@ const OverallRankingPage = () => {
                       <div className="scores-compact-row">
                         <div className="score-compact-item maxim">
                           <span className="score-compact-label">M:</span>
-                          <span className="score-compact-value">{maximScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(maximScore)}</span>
                         </div>
                         <div className="score-compact-item oleg">
                           <span className="score-compact-label">O:</span>
-                          <span className="score-compact-value">{olegScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(olegScore)}</span>
                         </div>
                         <div className="score-compact-item average">
-                          <span className="score-compact-value">{averageScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(averageScore)}</span>
                         </div>
                       </div>
                     ) : (
@@ -1063,17 +1179,16 @@ const OverallRankingPage = () => {
               <CardComponent 
                 key={poet.id}
                 {...cardProps}
+                data-poet-id={poet.id}
                 className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
                 onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
               >
                 {/* Первая строка - точно как компактный вид, только больше */}
                 <div className="overall-card-header">
                   {(!isAnimating || showScore) ? (
-                    <div className="overall-rank expanded">
-                      {medal || `#${rank}`}
-                    </div>
+                    <span className="overall-rank-number expanded">#{rank}</span>
                   ) : (
-                    <div className="overall-rank expanded" style={{ opacity: 0 }}>?</div>
+                    <span className="overall-rank-number expanded" style={{ opacity: 0 }}>?</span>
                   )}
                   {poet.imageUrl && (
                     <div className="overall-avatar">
@@ -1092,14 +1207,14 @@ const OverallRankingPage = () => {
                       <div className="scores-compact-row expanded">
                         <div className="score-compact-item maxim">
                           <span className="score-compact-label">M:</span>
-                          <span className="score-compact-value">{maximScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(maximScore)}</span>
                         </div>
                         <div className="score-compact-item oleg">
                           <span className="score-compact-label">O:</span>
-                          <span className="score-compact-value">{olegScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(olegScore)}</span>
                         </div>
                         <div className="score-compact-item average">
-                          <span className="score-compact-value">{averageScore.toFixed(1)}</span>
+                          <span className="score-compact-value">{formatScore(averageScore)}</span>
                         </div>
                       </div>
                     ) : (
@@ -1121,8 +1236,10 @@ const OverallRankingPage = () => {
                       return (
                         <div key={key} className="category-card">
                           <div className="category-card-header">
-                            <span className="category-card-name">{cat.name}</span>
-                            <span className="category-card-coefficient">×{cat.coefficient}</span>
+                     
+                              <span className="category-card-name">{cat.name}</span>
+                    
+                            {/* <span className="category-card-coefficient">×{cat.coefficient}</span> */}
                           </div>
                           <div className="category-ratings-boxes">
                             <div className="rating-box maxim">
@@ -1174,7 +1291,6 @@ const OverallRankingPage = () => {
             return displayRankings.map((item, index) => {
             const { poet, maximRating, olegRating, averageRating } = item;
             const rank = ranks[originalIndex >= 0 && index === Math.round(animationStep) ? originalIndex : index];
-            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
 
@@ -1195,11 +1311,14 @@ const OverallRankingPage = () => {
                 className={`category-rank-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
               >
                 {(!isAnimating || showScore) ? (
-                  <div className="category-rank-number compact">
-                    {medal || `#${rank}`}
-                  </div>
+                  <span className="category-rank-number compact">#{rank}</span>
                 ) : (
-                  <div className="category-rank-number compact" style={{ opacity: 0 }}>?</div>
+                  <span className="category-rank-number compact" style={{ opacity: 0 }}>?</span>
+                )}
+                {poet.imageUrl && (
+                  <div className="overall-avatar compact">
+                    <img src={poet.imageUrl} alt={poet.name} />
+                  </div>
                 )}
                 <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
                   <h3 className="category-poet-name compact">{poet.name}</h3>
@@ -1236,98 +1355,46 @@ const OverallRankingPage = () => {
         </div>
       )}
       
-      {/* Фейерверк для топ-3 */}
-      {showFireworks && (
-        <div className="fireworks-container">
-          {/* Большие взрывы */}
-          {[...Array(8)].map((_, i) => (
-            <div key={`big-${i}`} className="firework-burst" style={{
-              left: `${20 + (i * 12)}%`,
-              top: `${20 + Math.random() * 60}%`,
-              animationDelay: `${i * 0.3}s`
-            }}>
-              {[...Array(12)].map((_, j) => (
-                <div key={j} className="spark" style={{
-                  '--angle': `${j * 30}deg`
-                }} />
-              ))}
+      {/* Анимация победы для топ-3 */}
+      {showFireworks && winningPoet && (
+        <div className="victory-container">
+          <div className="victory-content">
+            <div className="victory-icon">
+              {winningPoet.imageUrl ? (
+                <img src={winningPoet.imageUrl} alt={winningPoet.name} className="victory-poet-icon" />
+              ) : (
+                <img src="/images/poet2.png" alt="Поэт" className="victory-poet-icon" />
+              )}
+              <div className="victory-glow"></div>
             </div>
-          ))}
-          
-          {/* Падающее конфетти */}
-          {[...Array(50)].map((_, i) => (
-            <div key={`confetti-${i}`} className="confetti" style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              '--rotation': `${Math.random() * 360}deg`,
-              backgroundColor: ['#ffd700', '#ff6b6b', '#4ecdc4', '#95e1d3', '#f38181'][i % 5]
-            }} />
-          ))}
-          
-          {/* Звездочки */}
-          {[...Array(30)].map((_, i) => (
-            <div key={`star-${i}`} className="star-particle" style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`
-            }}>⭐</div>
-          ))}
-          
-          {/* Центральная вспышка */}
-          <div className="flash-overlay" />
-        </div>
-      )}
-      
-      {/* Анимация гроба для последнего места ⚰️ */}
-      {showCoffin && (
-        <div className="coffin-container">
-          <div className="coffin-emoji">⚰️</div>
-          <div className="coffin-text">R.I.P.</div>
-          <div className="coffin-subtitle">Он вдохновлял, но не сегодня...</div>
-        </div>
-      )}
-      
-      {/* Анимация слез 😭 */}
-      {showTears && (
-        <div className="tears-container">
-          {/* Много падающих слез */}
-          {[...Array(40)].map((_, i) => (
-            <div key={`tear-${i}`} className="tear" style={{
-              left: `${10 + Math.random() * 80}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 3}s`,
-              fontSize: `${2 + Math.random()}rem`
-            }}>💧</div>
-          ))}
-          
-          {/* Очень грустное облако */}
-          <div className="sad-cloud">
-            <div className="cloud-emoji">😭😭😭</div>
-            <div className="sad-message">Последнее место...</div>
-            <div className="sad-submessage">В следующий раз обязательно получится!</div>
+            <div className="victory-text">ПОЗДРАВЛЯЕМ!</div>
+            <div className="victory-subtitle">{winningPoet.name} попал в тройку лучших</div>
+            
+            {/* Минималистичные частицы */}
+            {[...Array(20)].map((_, i) => (
+              <div key={`particle-${i}`} className="victory-particle" style={{
+                '--angle': `${i * 18}deg`,
+                '--delay': `${i * 0.1}s`
+              }} />
+            ))}
           </div>
-          
-          {/* Много разбитых сердец */}
-          {[...Array(12)].map((_, i) => (
-            <div key={`heart-${i}`} className="broken-heart" style={{
-              left: `${15 + (i * 6)}%`,
-              top: `${40 + Math.random() * 40}%`,
-              animationDelay: `${i * 0.15}s`,
-              fontSize: `${2 + Math.random() * 1.5}rem`
-            }}>💔</div>
-          ))}
-          
-          {/* Грустные эмодзи */}
-          {[...Array(8)].map((_, i) => (
-            <div key={`sad-${i}`} className="sad-emoji" style={{
-              left: `${20 + (i * 10)}%`,
-              top: `${20 + Math.random() * 20}%`,
-              animationDelay: `${i * 0.3}s`
-            }}>😢</div>
-          ))}
-          
-          {/* Темное облако сверху */}
-          <div className="dark-overlay" />
+        </div>
+      )}
+      
+      {/* Анимация для последнего места */}
+      {showCoffin && losingPoet && (
+        <div className="loss-container">
+          <div className="loss-content">
+            <div className="loss-icon">
+              {losingPoet.imageUrl ? (
+                <img src={losingPoet.imageUrl} alt={losingPoet.name} className="loss-poet-icon" />
+              ) : (
+                <img src="/images/poet2.png" alt="Поэт" className="loss-poet-icon" />
+              )}
+            </div>
+            <div className="loss-text">R.I.P.</div>
+            <div className="loss-subtitle">Он вдохновлял, но не сегодня...</div>
+          </div>
         </div>
       )}
       

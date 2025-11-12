@@ -35,7 +35,6 @@ const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
       <div
         key={index}
         className={`star-wrapper ${readOnly ? 'read-only' : ''}`}
-        onMouseLeave={handleMouseLeave}
       >
         <span className={`star star-empty`}>★</span>
         {showFilled && (
@@ -63,7 +62,7 @@ const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
   };
 
   return (
-    <div className="star-rating">
+    <div className="star-rating" onMouseLeave={handleMouseLeave}>
       {Array.from({ length: maxRating }, (_, i) => renderStar(i))}
       <span className="rating-value">{value.toFixed(1)}</span>
     </div>

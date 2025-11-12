@@ -15,6 +15,7 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
   const [mySabrePosition, setMySabrePosition] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
   const [isMusicMuted, setIsMusicMuted] = useState(false); // Состояние музыки
+  const [showRules, setShowRules] = useState(false); // Состояние показа правил
   
   const opponent = currentUser === 'maxim' ? 'oleg' : 'maxim';
   const TOTAL_CELLS = 25; // 5×5 grid
@@ -513,39 +514,43 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
       if (canClick) cellClass += ' clickable';
       if (selectedCell === i) cellClass += ' selected';
 
-      let cellContent = '';
+      let cellContent = null;
       if (phase === 'placing_pistol') {
-        if (isMyPistol) cellContent = '🔫';
+        if (isMyPistol) cellContent = <img src="/images/duel/pistol.png" alt="Пистолет" className="weapon-icon" />;
       } else if (phase === 'placing_sabre' || phase === 'waiting_opponent') {
-        if (isMyPistol) cellContent = '🔫';
-        if (isMySabre) cellContent = '🗡';
+        if (isMyPistol) cellContent = <img src="/images/duel/pistol.png" alt="Пистолет" className="weapon-icon" />;
+        if (isMySabre) cellContent = <img src="/images/duel/sabre.png" alt="Сабля" className="weapon-icon" />;
       } else {
         // Сначала проверяем, открыта ли клетка соперником
         if (isOpened) {
           // Если это моё оружие И оно открыто соперником
           if (isMyPistol) {
-            cellContent = '🔫💥'; // Соперник нашел мой пистолет!
+            cellContent = <img src="/images/duel/coffin.png" alt="Смерть" className="weapon-icon" />; // Соперник нашел мой пистолет!
           } else if (isMySabre) {
-            cellContent = isDefused ? '🗡💌' : '🗡💀'; // Обезврежена письмом или нет
+            cellContent = isDefused ? 
+              <><img src="/images/duel/letter.png" alt="Обезврежена" className="weapon-icon" /></> : 
+              <><img src="/images/duel/skull.png" alt="Ранение" className="weapon-icon" /></>; // Обезврежена письмом или нет
           } else if (isBomb) {
-            cellContent = isDefused ? '💣💌' : '💣'; // Обезврежена письмом или нет
+            cellContent = isDefused ? 
+              <><img src="/images/duel/bomb.png" alt="Бомба" className="weapon-icon" /><img src="/images/duel/letter.png" alt="Обезврежена" className="weapon-icon" /></> : 
+              <img src="/images/duel/bomb.png" alt="Бомба" className="weapon-icon" />; // Обезврежена письмом или нет
           } else if (isLoveLetter) {
-            cellContent = '💌';
+            cellContent = <img src="/images/duel/letter.png" alt="Любовное письмо" className="weapon-icon" />;
           } else if (isTrap) {
-            cellContent = '🕸️';
+            cellContent = <img src="/images/duel/trap.png" alt="Ловушка" className="weapon-icon" />;
           } else if (isOpponentPistol) {
-            cellContent = '🔫💥'; // Я нашел пистолет соперника
+            cellContent = <img src="/images/duel/coffin.png" alt="Смерть" className="weapon-icon" />; // Я нашел пистолет соперника
           } else if (isOpponentSabre) {
-            cellContent = isDefused ? '🗡💌' : '🗡💀'; // Обезврежена письмом или нет
+            cellContent = <img src="/images/duel/sabre.png" alt="Сабля" className="weapon-icon" />
           } else {
             cellContent = '✓';
           }
         } else {
           // Клетка не открыта - показываем моё оружие
           if (isMyPistol) {
-            cellContent = '🔫';
+            cellContent = <img src="/images/duel/pistol.png" alt="Пистолет" className="weapon-icon" />;
           } else if (isMySabre) {
-            cellContent = '🗡';
+            cellContent = <img src="/images/duel/sabre.png" alt="Сабля" className="weapon-icon" />;
           }
         }
       }
@@ -593,10 +598,60 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
           onClick={toggleMusic} 
           title={isMusicMuted ? "Включить музыку" : "Выключить музыку"}
         >
-          {isMusicMuted ? '🔇' : '🎵'}
+          <span className="music-icon">♫</span>
+          {isMusicMuted && <span className="stop-line"></span>}
         </button>
+        <button 
+          className="rules-btn" 
+          onMouseEnter={() => setShowRules(true)}
+          onMouseLeave={() => setShowRules(false)}
+          title="Правила игры"
+        >
+          <span className="rules-icon">?</span>
+        </button>
+        
+        {showRules && (
+          <div className="rules-overlay">
+            <div className="rules-content">
+              <h3>Правила дуэли</h3>
+              <div className="rules-list">
+                <div className="rule-item">
+                  <span className="rule-icon">
+                    <img src="/images/duel/pistol.png" alt="Пистолет" className="rule-weapon-icon" />
+                  </span>
+                  <span className="rule-text"><strong>Пистолет</strong> — мгновенная смерть</span>
+                </div>
+                <div className="rule-item">
+                  <span className="rule-icon">
+                    <img src="/images/duel/bomb.png" alt="Бомба" className="rule-weapon-icon" />
+                  </span>
+                  <span className="rule-text"><strong>Бомба</strong> — смерть</span>
+                </div>
+                <div className="rule-item">
+                  <span className="rule-icon">
+                    <img src="/images/duel/sabre.png" alt="Сабля" className="rule-weapon-icon" />
+                  </span>
+                  <span className="rule-text"><strong>Сабля</strong> — ранение (смерть через 3 хода)</span>
+                </div>
+                <div className="rule-item">
+                  <span className="rule-icon">
+                    <img src="/images/duel/letter.png" alt="Письмо" className="rule-weapon-icon" />
+                  </span>
+                  <span className="rule-text"><strong>Письмо</strong> — спасение от сабли/бомбы</span>
+                </div>
+                <div className="rule-item">
+                  <span className="rule-icon">
+                    <img src="/images/duel/trap.png" alt="Ловушка" className="rule-weapon-icon" />
+                  </span>
+                  <span className="rule-text"><strong>Ловушка</strong> — дополнительный ход</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="duel-game-header">
-          <h2>⚔️ Дуэль: {category} ⚔️</h2>
+          <h2>Дуэль: {category}</h2>
           <p className="duel-poets">
             <span className="poet-maxim">{poet1.name}</span>
             {' VS '}
@@ -606,37 +661,19 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
 
         {phase === 'placing_pistol' && (
           <div className="duel-instructions">
-            <p>🔫 Разместите свой пистолет на поле</p>
-            <p className="hint">Попадание в него = мгновенная смерть</p>
+            <p>Разместите свой пистолет на поле</p>
           </div>
         )}
         
         {phase === 'placing_sabre' && (
           <div className="duel-instructions">
-            <p>🗡 Разместите свою саблю на поле</p>
-            <p className="hint">Попадание в неё = ранение (смерть через 3 хода или спасет письмо)</p>
+            <p>Разместите свою саблю на поле</p>
           </div>
         )}
         
         {phase === 'waiting_opponent' && gameState && (
           <div className="duel-instructions">
-            <p>⏳ Ожидание соперника...</p>
-            <p className="hint">
-              {(() => {
-                const opponentPistolPlaced = gameState.pistols && gameState.pistols[opponent] >= 0;
-                const opponentSabrePlaced = gameState.sabres && gameState.sabres[opponent] >= 0;
-                
-                if (!opponentPistolPlaced && !opponentSabrePlaced) {
-                  return 'Соперник размещает пистолет и саблю';
-                } else if (!opponentPistolPlaced) {
-                  return 'Соперник размещает пистолет';
-                } else if (!opponentSabrePlaced) {
-                  return 'Соперник размещает саблю';
-                } else {
-                  return 'Ожидание начала игры...';
-                }
-              })()}
-            </p>
+            <p>Ожидание соперника...</p>
           </div>
         )}
 
@@ -644,15 +681,11 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
           <div className="duel-instructions">
             {gameState.currentTurn === currentUser ? (
               <>
-                <p className="your-turn">🎯 Ваш ход!</p>
-                <p className="hint">
-                  💥 Пистолет = смерть | 💣 Бомба = смерть | ⚔️ Сабля = ранение | 💌 Письмо = спасение | 🕸️ Ловушка = доп.ход
-                </p>
+                <p className="your-turn">Ваш ход!</p>
               </>
             ) : (
               <>
-                <p className="opponent-turn">⏳ Ход соперника...</p>
-                <p className="hint">Ожидайте хода {opponent === 'maxim' ? 'Максима' : 'Олега'}</p>
+                <p className="opponent-turn">Ход соперника...</p>
               </>
             )}
           </div>
@@ -661,11 +694,11 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
         {phase === 'finished' && gameState && (
           <div className="duel-result">
             {gameState.winner === currentUser ? (
-              <h3 className="winner">🕊️ Он рифмовал — и победил</h3>
+              <h3 className="winner">Он рифмовал — и победил</h3>
             ) : gameState.winner === opponent ? (
-              <h3 className="loser">💥 Он был хорош… пока не встретил соперника получше</h3>
+              <h3 className="loser">Он был хорош… пока не встретил соперника получше</h3>
             ) : (
-              <h3 className="draw">🤝 Ничья!</h3>
+              <h3 className="draw">Ничья!</h3>
             )}
           </div>
         )}
@@ -678,40 +711,40 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
           {phase === 'playing' && gameState && (
             <div className="field-status">
               {/* Информация о текущем игроке */}
-              <div className={`status-compact player-info ${currentUser}`}>
+              {/* <div className={`status-compact player-info ${currentUser}`}>
                 <div className={`player-color-indicator ${currentUser}`}></div>
                 <span className="status-text-compact">
                   {currentUser === 'maxim' ? poet1.name : poet2.name}
                 </span>
               </div>
-              
-              <div className={`status-compact ${gameState.wounded && typeof gameState.wounded[currentUser] === 'number' ? 'wounded' : 'healthy'}`}>
-                <span className="status-icon-compact">
-                  {gameState.wounded && typeof gameState.wounded[currentUser] === 'number' ? '🩸' : '💚'}
-                </span>
-                <span className="status-text-compact">
-                  {gameState.wounded && typeof gameState.wounded[currentUser] === 'number' ? (
-                    (() => {
+               */}
+              {gameState.wounded && typeof gameState.wounded[currentUser] === 'number' && (
+                <div className="status-compact wounded">
+                  <span className="status-icon-compact">
+                    <img src="/images/duel/skull.png" alt="Ранен" className="status-weapon-icon" />
+                  </span>
+                  <span className="status-text-compact">
+                    {(() => {
                       const playerTurns = gameState.playerTurns || { maxim: 0, oleg: 0 };
                       const currentPlayerTurns = playerTurns[currentUser] || 0;
                       const woundedAtTurn = gameState.wounded[currentUser];
                       const turnsLeft = 3 - (currentPlayerTurns - woundedAtTurn);
                       return `Ранен (${turnsLeft})`;
-                    })()
-                  ) : (
-                    'Здоров'
-                  )}
-                </span>
-              </div>
+                    })()}
+                  </span>
+                </div>
+              )}
               
-              <div className={`status-compact ${gameState.hasLoveLetter && gameState.hasLoveLetter[currentUser] ? 'has-letter' : 'no-letter'}`}>
-                <span className="status-icon-compact">
-                  {gameState.hasLoveLetter && gameState.hasLoveLetter[currentUser] ? '💌' : '📭'}
-                </span>
-                <span className="status-text-compact">
-                  {gameState.hasLoveLetter && gameState.hasLoveLetter[currentUser] ? 'Письмо' : 'Нет письма'}
-                </span>
-              </div>
+              {gameState.hasLoveLetter && gameState.hasLoveLetter[currentUser] && (
+                <div className="status-compact has-letter">
+                  <span className="status-icon-compact">
+                    <img src="/images/duel/letter.png" alt="Письмо" className="status-weapon-icon" />
+                  </span>
+                  <span className="status-text-compact">
+                    Письмо
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

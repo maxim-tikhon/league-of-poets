@@ -11,8 +11,17 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   const [sortBy, setSortBy] = useState('date'); // 'overall', 'date', 'name' or category key
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [compactMode, setCompactMode] = useState(false); // Компактный режим
+  const [scoreSystem, setScoreSystem] = useState('five'); // 'five' or 'hundred'
   const [battleConflict, setBattleConflict] = useState(null); // { category, poet1, poet2 }
   const lastRatingChange = useRef(null); // { poetId, category, timestamp }
+
+  // Функция форматирования оценки в зависимости от выбранной системы
+  const formatScore = useCallback((score) => {
+    if (scoreSystem === 'five') {
+      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
+    }
+    return score.toFixed(1); // 100-балльная система
+  }, [scoreSystem]);
 
   const getSortedPoets = () => {
     const poetsWithScores = poets.map(poet => {
@@ -319,15 +328,16 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     
     categoriesToShow.forEach(category => {
       if (categoryWinners[category] && categoryWinners[category].includes(poetId)) {
-        const categoryName = category === 'overall' ? 'Общий балл' : CATEGORIES[category].name;
+        const categoryName = category === 'overall' ? 'Лучшй поэт' : CATEGORIES[category].name;
         badges.push(
-          <img 
+      
+            <img 
             key={category}
-            src={`/images/badges/${category}.png`}
-            alt={`Победитель: ${categoryName}`}
-            title={`🏆 Победитель: "${categoryName}"`}
-            className="winner-badge"
-          />
+              src={`/images/badges/${category}.png`}
+              alt={`Победитель в категории ${categoryName}`}
+              className="winner-badge"
+            />
+  
         );
       }
     });
@@ -338,14 +348,14 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   if (poets.length === 0) {
     return (
       <div className="personal-ranking fade-in">
-        <div className="page-header">
+        {/* <div className="page-header">
           <h1 className="page-title" style={{ color }}>
             <span className="title-icon">{icon}</span>
             {title}
           </h1>
-        </div>
+        </div> */}
         <div className="empty-state">
-          <span className="empty-icon">📝</span>
+          <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           <p>Нет поэтов для оценки</p>
           <p className="empty-hint">Добавьте поэтов на странице "Поэты"</p>
         </div>
@@ -355,53 +365,59 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
 
   return (
     <div className="personal-ranking fade-in">
-      <div className="page-header">
+      {/* <div className="page-header">
         <h1 className="page-title" style={{ color }}>
           <span className="title-icon">{icon}</span>
           {title}
         </h1>
-      </div>
+      </div> */}
 
       <div className="sorting-controls">
-        <span>Сортировать по:</span>
         <button 
           className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
           onClick={() => handleSort('date')}
         >
-          Дате {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Дата {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
           onClick={() => handleSort('name')}
         >
-          Имени {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Имя {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'overall' ? 'active' : ''}`}
           onClick={() => handleSort('overall')}
         >
-          <img 
+          {/* <img 
             src="/images/badges/overall.png" 
             alt="Общий балл"
             className="sort-btn-icon"
-          />
-          Общему баллу
+          /> */}
+          Общий балл
         </button>
         {Object.entries(CATEGORIES).map(([key, cat]) => (
-          <Tooltip key={key} text={cat.description}>
             <button 
+              key={key}
               className={`sort-btn ${sortBy === key ? 'active' : ''}`}
               onClick={() => handleSort(key)}
             >
-              <img 
+              {/* <img 
                 src={`/images/badges/${key}.png`} 
                 alt={cat.name}
                 className="sort-btn-icon"
-              />
+              /> */}
               {cat.name}
             </button>
-          </Tooltip>
         ))}
+        
+        {/* Вкладка "Награды" - отделена от других */}
+        <button 
+          className={`sort-btn sort-btn-awards ${sortBy === 'awards' ? 'active' : ''}`}
+          onClick={() => handleSort('awards')}
+        >
+          Награды
+        </button>
         
         <div className="compact-mode-toggle-inline">
           <label className="toggle-label">
@@ -412,11 +428,72 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
               className="toggle-checkbox"
             />
             <span className="toggle-switch"></span>
-            <span className="toggle-text">Компактный</span>
+            <span className="toggle-text">Список</span>
+          </label>
+        </div>
+        
+        <div className="score-system-toggle-inline">
+          <label className="toggle-label">
+            <input 
+              type="checkbox" 
+              checked={scoreSystem === 'hundred'}
+              onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
+              className="toggle-checkbox"
+            />
+            <span className="toggle-switch"></span>
+            <span className="toggle-text">5⇄100</span>
           </label>
         </div>
       </div>
 
+      {sortBy === 'awards' ? (
+        // Вкладка "Награды" - показываем только поэтов с наградами
+        <div className="awards-list">
+          {poets
+            .filter(poet => {
+              // Показываем только поэтов, у которых есть хотя бы одна награда
+              return ['overall', 'creativity', 'influence', 'drama', 'beauty'].some(category => 
+                categoryWinners[category] && categoryWinners[category].includes(poet.id)
+              );
+            })
+            .map(poet => {
+              // Собираем все награды поэта
+              const poetAwards = [];
+              if (categoryWinners.overall && categoryWinners.overall.includes(poet.id)) {
+                poetAwards.push({ category: 'overall', name: 'Лучшй поэт' });
+              }
+              Object.entries(CATEGORIES).forEach(([key, cat]) => {
+                if (categoryWinners[key] && categoryWinners[key].includes(poet.id)) {
+                  poetAwards.push({ category: key, name: cat.name });
+                }
+              });
+
+              return (
+                <div key={poet.id} className="award-card">
+                  {poet.imageUrl && (
+                    <div className="award-poet-avatar">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
+                  )}
+                  <Link to={`/poet/${poet.id}`} className="award-poet-name-link">
+                    <h3 className="award-poet-name">{poet.name}</h3>
+                  </Link>
+                  <div className="award-badges-container">
+                    {poetAwards.map((award, index) => (
+                      <Tooltip key={index} text={`Победитель в категории "${award.name}"`}>
+                        <img 
+                          src={`/images/badges/${award.category}.png`}
+                          alt={`Победитель в категории ${award.name}`}
+                          className="award-badge"
+                        />
+                      </Tooltip>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      ) : (
       <div className="poets-ranking-list">
         {(() => {
           // Вычисляем ранги один раз для всех поэтов
@@ -452,7 +529,6 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           return sortedPoets.map((item, index) => {
             const { poet, ratings: poetRatings, score } = item;
             const rank = showRank ? ranks[index] : null;
-            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
             const isOverallHighlighted = sortBy === 'overall';
 
             // Компактный режим
@@ -460,18 +536,23 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
               // Определяем, что показывать в компактном режиме
               let displayValue;
               if (sortBy === 'overall') {
-                displayValue = score.toFixed(1);
+                displayValue = formatScore(score);
               } else if (Object.keys(CATEGORIES).includes(sortBy)) {
                 const rating = poetRatings[sortBy] || 0;
                 displayValue = rating.toFixed(1);
               } else {
                 // Для сортировки по дате или имени показываем общий балл
-                displayValue = score.toFixed(1);
+                displayValue = formatScore(score);
               }
               
               return (
                 <div key={poet.id} className="poet-ranking-card compact">
-                  {rank && <span className="rank-badge compact">{medal || `#${rank}`}</span>}
+                  {rank && <span className="rank-number compact">#{rank}</span>}
+                  {poet.imageUrl && (
+                    <div className="poet-avatar compact">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
+                  )}
                   <Link to={`/poet/${poet.id}`} className="poet-name-link">
                     <h3 className="poet-name compact">{poet.name}</h3>
                   </Link>
@@ -492,7 +573,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
             return (
               <div key={poet.id} className="poet-ranking-card">
                 <div className="poet-ranking-header">
-                  {rank && <span className="rank-badge">{medal || `#${rank}`}</span>}
+                  {rank && <span className="rank-number">#{rank}</span>}
                   {poet.imageUrl && (
                     <div className="poet-avatar">
                       <img src={poet.imageUrl} alt={poet.name} />
@@ -504,10 +585,9 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                   
                   <div className="poet-ranking-right-section">
                     {renderWinnerBadges(poet.id)}
-                    <div className={`total-score ${isOverallHighlighted ? 'highlighted' : ''}`} style={{ color }}>
-                      <span className="score-label">Итого:</span>
-                      <span className="score-value">{score.toFixed(1)}</span>
-                      <span className="score-max">/ 100</span>
+                    <div className={`total-score ${isOverallHighlighted ? 'highlighted' : ''}`}>
+        
+                      <span className="score-value">{formatScore(score)}</span>
                     </div>
                   </div>
                 </div>
@@ -543,6 +623,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           });
         })()}
       </div>
+      )}
       
       {/* Модалка для выбора победителя при конфликте */}
       {battleConflict && (

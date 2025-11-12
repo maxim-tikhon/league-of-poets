@@ -1,21 +1,54 @@
 .personal-ranking {
-  max-width: 1200px;
+  max-width: 1210px;
   margin: 0 auto;
 }
 
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 5rem 2rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  opacity: 0.4;
+  display: block;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.empty-hint {
+  color: var(--ink-light) !important;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+}
+
 .categories-info {
-  background: var(--cream);
-  padding: 2rem;
+  background: white;
+  padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
-  border: 2px solid var(--gold);
-  box-shadow: 0 4px 12px var(--shadow);
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .categories-info h3 {
   margin-bottom: 1rem;
-  color: var(--burgundy);
-  font-size: 1.5rem;
+  color: var(--ink);
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .categories-grid {
@@ -32,16 +65,15 @@
   background: white;
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid var(--sepia);
+  border: 1px solid rgba(199, 163, 107, 0.15);
   cursor: help;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .category-info-card:hover {
-  background: var(--parchment);
   border-color: var(--gold);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px var(--shadow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .category-header {
@@ -52,17 +84,18 @@
 }
 
 .category-header strong {
-  color: var(--ink-dark);
+  color: var(--ink);
   font-size: 1.1rem;
 }
 
 .coefficient {
-  background: var(--gold);
-  color: var(--ink-dark);
+  background: rgba(199, 163, 107, 0.15);
+  color: var(--ink);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  border: 1px solid rgba(199, 163, 107, 0.2);
 }
 
 
@@ -70,24 +103,26 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   background: white;
-  border-radius: 8px;
-  border: 2px solid var(--sepia);
+  border-radius: 12px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .sorting-controls .tooltip-wrapper {
   display: inline-flex;
 }
 
-.compact-mode-toggle-inline {
+.compact-mode-toggle-inline,
+.score-system-toggle-inline {
   display: flex;
   align-items: center;
-  padding-left: 0.5rem;
-  margin-left: 0.5rem;
-  border-left: 2px solid var(--sepia);
+  padding-left: 0.75rem;
+  margin-left: 0.75rem;
+  border-left: 1px solid rgba(199, 163, 107, 0.2);
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -105,12 +140,13 @@
 
 .toggle-switch {
   position: relative;
-  width: 40px;
-  height: 20px;
-  background: var(--sepia);
-  border-radius: 10px;
+  width: 44px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 11px;
   transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(199, 163, 107, 0.15);
 }
 
 .toggle-switch::after {
@@ -123,42 +159,162 @@
   background: white;
   border-radius: 50%;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .toggle-checkbox:checked + .toggle-switch {
   background: var(--gold);
+  border-color: var(--gold);
 }
 
 .toggle-checkbox:checked + .toggle-switch::after {
-  left: 22px;
+  left: 24px;
+}
+
+/* Вертикальная черта перед кнопкой "Награды" */
+.sort-btn-awards {
+  position: relative;
+  margin-left: 1.5rem;
+}
+
+.sort-btn-awards::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 24px;
+  background: rgba(199, 163, 107, 0.2);
+}
+
+/* Стили для вкладки "Награды" */
+.awards-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.award-card {
+  background: white;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  border-radius: 12px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.award-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: rgba(199, 163, 107, 0.25);
+}
+
+.award-poet-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.award-poet-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.award-poet-name-link {
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.award-poet-name-link:hover {
+  opacity: 0.7;
+}
+
+.award-poet-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+}
+
+.award-badges-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.award-badge {
+  width: 60px;
+  height: 70px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+.award-badge:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+}
+
+@media (max-width: 768px) {
+  .awards-list {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .award-poet-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .award-poet-name {
+    font-size: 1.1rem;
+  }
+  
+  .award-badge {
+    width: 50px;
+    height: 50px;
+  }
 }
 
 .toggle-text {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--ink-dark);
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .sorting-controls span {
-  font-weight: 600;
-  color: var(--ink-dark);
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .sort-btn {
   padding: 0.5rem 1rem;
-  border: 2px solid var(--sepia);
-  background: white;
-  border-radius: 6px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--ink-dark);
-  transition: all 0.3s ease;
+  color: var(--ink-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .sort-btn:hover {
-  background: var(--parchment);
-  border-color: var(--gold);
+  background: rgba(199, 163, 107, 0.08);
+  color: var(--ink);
 }
 
 .sort-btn-icon {
@@ -167,18 +323,17 @@
   object-fit: contain;
   background: transparent;
   margin-right: 0.4rem;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  filter: opacity(0.6);
   vertical-align: middle;
 }
 
 .sort-btn.active .sort-btn-icon {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: opacity(1);
 }
 
 .sort-btn.active {
-  background: var(--gold);
-  border-color: var(--gold-dark);
-  color: var(--ink-dark);
+  background: rgba(199, 163, 107, 0.12);
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -186,7 +341,8 @@
 .poets-ranking-list {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
 .poets-ranking-list:has(.poet-ranking-card.compact) {
@@ -195,25 +351,25 @@
 
 .poet-ranking-card {
   background: white;
-  border: 2px solid var(--gold);
+  border: 1px solid rgba(199, 163, 107, 0.15);
   border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px var(--shadow);
-  transition: all 0.3s ease;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
 }
 
 .poet-ranking-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--shadow-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .poet-avatar {
   flex-shrink: 0;
   width: 4rem;
   height: 4rem;
-  border-radius: 50%;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .poet-avatar img {
@@ -242,23 +398,23 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   border-width: 1px;
 }
 
 .poet-ranking-card.compact:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--shadow);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .poet-ranking-header {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid var(--parchment);
+  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
   flex-wrap: wrap;
 }
 
@@ -269,30 +425,29 @@
   margin-left: auto;
 }
 
-.rank-badge {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-  color: white;
-  font-weight: 700;
-  font-size: 1.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  min-width: 3.5rem;
-  text-align: center;
-  box-shadow: 0 4px 8px var(--shadow);
+.rank-number {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 1.6rem;
   flex-shrink: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.rank-badge.compact {
-  font-size: 1rem;
-  padding: 0.25rem 0.5rem;
-  min-width: 2rem;
+.rank-number.compact {
+  font-size: 1.1rem;
+}
+
+.poet-avatar.compact {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 .poet-ranking-header .poet-name {
   flex: 1;
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.6rem;
   min-width: 200px;
+  font-weight: 500;
 }
 
 .poet-name.compact {
@@ -306,19 +461,19 @@
 .total-score {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--parchment);
-  border-radius: 8px;
-  border: 2px solid currentColor;
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  color: white;
+  border-radius: 7px;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .total-score.highlighted {
-  background: linear-gradient(135deg, #fff9e6 0%, #ffe8a3 100%);
-  border: 3px solid var(--gold);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
-  transform: scale(1.05);
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  transform: scale(1.02);
 }
 
 /* Компактное отображение баллов */
@@ -327,18 +482,18 @@
   align-items: center;
   justify-content: center;
   padding: 0.4rem 0.75rem;
-  background: linear-gradient(135deg, #fff9e6 0%, #ffe8a3 100%);
-  border: 2px solid var(--gold);
-  border-radius: 6px;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  color: white;
+  border-radius: 7px;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   min-width: 3rem;
 }
 
 .score-value-compact {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--ink-dark);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: white;
   line-height: 1;
 }
 
@@ -349,12 +504,12 @@
 }
 
 .score-value {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 600;
 }
 
 .score-max {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   opacity: 0.7;
 }
 
@@ -365,17 +520,21 @@
 }
 
 .rating-item {
-  background: var(--parchment);
-  padding: 1.5rem;
+  background: white;
+  padding: 1.25rem;
   border-radius: 8px;
-  border: 1px solid var(--sepia);
-  transition: all 0.3s ease;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .rating-item.highlighted {
-  background: linear-gradient(135deg, #fff9e6 0%, #ffe8a3 100%);
-  border: 3px solid var(--gold);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+  background: white;
+  border: 1px solid var(--ink);
+  box-shadow: 0 2px 8px rgba(199, 163, 107, 0.15);
   transform: scale(1.02);
 }
 
@@ -384,7 +543,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dotted rgba(199, 163, 107, 0.3);
 }
 
 .rating-label .tooltip-wrapper {
@@ -394,26 +554,25 @@
 
 .category-name {
   font-weight: 600;
-  color: var(--ink-dark);
-  font-size: 1.1rem;
-  cursor: help;
-  border-bottom: 1px dotted var(--sepia);
-  padding-bottom: 2px;
+  color: var(--ink);
+  font-size: 1.05rem;
+  cursor: pointer;
 }
 
 .category-coefficient {
-  background: var(--burgundy);
-  color: var(--cream);
+  background: white;
+  color: var(--ink);
   padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  border: 1px solid rgba(199, 163, 107, 0.2);
 }
 
 .rating-points {
   margin-top: 0.75rem;
   font-size: 1rem;
-  color: var(--burgundy);
+  color: var(--ink-light);
   font-weight: 600;
   text-align: right;
 }
@@ -463,26 +622,26 @@
   align-items: center;
   gap: 0.35rem;
   margin-left: 0.5rem;
+  margin-right: 0.5rem;
   flex-shrink: 0;
 }
 
 .winner-badge {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
   background: transparent;
   transition: transform 0.2s ease;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
 }
 
 /* Больше размер для некомпактного режима */
 .poet-ranking-card:not(.compact) .winner-badge {
-  width: 60px;
-  height: 60px;
+  width: 55px;
+  height: 55px;
 }
 
 .winner-badge:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
-

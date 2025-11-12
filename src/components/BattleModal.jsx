@@ -12,9 +12,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
         <div className="battle-header">
           {isOverall ? (
             <>
-              <h2 className="battle-title epic">👑 ФИНАЛЬНАЯ ДУЭЛЬ 👑</h2>
-              <p className="battle-subtitle epic">
-                <span className="epic-glow">ЗА ГЛАВНЫЙ ПРИЗ</span>
+              <h2 className="battle-title epic">ФИНАЛЬНАЯ ДУЭЛЬ</h2>
+              <p className="battle-subtitle">
+                Выберите победителя в категории <strong>"Лучшй Поэт"</strong>
               </p>
               <p className="battle-description epic">
                 Два величайших поэта. Одинаковый балл. Только один станет легендой.
@@ -22,12 +22,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
             </>
           ) : (
             <>
-              <h2 className="battle-title">⚔️ ДУЭЛЬ ЗА ПОБЕДУ ⚔️</h2>
+              <h2 className="battle-title">ДУЭЛЬ</h2>
               <p className="battle-subtitle">
-                Выберите победителя: <strong>"{categoryName}"</strong>
-              </p>
-              <p className="battle-description">
-                Оба поэта имеют одинаковый балл. Кто достоин победы?
+                Выберите победителя в категории <strong>"{categoryName}"</strong>
               </p>
             </>
           )}
@@ -65,7 +62,7 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
                 </>
               ) : (
                 <div className="battle-poet-placeholder">
-                  <span className="placeholder-icon">📚</span>
+                  <img src="/images/poet.png" alt="Поэт" className="placeholder-icon" />
                   <h3 className="battle-poet-name">{poet1.name}</h3>
                 </div>
               )}
@@ -111,7 +108,7 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
                 </>
               ) : (
                 <div className="battle-poet-placeholder">
-                  <span className="placeholder-icon">📚</span>
+                  <img src="/images/poet.png" alt="Поэт" className="placeholder-icon" />
                   <h3 className="battle-poet-name">{poet2.name}</h3>
                 </div>
               )}

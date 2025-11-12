@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, Link } from 'react-router-dom';
 import './Layout.css';
 
 const Layout = () => {
@@ -7,10 +7,12 @@ const Layout = () => {
     <div className="layout">
       <header className="header">
         <div className="container">
-          <h1 className="logo">
-            <span className="logo-icon">📜</span>
-            League of Poets
-          </h1>
+          <Link to="/" className="logo-link">
+            <h1 className="logo">
+              <img src="/images/logo.png" alt="Лига Поэтов" className="logo-icon" />
+              Лига Поэтов
+            </h1>
+          </Link>
           <nav className="nav">
             <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Поэты
@@ -22,7 +24,7 @@ const Layout = () => {
               Рейтинг Олега
             </NavLink>
             <NavLink to="/overall-ranking" className={({ isActive }) => isActive ? 'nav-link active overall-link' : 'nav-link overall-link'}>
-              🏆 Общий Рейтинг
+              Общий Рейтинг
             </NavLink>
           </nav>
         </div>
@@ -36,7 +38,7 @@ const Layout = () => {
       
       <footer className="footer">
         <div className="container">
-          <p>© 2025 League of Poets. Битва великих поэтов.</p>
+          <p>© 2025 Лига Поэтов.</p>
         </div>
       </footer>
     </div>

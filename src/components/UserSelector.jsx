@@ -18,10 +18,10 @@ const UserSelector = ({ onSelectUser }) => {
   return (
     <div className="user-selector-overlay">
       <div className="user-selector-modal">
-        <h1 className="user-selector-title">
-          <span className="title-icon">📜</span>
-          League of Poets
-        </h1>
+        <div className="user-selector-header">
+          <img src="/images/logo2.png" alt="Лига Поэтов" className="selector-logo" />
+          <h1 className="user-selector-title">Лига Поэтов</h1>
+        </div>
         <h2 className="user-selector-subtitle">Выберите пользователя</h2>
         
         <div className="user-buttons">
@@ -29,7 +29,6 @@ const UserSelector = ({ onSelectUser }) => {
             className={`user-btn ${selectedUser === 'maxim' ? 'selected' : ''}`}
             onClick={() => handleSelect('maxim')}
           >
-            <span className="user-icon">🧟‍♂️</span>
             <span className="user-name">Максим</span>
           </button>
           
@@ -37,7 +36,6 @@ const UserSelector = ({ onSelectUser }) => {
             className={`user-btn ${selectedUser === 'oleg' ? 'selected' : ''}`}
             onClick={() => handleSelect('oleg')}
           >
-            <span className="user-icon">🧛‍♂️</span>
             <span className="user-name">Олег</span>
           </button>
         </div>
