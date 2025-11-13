@@ -28,13 +28,7 @@ const OverallRankingPage = () => {
   const [showScore, setShowScore] = useState(false); // Показывать ли балл во время анимации
   const [animationStep, setAnimationStep] = useState(0); // Текущая позиция анимирующего поэта в списке (0 = первое место, N-1 = последнее место)
   const animatingCardRef = useRef(null); // Ref для анимирующейся карточки
-  const [showFireworks, setShowFireworks] = useState(false); // Показывать ли анимацию победы
-  const [winningPoet, setWinningPoet] = useState(null); // Информация о победителе
-  const [showCoffin, setShowCoffin] = useState(false); // Показывать ли анимацию проигрыша
-  const [losingPoet, setLosingPoet] = useState(null); // Информация о проигравшем поэте
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false); // Флаг для отображения кнопки
-  const audioRef = useRef(null); // Реф для хранения аудио объекта
   
   // Функция форматирования оценки в зависимости от выбранной системы
   const formatScore = useCallback((score) => {
@@ -51,197 +45,6 @@ const OverallRankingPage = () => {
   // Firebase уже оптимизирован и не будет создавать новые объекты если данные не изменились
   const categoryLeaders = rawCategoryLeaders || { maxim: {}, oleg: {} };
   const overallDuelWinners = rawOverallDuelWinners || {};
-  
-  // Триумфальная музыка для топ-3 🎊
-  const playFireworkSound = () => {
-    // Показываем кнопку сразу
-    setIsMusicPlaying(true);
-    
-    // Останавливаем предыдущую музыку, если играет
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    
-    // Используем реальную запись триумфальной музыки
-    const audio = new Audio('/audio/victory-fanfare.wav');
-    audio.volume = 0.6; // Устанавливаем громкость 60%
-    audioRef.current = audio; // Сохраняем в ref
-    
-    // Подтверждаем, что музыка реально играет
-    audio.addEventListener('playing', () => {
-      setIsMusicPlaying(true);
-    });
-    
-    // Очищаем ссылку на аудио после завершения
-    audio.addEventListener('ended', () => {
-      audioRef.current = null;
-      setIsMusicPlaying(false);
-    });
-    
-    // Если метаданные не загружаются
-    audio.addEventListener('error', () => {
-      audioRef.current = null;
-      setIsMusicPlaying(false);
-    });
-    
-    // Начинаем воспроизведение с 1:20 (80 секунд)
-    audio.addEventListener('loadedmetadata', () => {
-      audio.currentTime = 80; // 1 минута 20 секунд
-    });
-    
-    // Запускаем воспроизведение сразу
-    audio.play().catch(() => {
-      // Игнорируем ошибки - музыка может играть несмотря на них
-    });
-  };
-  
-  // Резервный синтезированный звук фейерверка (на случай, если файл не загружен)
-  const playFireworkSoundFallback = () => {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Создаем несколько звуков взрывов
-    for (let i = 0; i < 8; i++) {
-      setTimeout(() => {
-        // Взрыв (белый шум с envelope)
-        const bufferSize = audioContext.sampleRate * 0.5;
-        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-        const data = buffer.getChannelData(0);
-        
-        for (let j = 0; j < bufferSize; j++) {
-          data[j] = Math.random() * 2 - 1;
-        }
-        
-        const noise = audioContext.createBufferSource();
-        noise.buffer = buffer;
-        
-        const noiseGain = audioContext.createGain();
-        noiseGain.gain.setValueAtTime(0.3, audioContext.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
-        const filter = audioContext.createBiquadFilter();
-        filter.type = 'highpass';
-        filter.frequency.value = 1000;
-        
-        noise.connect(filter);
-        filter.connect(noiseGain);
-        noiseGain.connect(audioContext.destination);
-        
-        noise.start(audioContext.currentTime);
-        noise.stop(audioContext.currentTime + 0.5);
-        
-        // Свист (частота падает)
-        const oscillator = audioContext.createOscillator();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(2000, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
-        
-        const oscGain = audioContext.createGain();
-        oscGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-        
-        oscillator.connect(oscGain);
-        oscGain.connect(audioContext.destination);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.3);
-      }, i * 300);
-    }
-    
-    // Триумфальная мелодия (фанфары)
-    setTimeout(() => {
-      const notes = [
-        { freq: 523.25, time: 0 },    // C5
-        { freq: 659.25, time: 0.15 },  // E5
-        { freq: 783.99, time: 0.3 },   // G5
-        { freq: 1046.5, time: 0.45 }   // C6
-      ];
-      
-      notes.forEach(note => {
-        setTimeout(() => {
-          const osc = audioContext.createOscillator();
-          osc.type = 'triangle';
-          osc.frequency.value = note.freq;
-          
-          const gain = audioContext.createGain();
-          gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-          
-          osc.connect(gain);
-          gain.connect(audioContext.destination);
-          
-          osc.start(audioContext.currentTime);
-          osc.stop(audioContext.currentTime + 0.4);
-        }, note.time * 1000);
-      });
-    }, 1000);
-  };
-  
-  // Похоронный марш Шопена для последнего места ⚰️
-  const playSadMusic = () => {
-    // Показываем кнопку сразу
-    setIsMusicPlaying(true);
-    
-    // Останавливаем предыдущую музыку, если играет
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    
-    // Используем реальную запись похоронного марша Шопена
-    // Источник: https://freesound.org/people/Sterio18/sounds/472906/
-    // Лицензия: CC0 (Public Domain)
-    const audio = new Audio('/audio/chopin-funeral-march.wav');
-    audio.volume = 0.5; // Устанавливаем громкость 50%
-    audioRef.current = audio; // Сохраняем в ref
-    
-    audio.play().catch(() => {
-      // Игнорируем ошибки - музыка может играть несмотря на них
-    });
-    
-    // Подтверждаем, что музыка реально играет
-    audio.addEventListener('playing', () => {
-      setIsMusicPlaying(true);
-    });
-    
-    // Очищаем ссылку на аудио после завершения
-    audio.addEventListener('ended', () => {
-      audioRef.current = null;
-      setIsMusicPlaying(false);
-    });
-  };
-  
-  // Резервный синтезированный вариант (на случай, если файл не загружен)
-  const playSadMusicFallback = () => {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    const melody = [
-      { freq: 246.94, time: 0, duration: 0.5 },
-      { freq: 246.94, time: 0.6, duration: 0.5 },
-      { freq: 246.94, time: 1.2, duration: 0.5 },
-      { freq: 261.63, time: 1.8, duration: 0.4 },
-      { freq: 293.66, time: 2.3, duration: 0.7 }
-    ];
-
-    melody.forEach(note => {
-      setTimeout(() => {
-        const osc = audioContext.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.value = note.freq;
-
-        const gain = audioContext.createGain();
-        gain.gain.setValueAtTime(0, audioContext.currentTime);
-        gain.gain.linearRampToValueAtTime(0.25, audioContext.currentTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.duration);
-
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-
-        osc.start(audioContext.currentTime);
-        osc.stop(audioContext.currentTime + note.duration);
-      }, note.time * 1000);
-    });
-  };
   
   // Найти самого последнего добавленного поэта за последние 24 часа
   const getNewestPoet = () => {
@@ -403,27 +206,6 @@ const OverallRankingPage = () => {
     // Закрываем игру
     setGameConflict(null);
   };
-  
-  // Функция для остановки музыки
-  const stopMusic = () => {
-    if (audioRef.current) {
-      try {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      } catch (err) {
-        // Игнорируем ошибки остановки
-      }
-      audioRef.current = null;
-      setIsMusicPlaying(false);
-    }
-  };
-  
-  // Останавливаем музыку при размонтировании компонента
-  useEffect(() => {
-    return () => {
-      stopMusic();
-    };
-  }, []);
 
   // Обработка перехода со страницы поэта (раскрытие карточки и скролл)
   useEffect(() => {
@@ -600,10 +382,14 @@ const OverallRankingPage = () => {
               // Мы на этом сегменте
               const segmentProgress = (currentStep - accumulatedSteps) / segmentSteps;
               
-              // Легкий easing для плавности (ease-in-out)
-              const eased = segmentProgress < 0.5
-                ? 2 * segmentProgress * segmentProgress
-                : 1 - Math.pow(-2 * segmentProgress + 2, 2) / 2;
+              // Используем ease-in для последнего сегмента (ускорение к концу)
+              // Для остальных сегментов используем ease-in-out
+              const isLastSegment = i === route.length - 2;
+              const eased = isLastSegment
+                ? segmentProgress * segmentProgress // ease-in (ускорение)
+                : segmentProgress < 0.5
+                  ? 2 * segmentProgress * segmentProgress
+                  : 1 - Math.pow(-2 * segmentProgress + 2, 2) / 2;
               
               currentPos = route[i] + (route[i + 1] - route[i]) * eased;
               break;
@@ -612,9 +398,11 @@ const OverallRankingPage = () => {
             accumulatedSteps += segmentSteps;
           }
           
-          // Если последний шаг
-          if (progress >= 1) {
+          // Завершаем анимацию раньше для более резкой остановки
+          if (progress >= 0.97) {
             currentPos = route[route.length - 1];
+            setAnimationStep(currentPos);
+            return; // Выходим из анимации
           }
           
           // Устанавливаем текущую позицию напрямую (это индекс в списке, а не процент!)
@@ -632,32 +420,6 @@ const OverallRankingPage = () => {
       setTimeout(() => {
         setShowScore(true);
         
-        const totalPoets = rankings.length;
-        
-        // Проверяем, попал ли поэт в топ-3
-        if (poetIndex <= 2) {
-          // Запускаем анимацию победы!
-          setWinningPoet(newestPoet);
-          setShowFireworks(true);
-          // Воспроизводим звук
-          playFireworkSound();
-          // Убираем анимацию через 8 секунд (как при проигрыше)
-          setTimeout(() => {
-            setShowFireworks(false);
-            setWinningPoet(null);
-          }, 8000);
-        } else if (poetIndex === totalPoets - 1 && totalPoets > 3) {
-          // Если последнее место И больше 3 поэтов, показываем анимацию проигрыша
-          setLosingPoet(newestPoet);
-          setShowCoffin(true);
-          playSadMusic();
-          
-          // Убираем через 8 секунд
-          setTimeout(() => {
-            setShowCoffin(false);
-            setLosingPoet(null);
-          }, 8000);
-        }
         
         setAnimatingPoet(null);
         setAnimationStep(0);
@@ -938,18 +700,6 @@ const OverallRankingPage = () => {
         </h1>
       </div> */}
       
-      {/* Кнопка остановки музыки в правом нижнем углу */}
-      {isMusicPlaying && (
-        <button 
-          className="stop-music-btn-floating" 
-          onClick={stopMusic}
-          title="Остановить музыку"
-        >
-          <span className="music-icon">♫</span>
-          <span className="stop-line"></span>
-        </button>
-      )}
-
       {/* Блок конфликтов */}
       {detectConflicts.length > 0 && (
         <div className="conflicts-block">
@@ -1355,48 +1105,6 @@ const OverallRankingPage = () => {
         </div>
       )}
       
-      {/* Анимация победы для топ-3 */}
-      {showFireworks && winningPoet && (
-        <div className="victory-container">
-          <div className="victory-content">
-            <div className="victory-icon">
-              {winningPoet.imageUrl ? (
-                <img src={winningPoet.imageUrl} alt={winningPoet.name} className="victory-poet-icon" />
-              ) : (
-                <img src="/images/poet2.png" alt="Поэт" className="victory-poet-icon" />
-              )}
-              <div className="victory-glow"></div>
-            </div>
-            <div className="victory-text">ПОЗДРАВЛЯЕМ!</div>
-            <div className="victory-subtitle">{winningPoet.name} попал в тройку лучших</div>
-            
-            {/* Минималистичные частицы */}
-            {[...Array(20)].map((_, i) => (
-              <div key={`particle-${i}`} className="victory-particle" style={{
-                '--angle': `${i * 18}deg`,
-                '--delay': `${i * 0.1}s`
-              }} />
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Анимация для последнего места */}
-      {showCoffin && losingPoet && (
-        <div className="loss-container">
-          <div className="loss-content">
-            <div className="loss-icon">
-              {losingPoet.imageUrl ? (
-                <img src={losingPoet.imageUrl} alt={losingPoet.name} className="loss-poet-icon" />
-              ) : (
-                <img src="/images/poet2.png" alt="Поэт" className="loss-poet-icon" />
-              )}
-            </div>
-            <div className="loss-text">R.I.P.</div>
-            <div className="loss-subtitle">Он вдохновлял, но не сегодня...</div>
-          </div>
-        </div>
-      )}
       
       {/* Игра для разрешения конфликта */}
       {gameConflict && currentUser && (

@@ -14,7 +14,7 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
   const [myPistolPosition, setMyPistolPosition] = useState(null);
   const [mySabrePosition, setMySabrePosition] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
-  const [isMusicMuted, setIsMusicMuted] = useState(false); // Состояние музыки
+  const [isMusicMuted, setIsMusicMuted] = useState(true); // Состояние музыки (по умолчанию выключена)
   const [showRules, setShowRules] = useState(false); // Состояние показа правил
   
   const opponent = currentUser === 'maxim' ? 'oleg' : 'maxim';
