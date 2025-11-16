@@ -1,8 +1,9 @@
 .poet-detail-page {
   max-width: 1210px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  /* padding: 3rem 2rem; */
   min-height: 100vh;
+  margin-top: 0.5rem;
 }
 
 .fade-in {
@@ -44,28 +45,20 @@
 }
 
 .poet-detail-container {
-  background: var(--cream);
   border: none;
   border-radius: 16px;
-  padding: 2.5rem;
   box-shadow: none;
 }
 
-/* Первая строка: Имя + Оценки */
-.poet-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+/* Имя поэта внутри колонки с досье */
+.poet-header-inline {
+  margin-bottom: 1.5rem;
 }
 
 .poet-detail-name {
-  font-family: 'Lora', serif;
-  font-size: 2.5rem;
-  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  font-size: 2rem;
+  font-weight: 500;
   color: var(--ink);
   margin: 0;
   line-height: 1.3;
@@ -82,35 +75,53 @@
 
 .rating-overall-card {
   position: relative;
-  width: 70px;
-  height: 70px;
-  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-  border-radius: 16px;
+  width: 50px;
+  height: 27px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
   cursor: pointer;
+  background: var(--burgundy);
+
 }
 
-.rating-overall-card:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(135deg, #3a3a3a 0%, #252525 100%);
-}
+.rating-personal-card {
+  background: var(--gold);
 
-.rating-overall-card:active {
-  transform: translateY(0) scale(1.02);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 .rating-overall-value {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1rem;
+  /* font-weight: 600; */
   color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
+/* Иконка лайка */
+.like-container {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.like-icon {
+  width: 35px;
+  height: 30px;
+  cursor: pointer;
+  /* transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.8; */
+}
+
+/* .like-icon:hover {
+  transform: scale(1.15);
+  opacity: 1;
+}
+
+.like-icon:active {
+  transform: scale(0.95);
+} */
 
 /* Tooltip */
 .rating-tooltip {
@@ -178,18 +189,13 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Вторая строка: Фото + Досье */
+/* 3 колонки: Фото + Досье + Оценки */
 .poet-content {
   display: flex;
-  gap: 2.5rem;
-  align-items: stretch;
+  gap: 3rem;
+  align-items: flex-start;
 }
 
-.poet-info-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
 
 .rating-circle {
   width: 50px;
@@ -251,181 +257,6 @@
   position: relative;
 }
 
-/* ============================================ */
-/* ВАРИАНТ 1: Минималистичные карточки */
-/* ============================================ */
-.ratings-cards {
-  gap: 0.75rem;
-}
-
-.ratings-cards .rating-circle {
-  width: 60px;
-  height: 60px;
-  background: white;
-  border: 1.5px solid rgba(199, 163, 107, 0.3);
-  flex-direction: column;
-  gap: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.ratings-cards .rating-circle:hover {
-  border-color: var(--gold);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-.ratings-cards .rating-circle.overall {
-  width: 75px;
-  height: 60px;
-  border-color: rgba(199, 163, 107, 0.5);
-}
-
-.ratings-cards .circle-background-letter {
-  position: static;
-  font-size: 0.7rem;
-  opacity: 0.5;
-  color: var(--ink-light);
-  font-weight: 500;
-  margin-top: 0.25rem;
-}
-
-.ratings-cards .circle-rating,
-.ratings-cards .circle-rating-large {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--ink);
-  position: static;
-}
-
-/* ============================================ */
-/* ВАРИАНТ 2: Только обводка */
-/* ============================================ */
-.ratings-outline {
-  gap: 1rem;
-}
-
-.rating-outline-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.rating-outline-circle {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid rgba(199, 163, 107, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--ink);
-  transition: all 0.2s ease;
-}
-
-.rating-outline-item:hover .rating-outline-circle {
-  border-color: var(--gold);
-  transform: scale(1.05);
-}
-
-.rating-outline-item.overall .rating-outline-circle {
-  width: 60px;
-  height: 50px;
-  border-radius: 25px;
-  border-color: var(--gold);
-  border-width: 2.5px;
-  font-weight: 600;
-}
-
-.rating-outline-label {
-  font-size: 0.75rem;
-  color: var(--ink-light);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* ============================================ */
-/* ВАРИАНТ 3: Горизонтальные плашки */
-/* ============================================ */
-.ratings-horizontal {
-  gap: 0.5rem;
-  font-size: 0.95rem;
-}
-
-.rating-horizontal-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rating-separator {
-  color: rgba(199, 163, 107, 0.3);
-  font-weight: 300;
-}
-
-.rating-label-inline {
-  color: var(--ink-light);
-  font-weight: 500;
-}
-
-.rating-value-inline {
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 1.05rem;
-}
-
-.rating-horizontal-item.overall .rating-value-inline {
-  color: var(--burgundy);
-  font-size: 1.1rem;
-}
-
-/* ============================================ */
-/* ВАРИАНТ 4: Компактные badges */
-/* ============================================ */
-.ratings-badges {
-  gap: 0.5rem;
-}
-
-.rating-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  background: rgba(199, 163, 107, 0.08);
-  border: 1px solid rgba(199, 163, 107, 0.2);
-  border-radius: 20px;
-  transition: all 0.2s ease;
-}
-
-.rating-badge:hover {
-  background: rgba(199, 163, 107, 0.12);
-  border-color: var(--gold);
-  transform: translateY(-1px);
-}
-
-.rating-badge.overall {
-  background: rgba(199, 163, 107, 0.12);
-  border-color: var(--gold);
-  padding: 0.4rem 1rem;
-}
-
-.badge-label {
-  font-size: 0.75rem;
-  color: var(--ink-light);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-value {
-  font-size: 1rem;
-  color: var(--ink);
-  font-weight: 600;
-}
-
 .poet-portrait {
   flex-shrink: 0;
 }
@@ -434,15 +265,16 @@
   width: 280px;
   height: 380px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 6px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+  /* margin-top: 0.6rem; */
 }
 
-.poet-portrait img:hover {
+/* .poet-portrait img:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.12);
-}
+} */
 
 .poet-bio-section {
   flex: 1;
@@ -451,23 +283,17 @@
 }
 
 .bio-grid {
-  background: white;
-  border: 1px solid rgba(199, 163, 107, 0.15);
-  border-radius: 12px;
-  padding: 1.75rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 0.5rem;
   height: 100%;
   overflow-y: auto;
-  margin-bottom: 7px;
 }
 
 .bio-item {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .bio-field {
@@ -530,20 +356,28 @@
   box-shadow: 0 4px 12px rgba(199, 163, 107, 0.3);
 }
 
+/* Стили для модалки редактирования */
+.label-with-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
 /* Респонсивность */
 @media (max-width: 968px) {
   .poet-detail-container {
     padding: 2rem;
   }
 
-  .poet-header {
+  .poet-header-inline {
     flex-direction: column;
     align-items: flex-start;
     gap: 1.5rem;
   }
 
   .poet-detail-name {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 
   .rating-overall-container {
@@ -551,21 +385,17 @@
   }
 
   .rating-overall-card {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
   }
 
   .rating-overall-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   .poet-content {
     flex-direction: column;
     align-items: center;
-  }
-  
-  .poet-info-column {
-    width: 100%;
   }
   
   .poet-portrait {
@@ -580,6 +410,12 @@
   .poet-bio-section {
     width: 100%;
   }
+  
+  .poet-ratings-section {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 640px) {
@@ -591,13 +427,13 @@
     padding: 1.5rem;
   }
 
-  .poet-header {
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
+  .poet-header-inline {
+    padding-bottom: 0;
+    margin-bottom: 1rem;
   }
 
   .poet-detail-name {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
   
   .poet-portrait img {
@@ -614,11 +450,339 @@
     font-size: 1.5rem;
   }
   
-  .bio-grid {
-    padding: 1.25rem 1.5rem;
-  }
-  
   .bio-item {
     font-size: 0.9rem;
+  }
+}
+
+/* === Letterboxd Theme Overrides === */
+body[data-theme="letterboxd"] .bio-grid {
+  background: transparent;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .empty-bio {
+  background: #1a1a1a;
+  border: none
+}
+
+body[data-theme="letterboxd"] .bio-field {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .rating-overall-card {
+  background: #40BCF4;
+  color: white;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .rating-personal-card {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .rating-tooltip {
+  background: #1a1a1a;
+  border: none;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .rating-tooltip::before {
+  border-bottom-color: #1a1a1a;
+}
+
+/* Lightbox для увеличенного изображения */
+.poet-portrait-img-clickable {
+  cursor: zoom-in;
+}
+
+.image-lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 2rem;
+  animation: lightboxFadeIn 0.2s ease;
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5e5e5;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 300;
+  z-index: 10001;
+}
+
+.lightbox-close:hover {
+  background: rgba(199, 163, 107, 0.1);
+  color: white;
+}
+
+.image-lightbox-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 90vw;
+  max-height: 90vh;
+  animation: lightboxZoomIn 0.3s ease;
+}
+
+@keyframes lightboxZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.image-lightbox-content img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-caption {
+  margin-top: 1.5rem;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Letterboxd theme для lightbox */
+body[data-theme="letterboxd"] .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
+/* ===== ОЦЕНКИ ПО КАТЕГОРИЯМ ===== */
+.poet-ratings-section {
+  margin-top: 0;
+  /* min-width: 420px; */
+  flex-shrink: 0;
+  width: 220px;
+    /* padding-top: 1rem; */
+background-color: white;
+}
+
+/* Блок с лайком и рейтингами */
+.poet-ratings-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.2);
+  margin-bottom: 0.75rem;
+}
+
+.poet-ratings-header .like-container {
+  margin-left: 0;
+}
+
+.poet-ratings-header .rating-overall-container {
+  justify-content: center;
+}
+
+/* Кнопки действий (Редактировать/Удалить) */
+.poet-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(199, 163, 107, 0.2);
+  padding-top: 0;
+}
+
+.poet-action-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.2);
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  /* font-weight: 500; */
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.poet-action-btn:last-child {
+  border-bottom: none;
+}
+
+.poet-action-btn:hover {
+ color: var(--gold);
+}
+
+.ratings-section-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.ratings-categories-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rating-category-card {
+  width: 100%;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.rating-category-card .star-container {
+  font-size: 2.2rem;
+}
+
+.rating-category-card .rating-value {
+  font-size: 1.1rem;
+}
+
+
+
+.rating-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rating-category-header .tooltip-wrapper {
+  display: inline-block;
+}
+
+.rating-category-header .category-name {
+  font-weight: normal;
+  color: var(--ink);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.rating-category-header .category-coefficient {
+  background: white;
+  color: var(--ink);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(199, 163, 107, 0.2);
+}
+
+.category-points {
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--ink-light);
+  font-weight: 500;
+  padding-top: 0.5rem;
+}
+
+/* Letterboxd Theme для оценок */
+body[data-theme="letterboxd"] .poet-ratings-section {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  background-color: #445566;
+  border-radius: 6px;
+}
+
+body[data-theme="letterboxd"] .ratings-section-title {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .rating-category-card {
+  background: transparent;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .rating-category-card:hover {
+  box-shadow: none;
+}
+
+body[data-theme="letterboxd"] .rating-category-header .category-name {
+  color: #BCD;
+}
+
+body[data-theme="letterboxd"] .rating-category-header .category-coefficient {
+  background: rgba(0, 172, 28, 0.2);
+  color: #e5e5e5;
+  border-color: rgba(0, 172, 28, 0.3);
+}
+
+body[data-theme="letterboxd"] .category-points {
+  color: #b3b3b3;
+}
+
+/* Letterboxd Theme для блока с рейтингами */
+body[data-theme="letterboxd"] .poet-ratings-header {
+  border-bottom-color: #14181c;
+}
+
+/* Letterboxd Theme для кнопок действий */
+body[data-theme="letterboxd"] .poet-actions {
+  border-top-color: #14181c;
+}
+
+body[data-theme="letterboxd"] .poet-action-btn {
+  border-bottom-color: #14181c;
+  color: #BCD;
+}
+
+body[data-theme="letterboxd"] .poet-action-btn:hover {
+  color: white;
+}
+
+/* Адаптивность оценок */
+@media (max-width: 1024px) {
+  .ratings-categories-column {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ratings-categories-column {
+    gap: 0.75rem;
+  }
+  
+  .rating-category-card {
+    width: 100%;
   }
 }

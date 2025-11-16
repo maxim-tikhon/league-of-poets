@@ -1,15 +1,18 @@
 import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
+import ThemeSelector from './ThemeSelector';
 import './Layout.css';
 
 const Layout = () => {
+  const logoSrc = '/images/logo.png';
+
   return (
     <div className="layout">
       <header className="header">
-        <div className="container">
+        <div className="container header-container">
           <Link to="/" className="logo-link">
             <h1 className="logo">
-              <img src="/images/logo.png" alt="Лига Поэтов" className="logo-icon" />
+              <img src={logoSrc} alt="Лига Поэтов" className="logo-icon" />
               Лига Поэтов
             </h1>
           </Link>
@@ -27,6 +30,7 @@ const Layout = () => {
               Общий Рейтинг
             </NavLink>
           </nav>
+          <ThemeSelector />
         </div>
       </header>
       

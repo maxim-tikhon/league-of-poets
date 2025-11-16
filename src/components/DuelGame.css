@@ -14,15 +14,15 @@
 }
 
 .duel-game-container {
-  background: white;
-  border: 1px solid rgba(199, 163, 107, 0.2);
-  border-radius: 16px;
-  padding: 3rem;
+  background: var(--cream);
+  border: none;
+  border-radius: 6px;
+  padding: 2rem;
   max-width: 900px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.08);
   animation: slideIn 0.3s ease-out;
   position: relative;
 }
@@ -48,8 +48,7 @@
 
 .close-duel-btn:hover {
   background: rgba(199, 163, 107, 0.1);
-  color: var(--burgundy);
-  transform: scale(1.1);
+  color: var(--ink);
 }
 
 .toggle-music-btn {
@@ -91,7 +90,7 @@
 .rules-btn:hover {
   background: rgba(199, 163, 107, 0.1);
   color: var(--gold);
-  transform: scale(1.1);
+  /* transform: scale(1.1); */
 }
 
 .rules-btn .rules-icon {
@@ -105,14 +104,15 @@
   position: absolute;
   top: 4rem;
   right: 6rem;
-  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-  border: 1px solid rgba(199, 163, 107, 0.3);
-  border-radius: 12px;
+  background: rgba(199, 163, 107, 0.05);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 6px;
   padding: 1.5rem 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   min-width: 320px;
   animation: slideDown 0.3s ease-out;
+  backdrop-filter: blur(8px);
 }
 
 @keyframes slideDown {
@@ -135,7 +135,7 @@
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 8px solid rgba(199, 163, 107, 0.3);
+  border-bottom: 8px solid rgba(199, 163, 107, 0.2);
 }
 
 .rules-overlay::after {
@@ -147,17 +147,16 @@
   height: 0;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-bottom: 7px solid #2d2d2d;
+  border-bottom: 7px solid rgba(199, 163, 107, 0.05);
 }
 
 .rules-content h3 {
   color: var(--gold);
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 500;
   margin: 0 0 1rem 0;
   text-align: center;
-  font-family: 'Lora', serif;
-  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
 }
 
 .rules-list {
@@ -170,40 +169,46 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
+  padding: 0.75rem;
+  background: rgba(199, 163, 107, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(199, 163, 107, 0.1);
   transition: all 0.2s ease;
 }
 
 .rule-item:hover {
-  background: rgba(199, 163, 107, 0.1);
-  transform: translateX(4px);
+  background: rgba(199, 163, 107, 0.08);
+  border-color: rgba(199, 163, 107, 0.2);
 }
 
 .rule-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   flex-shrink: 0;
-  width: 32px;
+  width: 28px;
   text-align: center;
 }
 
 .rule-text {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.95rem;
+  color: var(--ink-light);
+  font-size: 0.9rem;
   font-family: 'Inter', sans-serif;
   line-height: 1.4;
+  font-weight: 400;
 }
 
 .rule-text strong {
-  color: white;
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: 500;
 }
 
 .toggle-music-btn:hover {
   background: rgba(199, 163, 107, 0.1);
   color: var(--gold);
-  transform: scale(1.1);
+  /* transform: scale(1.1); */
+}
+
+body[data-theme="letterboxd"] .toggle-music-btn:hover {
+  color: #e5e5e5
 }
 
 .toggle-music-btn .music-icon {
@@ -215,6 +220,10 @@
 
 .toggle-music-btn:hover .music-icon {
   color: var(--gold);
+}
+
+body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
+  color: #e5e5e5;
 }
 
 .toggle-music-btn .stop-line {
@@ -245,22 +254,23 @@
 
 .duel-game-header {
   text-align: center;
-  margin-bottom: 2rem;
+  /* margin-bottom: 2rem; */
+  padding-bottom: 1rem;
+  /* border-bottom: 1px solid rgba(199, 163, 107, 0.15); */
 }
 
 .duel-game-header h2 {
   color: var(--ink);
-  font-size: 2rem;
-  margin: 0 0 0.75rem 0;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .duel-poets {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--ink-light);
-  margin: 0.5rem 0;
+  margin: 0;
   font-weight: 400;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
@@ -279,17 +289,17 @@
 
 .duel-instructions {
   background: rgba(199, 163, 107, 0.05);
-  border: 1px solid rgba(199, 163, 107, 0.2);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  border-radius: 6px;
+  padding: 1rem;
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .duel-instructions p {
-  /* margin: 0.5rem 0; */
+  margin: 0;
   color: var(--ink);
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   font-weight: 500;
 }
@@ -298,18 +308,19 @@
   font-size: 0.9rem;
   color: var(--ink-light);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 400;
 }
 
 .your-turn {
-  color: var(--gold) !important;
-  font-weight: 600;
-  font-size: 1.15rem !important;
+  color: var(--ink) !important;
+  font-weight: 400;
+  font-size: 1rem !important;
 }
 
 .opponent-turn {
   color: var(--ink-light) !important;
-  font-weight: 500;
-  font-size: 1.05rem !important;
+  font-weight: 400;
+  font-size: 1rem !important;
 }
 
 .game-field-wrapper {
@@ -481,53 +492,25 @@
 }
 
 .duel-cell.opened-by-maxim {
-  background: rgba(45, 45, 45, 0.05);
-  border-color: var(--ink);
-}
-
-.duel-cell.opened-by-oleg {
-  background: rgba(123, 46, 46, 0.05);
-  border-color: var(--burgundy);
-}
-
-.duel-cell.my-pistol {
-  background: white !important;
+  background: rgba(45, 45, 45, 0.08) !important;
   border-color: var(--ink) !important;
   border-width: 2px !important;
 }
 
-.duel-cell.my-sabre {
-  background: white !important;
-  border-color: var(--ink-light) !important;
-  border-width: 2px !important;
-}
-
-.duel-cell.opponent-pistol {
-  background: rgba(123, 46, 46, 0.1) !important;
-  border-color: var(--burgundy) !important;
-  border-width: 2px !important;
-}
-
-.duel-cell.opponent-sabre {
+.duel-cell.opened-by-oleg {
   background: rgba(123, 46, 46, 0.08) !important;
   border-color: var(--burgundy) !important;
   border-width: 2px !important;
 }
 
-/* Дополнительная визуализация для открытого соперником оружия */
+/* Смертельное оружие (пистолет/сабля) - красноватый фон для обоих игроков */
 .duel-cell.opponent-weapon-revealed {
-  border-width: 3px !important;
-  box-shadow: 0 0 12px rgba(123, 46, 46, 0.3) !important;
-  animation: dangerPulse 1.5s ease infinite !important;
+  background: rgba(220, 38, 38, 0.15) !important;
 }
 
-@keyframes dangerPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
+/* Бомба - красноватый фон */
+.duel-cell.bomb:not(.defused) {
+  background: rgba(220, 38, 38, 0.15) !important;
 }
 
 @keyframes explode {
@@ -540,54 +523,6 @@
   0% { transform: rotate(0deg); }
   50% { transform: rotate(5deg); }
   100% { transform: rotate(0deg); }
-}
-
-.duel-cell.trap {
-  background: rgba(45, 45, 45, 0.03) !important;
-  border-color: var(--ink-light) !important;
-  border-width: 2px !important;
-}
-
-.duel-cell.love-letter {
-  background: rgba(199, 163, 107, 0.1) !important;
-  border-color: var(--gold) !important;
-  border-width: 2px !important;
-}
-
-@keyframes lovePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.duel-cell.bomb {
-  background: rgba(45, 45, 45, 0.08) !important;
-  border-color: var(--ink) !important;
-  border-width: 2px !important;
-}
-
-/* Обезвреженные письмом клетки */
-.duel-cell.defused {
-  background: rgba(199, 163, 107, 0.08) !important;
-  border-color: var(--gold) !important;
-  border-width: 2px !important;
-}
-
-@keyframes defusedGlow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-@keyframes bombBlink {
-  0%, 100% { 
-    opacity: 1;
-  }
-  50% { 
-    opacity: 0.7;
-  }
 }
 
 .cell-content {
@@ -615,53 +550,55 @@
 
 .duel-result {
   text-align: center;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
   background: rgba(199, 163, 107, 0.05);
-  border: 1px solid rgba(199, 163, 107, 0.2);
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  border-left: 3px solid rgba(199, 163, 107, 0.3);
 }
 
 .duel-result h3 {
-  /* margin: 0 0 0.5rem 0; */
-  font-size: 1.2rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--ink);
 }
 
-.duel-result h3.winner {
-  color: var(--gold);
+.duel-result.winner {
+  background: rgba(199, 163, 107, 0.1);
+  border-left-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(199, 163, 107, 0.1);
 }
 
-.duel-result h3.loser {
-  color: var(--burgundy);
+.duel-result.loser {
+  background: rgba(123, 46, 46, 0.06);
+  border-left-color: var(--burgundy);
+  box-shadow: 0 0 0 1px rgba(123, 46, 46, 0.08);
 }
 
 .duel-result h3.draw {
   color: var(--ink-light);
 }
 
-@keyframes celebrate {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-}
-
 .duel-result p {
   margin: 0;
   color: var(--ink-light);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 400;
 }
 
 .close-game-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 0.85rem;
   margin-top: 1rem;
   background: var(--gold);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -669,9 +606,8 @@
 }
 
 .close-game-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(199, 163, 107, 0.3);
   background: #d6a85a;
+  opacity: 0.95;
 }
 
 /* Адаптивность */
@@ -708,15 +644,16 @@
   }
 
   .rule-icon {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+    width: 24px;
   }
 
   .duel-game-header h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .duel-poets {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
   }
 
   .game-field-wrapper {
@@ -767,21 +704,21 @@
   .rules-content h3 {
     font-size: 1rem;
   }
-
   .rule-text {
     font-size: 0.85rem;
   }
 
   .rule-icon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    width: 24px;
   }
 
   .duel-game-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
 
   .duel-poets {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
 
   .duel-grid {
@@ -796,5 +733,175 @@
     min-height: 45px;
   }
 
+}
+
+/* === Letterboxd Theme Overrides === */
+body[data-theme="letterboxd"] .duel-game-container {
+  background: #14181c url(/images/content-bg.png) 0 -1px repeat-x;
+}
+
+body[data-theme="letterboxd"] .duel-game-header {
+  border-bottom-color: #456;
+}
+
+body[data-theme="letterboxd"] .close-duel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .toggle-music-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="letterboxd"] .rules-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .rules-overlay {
+  background: #253544;
+  border: none;
+  backdrop-filter: none;
+}
+
+body[data-theme="letterboxd"] .rules-overlay::before {
+  display: none;
+}
+
+body[data-theme="letterboxd"] .rules-overlay::after {
+  display: none;
+}
+
+body[data-theme="letterboxd"] .rules-content h3 {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .rule-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+}
+
+body[data-theme="letterboxd"] .rule-item:hover {
+  background: rgba(0, 172, 28, 0.08);
+}
+
+body[data-theme="letterboxd"] .rule-text {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .rule-text strong {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .duel-instructions {
+  background: #253544;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .your-turn {
+  color: #e5e5e5 !important;
+}
+
+body[data-theme="letterboxd"] .opponent-turn {
+  color: #9ab !important;
+}
+
+body[data-theme="letterboxd"] .duel-instructions p {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .duel-result {
+  background: #253544;
+  border: none;
+  /* border-left: 3px solid #456; */
+}
+
+body[data-theme="letterboxd"] .duel-result.winner {
+  background: rgba(0, 172, 28, 0.1);
+}
+
+body[data-theme="letterboxd"] .duel-result.loser {
+  background: rgba(229, 9, 20, 0.1);
+}
+
+body[data-theme="letterboxd"] .duel-result h3 {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .duel-result.winner h3 {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .duel-result.loser h3 {
+  color: #E50914;
+}
+
+body[data-theme="letterboxd"] .status-compact {
+  background: #253544;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .status-compact:hover {
+  background: #2c3a4a;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .status-text-compact {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .duel-cell {
+  background: #253544;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .duel-cell.clickable {
+  background: #2c3a4a;
+  border-color: #40BCF4;
+}
+
+body[data-theme="letterboxd"] .duel-cell.clickable:hover {
+  border-color: #40BCF4;
+  box-shadow: 0 4px 12px rgba(0, 172, 28, 0.3);
+}
+
+body[data-theme="letterboxd"] .duel-cell.opened-by-maxim {
+  background: rgba(255, 144, 16, 0.05) !important;
+  border-color: #FF9010 !important;
+  border-width: 2px !important;
+}
+
+body[data-theme="letterboxd"] .duel-cell.opened-by-oleg {
+  background: rgba(0, 172, 28, 0.05) !important;
+  border-color: #00ac1c !important;
+  border-width: 2px !important;
+}
+
+/* Смертельное оружие - красноватый фон */
+body[data-theme="letterboxd"] .duel-cell.opponent-weapon-revealed {
+  background: rgba(229, 9, 20, 0.2) !important;
+}
+
+/* Бомба - красноватый фон */
+body[data-theme="letterboxd"] .duel-cell.bomb:not(.defused) {
+  background: rgba(229, 9, 20, 0.2) !important;
+}
+
+body[data-theme="letterboxd"] .duel-cell.opened-by-oleg .cell-content {
+  color: #00ac1c !important;
+}
+
+body[data-theme="letterboxd"] .duel-cell.duel-cell.opened-by-maxim .cell-content {
+  color: #FF9010 !important;
+}
+
+body[data-theme="letterboxd"] .close-game-btn {
+  background: #E50914;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .close-game-btn:hover {
+  background: #B81D24;
+  opacity: 1;
 }
 

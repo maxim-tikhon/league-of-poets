@@ -1,7 +1,7 @@
 .star-rating {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.1rem;
 }
 
 .star-wrapper {
@@ -14,6 +14,11 @@
 
 .star-wrapper.read-only {
   cursor: default;
+}
+
+.star-wrapper.read-only .star-click-area {
+  cursor: default;
+  pointer-events: none;
 }
 
 .star {
@@ -31,7 +36,7 @@
   top: 0;
   left: 0;
   color: var(--gold);
-  text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  /* text-shadow: 0 0 2px rgba(212, 175, 55, 0.5); */
   pointer-events: none;
   opacity: 1;
 }
@@ -54,14 +59,14 @@
 }
 
 .star-wrapper:not(.read-only):hover .star {
-  transform: scale(1.15);
+  transform: scale(1.1);
 }
 
 .rating-value {
   font-size: 1rem;
   margin-left: 0.5rem;
   color: var(--ink-light);
-  font-weight: 600;
+  font-weight: 500;
   min-width: 2rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
@@ -76,7 +81,7 @@
 }
 
 .star-rating.small .rating-value {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   min-width: 1.5rem;
 }
 
@@ -93,3 +98,12 @@
   min-width: 2.5rem;
 }
 
+/* Letterboxd Theme */
+body[data-theme="letterboxd"] .star-empty {
+  color: #344454;
+}
+
+/* body[data-theme="letterboxd"] .star-filled {
+  color: #40BCF4;
+  text-shadow: 0 0 2px rgba(64, 188, 244, 0.5);
+} */

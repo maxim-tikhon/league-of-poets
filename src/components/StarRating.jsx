@@ -64,7 +64,7 @@ const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
   return (
     <div className="star-rating" onMouseLeave={handleMouseLeave}>
       {Array.from({ length: maxRating }, (_, i) => renderStar(i))}
-      <span className="rating-value">{value.toFixed(1)}</span>
+      {/* <span className="rating-value">{value.toFixed(1)}</span> */}
     </div>
   );
 };

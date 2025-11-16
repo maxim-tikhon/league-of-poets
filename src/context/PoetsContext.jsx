@@ -31,6 +31,10 @@ export const PoetsProvider = ({ children }) => {
     oleg: {}
   });
   const [overallDuelWinners, setOverallDuelWinners] = useState({});
+  const [likes, setLikes] = useState({
+    maxim: {},
+    oleg: {}
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Подписка на изменения поэтов в Firebase
@@ -103,6 +107,25 @@ export const PoetsProvider = ({ children }) => {
         setOverallDuelWinners(data);
       } else {
         setOverallDuelWinners({});
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  // Подписка на изменения лайков в Firebase
+  useEffect(() => {
+    const likesRef = ref(database, 'likes');
+    
+    const unsubscribe = onValue(likesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setLikes(data);
+      } else {
+        setLikes({
+          maxim: {},
+          oleg: {}
+        });
       }
     });
     
@@ -185,8 +208,28 @@ export const PoetsProvider = ({ children }) => {
     }
   };
 
+  // Обновить поэта
+  const updatePoet = async (poetId, updatedData) => {
+    await update(ref(database, `poets/${poetId}`), updatedData);
+  };
+
   // Обновить рейтинг
   const updateRating = async (rater, poetId, category, value) => {
+    // Проверяем, была ли у поэта хотя бы одна оценка до этого
+    const poet = poets.find(p => p.id === poetId);
+    if (poet) {
+      const maximScore = calculateScore('maxim', poetId);
+      const olegScore = calculateScore('oleg', poetId);
+      const hadRatings = maximScore > 0 || olegScore > 0;
+      
+      // Если это первая оценка (до этого рейтинг был 0), сохраняем время первой оценки
+      if (!hadRatings && !poet.firstRatedAt) {
+        await update(ref(database, `poets/${poetId}`), {
+          firstRatedAt: new Date().toISOString()
+        });
+      }
+    }
+    
     await set(ref(database, `ratings/${rater}/${poetId}/${category}`), value);
   };
 
@@ -221,40 +264,76 @@ export const PoetsProvider = ({ children }) => {
   const calculateAverageScore = useCallback((poetId) => {
     const maximScore = calculateScore('maxim', poetId);
     const olegScore = calculateScore('oleg', poetId);
-    return (maximScore + olegScore) / 2;
+    
+    // Если оба пользователя оценили - среднее
+    if (maximScore > 0 && olegScore > 0) {
+      return (maximScore + olegScore) / 2;
+    }
+    
+    // Если только один пользователь оценил - его балл
+    return maximScore > 0 ? maximScore : olegScore;
   }, [calculateScore]);
 
   // Получить рейтинги для категории
   const getCategoryRankings = useCallback((category) => {
-    return poets.map(poet => ({
-      poet,
-      maximRating: ratings.maxim[poet.id]?.[category] || 0,
-      olegRating: ratings.oleg[poet.id]?.[category] || 0,
-      averageRating: ((ratings.maxim[poet.id]?.[category] || 0) + (ratings.oleg[poet.id]?.[category] || 0)) / 2
-    })).sort((a, b) => b.averageRating - a.averageRating);
+    return poets
+      .map(poet => {
+        const maximRating = ratings.maxim[poet.id]?.[category] || 0;
+        const olegRating = ratings.oleg[poet.id]?.[category] || 0;
+        
+        // Если оба пользователя оценили - среднее
+        let averageRating;
+        if (maximRating > 0 && olegRating > 0) {
+          averageRating = (maximRating + olegRating) / 2;
+        } else {
+          // Если только один пользователь оценил - его оценка
+          averageRating = maximRating > 0 ? maximRating : olegRating;
+        }
+        
+        return {
+          poet,
+          maximRating,
+          olegRating,
+          averageRating
+        };
+      })
+      .filter(item => item.averageRating > 0) // Показываем только поэтов с оценками
+      .sort((a, b) => b.averageRating - a.averageRating);
   }, [poets, ratings]);
 
   // Получить общие рейтинги
   const getOverallRankings = useCallback(() => {
-    return poets.map(poet => ({
-      poet,
-      maximScore: calculateScore('maxim', poet.id),
-      olegScore: calculateScore('oleg', poet.id),
-      averageScore: calculateAverageScore(poet.id)
-    })).sort((a, b) => b.averageScore - a.averageScore);
+    return poets
+      .map(poet => ({
+        poet,
+        maximScore: calculateScore('maxim', poet.id),
+        olegScore: calculateScore('oleg', poet.id),
+        averageScore: calculateAverageScore(poet.id)
+      }))
+      .filter(item => item.averageScore > 0) // Показываем только поэтов с оценками
+      .sort((a, b) => b.averageScore - a.averageScore);
   }, [poets, calculateScore, calculateAverageScore]);
+
+  // Переключить лайк поэта
+  const toggleLike = async (user, poetId) => {
+    const currentLikeStatus = likes[user]?.[poetId] || false;
+    await set(ref(database, `likes/${user}/${poetId}`), !currentLikeStatus);
+  };
 
   const value = {
     poets,
     ratings,
     categoryLeaders,
     overallDuelWinners,
+    likes,
     isLoading,
     addPoet,
     deletePoet,
+    updatePoet,
     updateRating,
     setCategoryLeader,
     setOverallDuelWinner,
+    toggleLike,
     calculateScore,
     calculateAverageScore,
     getCategoryRankings,

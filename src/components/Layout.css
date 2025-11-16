@@ -6,8 +6,6 @@
 
 .header {
   background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy) 100%);
-  /* border-bottom: 1px solid rgba(199, 163, 107, 0.3);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); */
   padding: 0.75rem 0;
   position: sticky;
   top: 0;
@@ -16,12 +14,24 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* Letterboxd тема - темный header без текстуры */
+body[data-theme="letterboxd"] .header {
+  background: #13171B;
+  border-bottom: none;
+  box-shadow: none;
+}
+
 .header .container {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .logo-link {
@@ -36,8 +46,8 @@
 }
 
 .logo {
-  font-family: 'Lora', serif;
-  font-size: 1.3rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 2px;
   margin: 0;
@@ -49,6 +59,7 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+
 
 .logo-icon {
   height: 2.5rem;
@@ -63,6 +74,7 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .nav-link {
@@ -72,11 +84,26 @@
   text-decoration: none;
   border-radius: 6px;
   font-size: 0.9rem;
-  font-weight: 500;
+  /* font-weight: 500; */
   transition: all 0.3s ease;
   background: transparent;
   border: none;
   position: relative;
+}
+
+/* Letterboxd тема - белые nav links */
+body[data-theme="letterboxd"] .nav-link {
+  color: #b3b3b3;
+}
+
+body[data-theme="letterboxd"] .nav-link:hover {
+  background: none;
+  color: #e5e5e5
+}
+
+body[data-theme="letterboxd"] .nav-link.active {
+  background: none;
+  color: white;
 }
 
 .nav-link::after {
@@ -103,17 +130,13 @@
 .nav-link.active {
   background: rgba(255, 255, 255, 0.15);
   color: white;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* .nav-link.active::after {
   transform: translateX(-50%) scaleX(1);
   background: var(--gold);
 } */
-
-.nav-link.overall-link {
-  font-weight: 500;
-}
 
 .nav-link.overall-link.active {
   /*background: rgba(199, 163, 107, 0.2);*/
@@ -122,15 +145,20 @@
 
 .main {
   flex: 1;
-  padding: 3rem 0;
+  padding: 2rem 0;
 }
 
 .footer {
   background: var(--ink);
   color: var(--gold);
-  padding: 1rem 0;
+  padding: 0.6rem 0;
   text-align: center;
-  font-style: italic;
+}
+
+/* Letterboxd тема - темный footer без текстуры */
+body[data-theme="letterboxd"] .footer {
+  background: #2c3440;
+  color: grey;
 }
 
 .footer p {
@@ -142,6 +170,12 @@
   .header .container {
     flex-direction: column;
     gap: 0.75rem;
+  }
+  
+  .header-container {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
   }
   
   .logo {
@@ -157,6 +191,11 @@
     width: 100%;
     justify-content: center;
     gap: 0.5rem;
+    order: 3;
+  }
+  
+  .theme-selector {
+    order: 2;
   }
   
   .nav-link {

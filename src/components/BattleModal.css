@@ -5,7 +5,8 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,15 +25,15 @@
 
 /* Modal */
 .battle-modal {
-  background: white;
-  border-radius: 16px;
-  padding: 3rem;
-  max-width: 900px;
+  background: var(--cream);
+  border-radius: 6px;
+  padding: 2rem;
+  max-width: 780px;
   width: 90%;
   position: relative;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.08);
   animation: slideIn 0.3s ease-out;
-  border: 1px solid rgba(199, 163, 107, 0.2);
+  border: none;
 }
 
 @keyframes slideIn {
@@ -49,20 +50,21 @@
 /* Header */
 .battle-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .battle-title {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 500;
   color: var(--ink);
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
 }
 
 .battle-subtitle {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--ink-light);
   margin-bottom: 0.5rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -71,11 +73,11 @@
 
 .battle-subtitle strong {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .battle-description {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--ink-light);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
@@ -85,14 +87,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
+  gap: 1.5rem;
   position: relative;
 }
 
 .battle-prize {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,21 +102,21 @@
 }
 
 .battle-prize-icon {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 16px rgba(199, 163, 107, 0.4));
+  filter: drop-shadow(0 3px 12px rgba(199, 163, 107, 0.3));
   animation: prizeFloat 3s ease-in-out infinite;
 }
 
 @keyframes prizeFloat {
   0%, 100% {
     transform: translateY(0) scale(1);
-    filter: drop-shadow(0 4px 16px rgba(199, 163, 107, 0.4));
+    filter: drop-shadow(0 3px 12px rgba(199, 163, 107, 0.3));
   }
   50% {
-    transform: translateY(-8px) scale(1.05);
-    filter: drop-shadow(0 8px 24px rgba(199, 163, 107, 0.6));
+    transform: translateY(-6px) scale(1.03);
+    filter: drop-shadow(0 6px 18px rgba(199, 163, 107, 0.4));
   }
 }
 
@@ -146,10 +148,10 @@
 /* Poet Cards */
 .battle-poet-card {
   flex: 1;
-  max-width: 300px;
+  max-width: 240px;
   background: white;
-  border: 1px solid rgba(199, 163, 107, 0.2);
-  border-radius: 12px;
+  border: none;
+  border-radius: 6px;
   padding: 0;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -159,11 +161,9 @@
   aspect-ratio: 3 / 4;
 }
 
-.battle-poet-card:hover {
-  transform: translateY(-4px);
-  /* border-color: var(--gold); */
-  box-shadow: 0 0 12px 3px rgba(212, 175, 55, 0.4);
-}
+/* .battle-poet-card:hover {
+  box-shadow: 0 0 0 3px var(--gold);
+} */
 
 .battle-poet-card.left {
   animation: slideInLeft 0.3s ease-out;
@@ -231,8 +231,8 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   margin: 0;
   color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  line-height: 1.1;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+  line-height: 1.2;
   word-break: break-word;
   text-align: left;
   width: 100%;
@@ -240,16 +240,16 @@
 
 /* First name smaller */
 .battle-poet-name .first-name {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 400;
   display: block;
-  margin-bottom: -0.5rem;
+  margin-bottom: -0.6rem;
 }
 
 /* Last name larger */
 .battle-poet-name .last-name {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 500;
   display: block;
 }
 
@@ -302,12 +302,12 @@
 /* Responsive */
 @media (max-width: 768px) {
   .battle-modal {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem;
     width: 95%;
   }
   
   .battle-title {
-    font-size: 1.8rem;
+    font-size: 1.3rem;
   }
   
   .battle-arena {
@@ -327,18 +327,31 @@
   
   .battle-poet-card {
     width: 100%;
-    max-width: 280px;
+    max-width: 220px;
   }
   
   .battle-poet-name .first-name {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
   
   .battle-poet-name .last-name {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
   }
 }
 
 /* 👑 ФИНАЛЬНАЯ ДУЭЛЬ 👑 - те же стили, что и для обычной дуэли */
 
+/* === Letterboxd Theme Overrides === */
+body[data-theme="letterboxd"] .battle-modal {
+  background: #14181c url(/images/content-bg.png) 0 -1px repeat-x;
+}
+
+body[data-theme="letterboxd"] .battle-poet-card {
+  background: #14181c url(/images/content-bg.png) 0 -1px repeat-x;
+}
+
+body[data-theme="letterboxd"] .battle-close-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
 

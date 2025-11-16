@@ -30,12 +30,20 @@ const OverallRankingPage = () => {
   const animatingCardRef = useRef(null); // Ref для анимирующейся карточки
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
   
-  // Функция форматирования оценки в зависимости от выбранной системы
+  // Функция форматирования индивидуальных оценок (Максим/Олег)
   const formatScore = useCallback((score) => {
     if (scoreSystem === 'five') {
       return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
     }
-    return score.toFixed(1); // 100-балльная система
+    return Math.round(score).toString(); // 100-балльная система - целые числа
+  }, [scoreSystem]);
+
+  // Функция форматирования среднего значения (всегда с десятичными)
+  const formatAverageScore = useCallback((score) => {
+    if (scoreSystem === 'five') {
+      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
+    }
+    return score.toFixed(1); // 100-балльная система - с одной десятичной
   }, [scoreSystem]);
   
   // Получаем текущего пользователя из localStorage
@@ -46,22 +54,25 @@ const OverallRankingPage = () => {
   const categoryLeaders = rawCategoryLeaders || { maxim: {}, oleg: {} };
   const overallDuelWinners = rawOverallDuelWinners || {};
   
-  // Найти самого последнего добавленного поэта за последние 24 часа
+  // Найти самого последнего оцененного поэта за последние 24 часа
   const getNewestPoet = () => {
     if (poets.length === 0) return null;
     
     const now = new Date();
     const poetsLast24h = poets.filter(poet => {
-      const addedDate = new Date(poet.addedAt);
-      const hoursDiff = (now - addedDate) / (1000 * 60 * 60);
-      return hoursDiff <= 24;
+      // Проверяем наличие firstRatedAt (момент получения первой оценки)
+      if (!poet.firstRatedAt) return false;
+      
+      const ratedDate = new Date(poet.firstRatedAt);
+      const hoursDiff = (now - ratedDate) / (1000 * 60 * 60);
+      return hoursDiff <= 1;
     });
     
     if (poetsLast24h.length === 0) return null;
     
-    // Найти самого последнего
+    // Найти поэта с самым свежим firstRatedAt
     return poetsLast24h.reduce((latest, current) => {
-      return new Date(current.addedAt) > new Date(latest.addedAt) ? current : latest;
+      return new Date(current.firstRatedAt) > new Date(latest.firstRatedAt) ? current : latest;
     });
   };
   
@@ -215,12 +226,8 @@ const OverallRankingPage = () => {
       // Переключаемся на вкладку overall
       setActiveTab('overall');
       
-      // Раскрываем карточку поэта
-      setExpandedCards(prev => {
-        const newSet = new Set(prev);
-        newSet.add(poetId);
-        return newSet;
-      });
+      // Разворачиваем карточку
+      setExpandedCards(new Set([poetId]));
       
       // Скроллим к карточке после небольшой задержки (чтобы DOM обновился)
       setTimeout(() => {
@@ -235,15 +242,15 @@ const OverallRankingPage = () => {
     }
   }, [location.state]);
   
-  // Проверяем, показывали ли уже анимацию в этой сессии
+  // Проверяем, показывали ли уже анимацию этому пользователю (навсегда)
   useEffect(() => {
     // Не запускаем анимацию, пока данные загружаются
     if (isLoading || !newestPoet) {
       return;
     }
     
-    const sessionKey = `animation_shown_${newestPoet.id}`;
-    const animationShown = sessionStorage.getItem(sessionKey);
+    const animationKey = `animation_shown_${currentUser}_${newestPoet.id}`;
+    const animationShown = localStorage.getItem(animationKey);
     
     if (!animationShown) {
       // Сразу устанавливаем анимирующего поэта (плашка будет видна на первом месте)
@@ -267,98 +274,20 @@ const OverallRankingPage = () => {
       if (rankings.length === 1) {
         setAnimatingPoet(null);
         setShowScore(true);
-        sessionStorage.setItem(sessionKey, 'true');
+        localStorage.setItem(animationKey, 'true');
         return;
       }
       
-      // Генерируем маршрут согласно новому алгоритму
-      const generateRoute = (targetIndex, totalPoets) => {
-        // 1. Определяем BASE_STEPS (количество поэтов × 2)
-        const baseSteps = totalPoets * 2;
-        
-        // 2. Допустимое отклонение (±10%)
-        const deviation = Math.floor(baseSteps * 0.1);
-        const totalSteps = baseSteps + Math.floor(Math.random() * (deviation * 2 + 1)) - deviation;
-        
-        // 3. Инициализация
-        let currentIndex = 0; // Начинаем с первого места
-        let accumulatedSteps = 0; // Сколько шагов уже прошли
-        const positions = [0]; // Маршрут (список позиций)
-        
-        // 4. Генерация промежуточных движений
-        let attempts = 0;
-        while (accumulatedSteps < totalSteps) {
-          // 4.1. Генерируем случайную позицию в диапазоне [0, totalPoets-1]
-          const randomPosition = Math.floor(Math.random() * totalPoets);
-          
-          // 4.2. Вычисляем расстояние до этой позиции
-          const stepsToPosition = Math.abs(randomPosition - currentIndex);
-          
-          // Если позиция совпадает с текущей - пропускаем
-          if (stepsToPosition === 0) {
-            continue;
-          }
-          
-          // 4.3. Проверяем: хватит ли шагов вернуться к финальной позиции?
-          const distanceToTarget = Math.abs(targetIndex - randomPosition);
-          const stepsAfterMove = accumulatedSteps + stepsToPosition;
-          const remainingSteps = totalSteps - stepsAfterMove;
-          
-          // Если после этого движения у нас не хватит шагов вернуться
-          if (remainingSteps < distanceToTarget) {
-            // Пробуем сгенерировать другую позицию
-            attempts++;
-            
-            // Если уже много попыток или шагов почти не осталось - идем к цели
-            if (attempts > 20 || (totalSteps - accumulatedSteps) <= Math.abs(targetIndex - currentIndex) * 1.2) {
-              positions.push(targetIndex);
-              break;
-            }
-            
-            continue; // Пробуем другую позицию
-          }
-          
-          // 4.4. Сбрасываем счетчик попыток и добавляем эту позицию в маршрут
-          attempts = 0;
-          positions.push(randomPosition);
-          accumulatedSteps += stepsToPosition;
-          currentIndex = randomPosition;
-          
-          // Защита от бесконечного цикла
-          if (positions.length > 1000) {
-            console.warn('Прерывание: слишком много итераций');
-            positions.push(targetIndex);
-            break;
-          }
-        }
-        
-        // 5. Убедимся, что финальная позиция - последняя
-        if (positions[positions.length - 1] !== targetIndex) {
-          positions.push(targetIndex);
-        }
-        
-        return positions;
-      };
-      
       const totalPoets = rankings.length;
-      const route = generateRoute(poetIndex, totalPoets);
       
-      // Рассчитываем общее количество шагов в маршруте
-      let totalSteps = 0;
-      for (let i = 0; i < route.length - 1; i++) {
-        totalSteps += Math.abs(route[i + 1] - route[i]);
-      }
+      // НОВАЯ АНИМАЦИЯ: Поэт "ищет" свое место с интригой
+      // Длительность анимации зависит от количества поэтов
+      const baseDuration = 4000; // 4 секунды базовая длительность
+      const totalDuration = Math.max(baseDuration, totalPoets * 300); // +300мс на каждого поэта
       
-      // Фиксированная скорость: 3 шага в секунду
-      const stepsPerSecond = 3;
-      let totalDuration = (totalSteps / stepsPerSecond) * 1000;
-      
-      // Если поэтов мало (меньше 5), устанавливаем минимальную длительность анимации
-      // Это сделает анимацию медленнее, но без прыжков
-      if (totalPoets < 5) {
-        const minDuration = 3500; // минимум 3.5 секунды
-        totalDuration = Math.max(totalDuration, minDuration);
-      }
+      // Параметры "волн" - поэт колеблется вверх-вниз
+      const numWaves = 3 + Math.floor(Math.random() * 2); // 3-4 волны для интриги
+      const startPos = Math.floor(Math.random() * Math.min(3, totalPoets)); // Начинаем в топ-3
       
       // Через небольшую задержку запускаем движение
       setTimeout(() => {
@@ -366,50 +295,50 @@ const OverallRankingPage = () => {
         
         const animate = () => {
           const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / totalDuration, 1);
+          let progress = Math.min(elapsed / totalDuration, 1);
           
-          // Вычисляем текущий пройденный путь (константная скорость)
-          const currentStep = progress * totalSteps;
+          // Применяем общий easing для всей анимации (ease-in-out)
+          // В начале медленно, середина быстрее, конец замедляется
+          const easeInOutQuart = (t) => {
+            return t < 0.5 
+              ? 8 * t * t * t * t 
+              : 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t);
+          };
           
-          // Находим текущую позицию на маршруте
-          let accumulatedSteps = 0;
-          let currentPos = route[0];
+          const easedProgress = easeInOutQuart(progress);
           
-          for (let i = 0; i < route.length - 1; i++) {
-            const segmentSteps = Math.abs(route[i + 1] - route[i]);
-            
-            if (accumulatedSteps + segmentSteps >= currentStep) {
-              // Мы на этом сегменте
-              const segmentProgress = (currentStep - accumulatedSteps) / segmentSteps;
-              
-              // Используем ease-in для последнего сегмента (ускорение к концу)
-              // Для остальных сегментов используем ease-in-out
-              const isLastSegment = i === route.length - 2;
-              const eased = isLastSegment
-                ? segmentProgress * segmentProgress // ease-in (ускорение)
-                : segmentProgress < 0.5
-                  ? 2 * segmentProgress * segmentProgress
-                  : 1 - Math.pow(-2 * segmentProgress + 2, 2) / 2;
-              
-              currentPos = route[i] + (route[i + 1] - route[i]) * eased;
-              break;
-            }
-            
-            accumulatedSteps += segmentSteps;
+          // Создаем "волны" - поэт колеблется вверх-вниз с уменьшающейся амплитудой
+          // amplitude постепенно уменьшается с 60% до 0%
+          const waveAmplitude = (totalPoets - 1) * 0.6 * (1 - easedProgress);
+          
+          // Частота колебаний (количество волн за анимацию)
+          const waveFrequency = numWaves * Math.PI * 2;
+          const waveOffset = Math.sin(easedProgress * waveFrequency) * waveAmplitude;
+          
+          // Базовая позиция плавно движется от стартовой к финальной
+          const basePosition = startPos + (poetIndex - startPos) * easedProgress;
+          
+          // Итоговая позиция = базовая + волновое смещение
+          let currentPos = basePosition + waveOffset;
+          
+          // Ограничиваем позицию в пределах списка
+          currentPos = Math.max(0, Math.min(totalPoets - 1, currentPos));
+          
+          // В конце (последние 10%) плавно "защелкиваемся" на финальную позицию
+          if (progress >= 0.9) {
+            const finalProgress = (progress - 0.9) / 0.1; // 0..1 для последних 10%
+            const finalEase = 1 - Math.pow(1 - finalProgress, 3); // ease-out cubic
+            currentPos = currentPos + (poetIndex - currentPos) * finalEase;
           }
           
-          // Завершаем анимацию раньше для более резкой остановки
-          if (progress >= 0.97) {
-            currentPos = route[route.length - 1];
-            setAnimationStep(currentPos);
-            return; // Выходим из анимации
-          }
-          
-          // Устанавливаем текущую позицию напрямую (это индекс в списке, а не процент!)
+          // Устанавливаем текущую позицию
           setAnimationStep(currentPos);
           
           if (progress < 1) {
             requestAnimationFrame(animate);
+          } else {
+            // Финальная точная позиция
+            setAnimationStep(poetIndex);
           }
         };
         
@@ -423,10 +352,10 @@ const OverallRankingPage = () => {
         
         setAnimatingPoet(null);
         setAnimationStep(0);
-        sessionStorage.setItem(sessionKey, 'true');
+        localStorage.setItem(animationKey, 'true');
       }, 1000 + totalDuration + 1000);
     }
-  }, [isLoading, newestPoet, activeTab, overallRankings, allCategoryRankings]);
+  }, [isLoading, newestPoet, activeTab, overallRankings, allCategoryRankings, currentUser]);
 
   // Автоматический скролл к анимирующемуся поэту (только если вышел за пределы viewport)
   useEffect(() => {
@@ -509,17 +438,30 @@ const OverallRankingPage = () => {
       const maximLeader = categoryLeaders.maxim?.[category];
       const olegLeader = categoryLeaders.oleg?.[category];
       
+      // Проверяем, кто из лидеров находится в топе по баллам
+      const maximLeaderInTop = maximLeader && topPoets.some(p => p.poet.id === maximLeader);
+      const olegLeaderInTop = olegLeader && topPoets.some(p => p.poet.id === olegLeader);
+      
       // Если Максим и Олег оба выбрали одного и того же поэта, и он среди топовых - он победитель
-      if (maximLeader && olegLeader && maximLeader === olegLeader) {
-        const isLeaderInTop = topPoets.some(p => p.poet.id === maximLeader);
-        if (isLeaderInTop) {
-          winners[category] = [maximLeader];
-          return;
-        }
+      if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
+        winners[category] = [maximLeader];
+        return;
       }
       
-      // Если выбраны разные поэты или никто не выбран - не показываем награду никому
-      // (требуется дуэль)
+      // Если только у Максима есть лидер в топе - он победитель
+      if (maximLeaderInTop && !olegLeaderInTop) {
+        winners[category] = [maximLeader];
+        return;
+      }
+      
+      // Если только у Олега есть лидер в топе - он победитель
+      if (olegLeaderInTop && !maximLeaderInTop) {
+        winners[category] = [olegLeader];
+        return;
+      }
+      
+      // Если у обоих разные лидеры в топе - конфликт, требуется дуэль
+      // Или если никто не выбрал лидера
       winners[category] = [];
     });
     
@@ -559,6 +501,27 @@ const OverallRankingPage = () => {
     
     return winners;
   }, [poets, ratings, categoryLeaders, overallDuelWinners, allCategoryRankings, overallRankings]);
+
+  // Определяем худшего по общему баллу
+  const categoryLosers = useMemo(() => {
+    const losers = {
+      overall: []
+    };
+    
+    // Худший только по общему баллу (с минимальным средним баллом)
+    // Награда выдается только если в рейтинге больше 3 поэтов
+    if (overallRankings.length > 3) {
+      const lowestScore = overallRankings[overallRankings.length - 1].averageScore;
+      const lowestPoets = overallRankings.filter(r => Math.abs(r.averageScore - lowestScore) < 0.01);
+      
+      // Если только один поэт с минимальным баллом - он худший
+      if (lowestPoets.length === 1) {
+        losers.overall = [lowestPoets[0].poet.id];
+      }
+    }
+    
+    return losers;
+  }, [overallRankings]);
   
   // Для категорий добавляем дополнительную сортировку с учетом победителей
   const categoryRankings = useMemo(() => {
@@ -629,23 +592,17 @@ const OverallRankingPage = () => {
   // Обновляем currentRankings с учетом пересортированного overall
   const finalRankings = activeTab === 'overall' ? sortedOverallRankings : currentRankings;
   
-  // Функция для отображения бейджей победителя
+  // Функция для отображения бейджей победителя и худшего
   const renderWinnerBadges = (poetId) => {
     const badges = [];
     
-    // Определяем какие награды показывать
-    let categoriesToShow = [];
-    if (activeTab === 'overall') {
-      // При просмотре общего балла показываем награду за overall + все категорийные награды
-      categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
-    } else {
-      // При просмотре конкретной категории показываем только её награду
-      categoriesToShow = [activeTab];
-    }
+    // Всегда показываем все награды, независимо от выбранной вкладки
+    const categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
     
+    // Награды за 1-е место (лучший)
     categoriesToShow.forEach(category => {
       if (categoryWinners[category] && categoryWinners[category].includes(poetId)) {
-        const categoryName = category === 'overall' ? 'Лучшй поэт' : CATEGORIES[category].name;
+        const categoryName = category === 'overall' ? 'Лучший поэт' : CATEGORIES[category].name;
         badges.push(
           <img 
             key={category}
@@ -656,6 +613,18 @@ const OverallRankingPage = () => {
         );
       }
     });
+    
+    // Награда за последнее место (худший) - только по общему баллу
+    if (categoryLosers.overall && categoryLosers.overall.includes(poetId)) {
+      badges.push(
+        <img 
+          key="overall-last"
+          src={`/images/badges/last.png`}
+          alt="Худший поэт"
+          className="winner-badge loser-badge"
+        />
+      );
+    }
     
     return badges.length > 0 ? <div className="winner-badges">{badges}</div> : null;
   };
@@ -711,7 +680,7 @@ const OverallRankingPage = () => {
             {detectConflicts.map((conflict) => (
               <div key={conflict.category} className="conflict-item">
                 <div className="conflict-info">
-                  <span className="conflict-category">{conflict.categoryName}</span>
+                  <span className="conflict-category">{conflict.categoryName}:</span>
                   <span className="conflict-poets">
                     {conflict.poet1.name} VS {conflict.poet2.name}
                   </span>
@@ -764,66 +733,68 @@ const OverallRankingPage = () => {
           Награды
         </button>
         
-        <div className="score-system-toggle-inline">
-          <label className="toggle-label">
-            <input 
-              type="checkbox" 
-              checked={scoreSystem === 'hundred'}
-              onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
-              className="toggle-checkbox"
-            />
-            <span className="toggle-switch"></span>
-            <span className="toggle-text">5⇄100</span>
-          </label>
-        </div>
+        {activeTab === 'overall' && (
+          <div className="score-system-toggle-inline">
+            <label className="toggle-label">
+              <input 
+                type="checkbox" 
+                checked={scoreSystem === 'hundred'}
+                onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
+                className="toggle-checkbox"
+              />
+              <span className="toggle-switch"></span>
+              <span className="toggle-text">5⇄100</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {activeTab === 'awards' ? (
-        // Вкладка "Награды" - показываем всех поэтов с их наградами
-        <div className="awards-list">
-          {poets
-            .filter(poet => {
-              // Показываем только поэтов, у которых есть хотя бы одна награда
-              return ['overall', 'creativity', 'influence', 'drama', 'beauty'].some(category => 
-                categoryWinners[category] && categoryWinners[category].includes(poet.id)
-              );
-            })
-            .map(poet => {
-              // Собираем все награды поэта
-              const poetAwards = [];
-              if (categoryWinners.overall && categoryWinners.overall.includes(poet.id)) {
-                poetAwards.push({ category: 'overall', name: 'Лучшй поэт' });
-              }
-              Object.entries(CATEGORIES).forEach(([key, cat]) => {
-                if (categoryWinners[key] && categoryWinners[key].includes(poet.id)) {
-                  poetAwards.push({ category: key, name: cat.name });
-                }
-              });
-
-              return (
-                <div key={poet.id} className="award-card">
-                  {poet.imageUrl && (
-                    <div className="award-poet-avatar">
-                      <img src={poet.imageUrl} alt={poet.name} />
-                    </div>
-                  )}
-                  <Link to={`/poet/${poet.id}`} className="award-poet-name-link">
-                    <h3 className="award-poet-name">{poet.name}</h3>
-                  </Link>
-                  <div className="award-badges-container">
-                    {poetAwards.map((award, index) => (
-                      <Tooltip key={index} text={`Победитель в категории "${award.name}"`}>
-                        <img 
-                          src={`/images/badges/${award.category}.png`}
-                          alt={`Победитель в категории "${award.name}"`}
-                          className="award-badge"
-                        />
-                      </Tooltip>
-                    ))}
-                  </div>
+        // Вкладка "Награды" - показываем награды с победителями
+        <div className="awards-list-new">
+          {[
+            { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
+            { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
+            { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
+            { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
+            { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
+            { key: 'last', name: 'Худший поэт', badge: 'last.png' }
+          ].map(award => {
+            // Найти победителей для этой награды
+            const winners = award.key === 'last'
+              ? (categoryLosers.overall || [])
+              : (categoryWinners[award.key] || []);
+            
+            if (winners.length === 0) return null;
+            
+            return (
+              <div key={award.key} className="award-row">
+                <div className="award-badge-large">
+                  <img src={`/images/badges/${award.badge}`} alt={award.name} />
+                  <span className="award-name">{award.name}</span>
                 </div>
-              );
-            })}
+                <div className="award-winners">
+                  {winners.map(poetId => {
+                    const poet = poets.find(p => p.id === poetId);
+                    if (!poet) return null;
+                    
+                    return (
+                      <Link key={poetId} to={`/poet/${poetId}`} className="award-winner-card">
+                        <div className="award-winner-image">
+                          {poet.imageUrl && (
+                            <img src={poet.imageUrl} alt={poet.name} className="award-winner-avatar" />
+                          )}
+                        </div>
+                        <div className="award-winner-overlay">
+                          <span className="award-winner-name">{poet.name}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }).filter(Boolean)}
         </div>
       ) : activeTab === 'overall' ? (
         <div className="overall-list">
@@ -862,10 +833,9 @@ const OverallRankingPage = () => {
                   layout: true,
                   transition: { 
                     layout: { 
-                      type: "spring",
-                      stiffness: 50,
-                      damping: 20,
-                      mass: 1
+                      type: "tween",
+                      duration: 0.25,
+                      ease: [0.4, 0.0, 0.2, 1] // Material Design easing (быстрое начало, плавное замедление)
                     }
                   },
                   ref: animatingCardRef
@@ -897,21 +867,21 @@ const OverallRankingPage = () => {
                   </Link>
                   
                   <div className="overall-card-right-section">
-                    {isNew && <span className="new-badge">NEW</span>}
+                    {/* {isNew && <span className="new-badge">NEW</span>} */}
                     {(!isAnimating || showScore) && renderWinnerBadges(poet.id)}
                     
                     {(!isAnimating || showScore) ? (
                       <div className="scores-compact-row">
                         <div className="score-compact-item maxim">
-                          <span className="score-compact-label">M:</span>
+                          <span className="score-compact-label">м</span>
                           <span className="score-compact-value">{formatScore(maximScore)}</span>
                         </div>
                         <div className="score-compact-item oleg">
-                          <span className="score-compact-label">O:</span>
+                          <span className="score-compact-label">о</span>
                           <span className="score-compact-value">{formatScore(olegScore)}</span>
                         </div>
                         <div className="score-compact-item average">
-                          <span className="score-compact-value">{formatScore(averageScore)}</span>
+                          <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
                         </div>
                       </div>
                     ) : (
@@ -933,84 +903,88 @@ const OverallRankingPage = () => {
                 className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
                 onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
               >
-                {/* Первая строка - точно как компактный вид, только больше */}
-                <div className="overall-card-header">
-                  {(!isAnimating || showScore) ? (
-                    <span className="overall-rank-number expanded">#{rank}</span>
-                  ) : (
-                    <span className="overall-rank-number expanded" style={{ opacity: 0 }}>?</span>
-                  )}
-                  {poet.imageUrl && (
-                    <div className="overall-avatar">
-                      <img src={poet.imageUrl} alt={poet.name} />
-                    </div>
-                  )}
-                  <Link to={`/poet/${poet.id}`} className="overall-poet-name-link">
-                    <h2 className="overall-poet-name expanded">{poet.name}</h2>
-                  </Link>
-                  
-                  <div className="overall-card-right-section">
-                    {isNew && <span className="new-badge">NEW</span>}
-                    {(!isAnimating || showScore) && renderWinnerBadges(poet.id)}
-                    
-                    {(!isAnimating || showScore) ? (
-                      <div className="scores-compact-row expanded">
-                        <div className="score-compact-item maxim">
-                          <span className="score-compact-label">M:</span>
-                          <span className="score-compact-value">{formatScore(maximScore)}</span>
-                        </div>
-                        <div className="score-compact-item oleg">
-                          <span className="score-compact-label">O:</span>
-                          <span className="score-compact-value">{formatScore(olegScore)}</span>
-                        </div>
-                        <div className="score-compact-item average">
-                          <span className="score-compact-value">{formatScore(averageScore)}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="scores-compact-row expanded">
-                        <div className="score-loading">...</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
+                {/* Место (#1, #2, etc) */}
                 {(!isAnimating || showScore) ? (
-                  <div className="ratings-grid">
-                    {Object.entries(CATEGORIES).map(([key, cat]) => {
-                      const maximRating = ratings.maxim[poet.id]?.[key] || 0;
-                      const olegRating = ratings.oleg[poet.id]?.[key] || 0;
-                      const avgRating = (maximRating + olegRating) / 2;
-                      const points = avgRating * cat.coefficient;
-
-                      return (
-                        <div key={key} className="category-card">
-                          <div className="category-card-header">
-                     
-                              <span className="category-card-name">{cat.name}</span>
+                  <span className="rank-number">#{rank}</span>
+                ) : (
+                  <span className="rank-number" style={{ opacity: 0 }}>?</span>
+                )}
+                
+                {/* Фотография на всю высоту */}
+                {poet.imageUrl && (
+                  <div className="overall-avatar">
+                    <img src={poet.imageUrl} alt={poet.name} />
+                  </div>
+                )}
+                
+                {/* Секция с информацией */}
+                <div className="overall-info-section">
+                  {/* Первая строка: имя, награды, оценки */}
+                  <div className="overall-card-header">
+                    <Link to={`/poet/${poet.id}`} className="overall-poet-name-link" onClick={(e) => e.stopPropagation()}>
+                      <h2 className="overall-poet-name">{poet.name}</h2>
+                    </Link>
                     
-                            {/* <span className="category-card-coefficient">×{cat.coefficient}</span> */}
+                    <div className="overall-header-right-section">
+                      {(!isAnimating || showScore) && renderWinnerBadges(poet.id)}
+                      
+                      {(!isAnimating || showScore) ? (
+                        <div className="scores-compact-row expanded">
+                          <div className="score-compact-item maxim">
+                            <span className="score-compact-label">м</span>
+                            <span className="score-compact-value">{formatScore(maximScore)}</span>
                           </div>
-                          <div className="category-ratings-boxes">
-                            <div className="rating-box maxim">
-                              <span className="rating-box-label">M:</span>
-                              <span className="rating-box-value">{maximRating.toFixed(1)}</span>
-                            </div>
-                            <div className="rating-box oleg">
-                              <span className="rating-box-label">O:</span>
-                              <span className="rating-box-value">{olegRating.toFixed(1)}</span>
-                            </div>
-                            <div className="rating-box average">
-                              <span className="rating-box-value">{avgRating.toFixed(1)}</span>
-                            </div>
+                          <div className="score-compact-item oleg">
+                            <span className="score-compact-label">о</span>
+                            <span className="score-compact-value">{formatScore(olegScore)}</span>
+                          </div>
+                          <div className="score-compact-item average">
+                            <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
                           </div>
                         </div>
-                      );
-                    })}
+                      ) : (
+                        <div className="scores-compact-row expanded">
+                          <div className="score-loading">...</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="score-loading">Вычисление рейтинга...</div>
-                )}
+
+                  {/* Вторая строка: категории с оценками М, О, средняя */}
+                  {(!isAnimating || showScore) ? (
+                    <div className="overall-ratings-grid">
+                      {Object.entries(CATEGORIES).map(([key, cat]) => {
+                        const maximRating = ratings.maxim[poet.id]?.[key] || 0;
+                        const olegRating = ratings.oleg[poet.id]?.[key] || 0;
+                        const avgRating = (maximRating + olegRating) / 2;
+
+                        return (
+                          <div key={key} className="overall-rating-item">
+                            <div className="overall-rating-label">
+                              <span className="overall-category-name">{cat.name}</span>
+                              {/* <span className="overall-category-coefficient">×{cat.coefficient}</span> */}
+                            </div>
+                            <div className="overall-category-scores">
+                              <div className="overall-category-score maxim">
+                                <span className="overall-category-score-label">м</span>
+                                <span className="overall-category-score-value">{maximRating.toFixed(1)}</span>
+                              </div>
+                              <div className="overall-category-score oleg">
+                                <span className="overall-category-score-label">о</span>
+                                <span className="overall-category-score-value">{olegRating.toFixed(1)}</span>
+                              </div>
+                              <div className="overall-category-score average">
+                                <span className="overall-category-score-value">{avgRating.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="score-loading">Вычисление рейтинга...</div>
+                  )}
+                </div>
               </CardComponent>
             );
             });
@@ -1049,7 +1023,13 @@ const OverallRankingPage = () => {
             const categoryCardProps = isAnimating 
               ? { 
                   layout: true,
-                  transition: { layout: { type: "spring", stiffness: 50, damping: 20, mass: 1 } },
+                  transition: { 
+                    layout: { 
+                      type: "tween",
+                      duration: 0.25,
+                      ease: [0.4, 0.0, 0.2, 1] // Material Design easing (быстрое начало, плавное замедление)
+                    }
+                  },
                   ref: animatingCardRef
                 }
               : {};
@@ -1075,17 +1055,17 @@ const OverallRankingPage = () => {
                 </Link>
                 
                 <div className="overall-card-right-section">
-                  {isNew && <span className="new-badge">NEW</span>}
+                  {/* {isNew && <span className="new-badge">NEW</span>} */}
                   {(!isAnimating || showScore) && renderWinnerBadges(poet.id)}
                   
                   {(!isAnimating || showScore) ? (
                     <div className="scores-compact-row">
                       <div className="score-compact-item maxim">
-                        <span className="score-compact-label">M:</span>
+                        <span className="score-compact-label">м</span>
                         <span className="score-compact-value">{maximRating.toFixed(1)}</span>
                       </div>
                       <div className="score-compact-item oleg">
-                        <span className="score-compact-label">O:</span>
+                        <span className="score-compact-label">о</span>
                         <span className="score-compact-value">{olegRating.toFixed(1)}</span>
                       </div>
                       <div className="score-compact-item average">

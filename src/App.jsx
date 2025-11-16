@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { PoetsProvider } from './context/PoetsContext';
 import Layout from './components/Layout';
+import ScrollToTop from './components/ScrollToTop';
 import PoetsPage from './pages/PoetsPage';
 import PoetDetailPage from './pages/PoetDetailPage';
 import MaximRankingPage from './pages/MaximRankingPage';
@@ -38,6 +39,7 @@ function App() {
   return (
     <PoetsProvider>
       <Router>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<PoetsPage />} />

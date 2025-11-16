@@ -2,9 +2,10 @@ import React from 'react';
 import { CATEGORIES } from '../context/PoetsContext';
 import './BattleModal.css';
 
-const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
+const BattleModal = ({ poet1, poet2, category, onSelect, onClose, isWorstConflict = false }) => {
   const isOverall = category === 'overall';
   const categoryName = isOverall ? 'Общий балл' : CATEGORIES[category]?.name || category;
+  const badgeImage = isOverall ? (isWorstConflict ? 'last.png' : 'overall.png') : `${category}.png`;
   
   return (
     <div className="battle-modal-overlay" onClick={onClose}>
@@ -12,13 +13,15 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
         <div className="battle-header">
           {isOverall ? (
             <>
-              <h2 className="battle-title epic">ФИНАЛЬНАЯ ДУЭЛЬ</h2>
+              <h2 className="battle-title epic">{isWorstConflict ? 'ДУЭЛЬ АУТСАЙДЕРОВ' : 'ФИНАЛЬНАЯ ДУЭЛЬ'}</h2>
               <p className="battle-subtitle">
-                Выберите победителя в категории <strong>"Лучшй Поэт"</strong>
+                Выберите <strong>{isWorstConflict ? 'Худшего' : 'Лучшего'} поэта </strong>
               </p>
-              <p className="battle-description epic">
-                Два величайших поэта. Одинаковый балл. Только один станет легендой.
-              </p>
+              {/* <p className="battle-description epic">
+                {isWorstConflict 
+                  ? 'Два поэта с одинаковым низким баллом. Кто из них худший?'
+                  : 'Два величайших поэта. Одинаковый балл. Только один станет легендой.'}
+              </p> */}
             </>
           ) : (
             <>
@@ -71,8 +74,8 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose }) => {
           
           <div className="battle-prize">
             <img 
-              src={`/images/badges/${category}.png`} 
-              alt={categoryName}
+              src={`/images/badges/${badgeImage}`} 
+              alt={isWorstConflict ? 'Худший Поэт' : categoryName}
               className="battle-prize-icon"
             />
           </div>

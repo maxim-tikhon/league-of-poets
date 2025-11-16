@@ -525,21 +525,21 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
         if (isOpened) {
           // Если это моё оружие И оно открыто соперником
           if (isMyPistol) {
-            cellContent = <img src="/images/duel/coffin.png" alt="Смерть" className="weapon-icon" />; // Соперник нашел мой пистолет!
+            cellContent = <img src="/images/duel/pistol.png" alt="Смерть" className="weapon-icon" />; // Соперник нашел мой пистолет!
           } else if (isMySabre) {
             cellContent = isDefused ? 
               <><img src="/images/duel/letter.png" alt="Обезврежена" className="weapon-icon" /></> : 
               <><img src="/images/duel/skull.png" alt="Ранение" className="weapon-icon" /></>; // Обезврежена письмом или нет
           } else if (isBomb) {
             cellContent = isDefused ? 
-              <><img src="/images/duel/bomb.png" alt="Бомба" className="weapon-icon" /><img src="/images/duel/letter.png" alt="Обезврежена" className="weapon-icon" /></> : 
+              <><img src="/images/duel/letter.png" alt="Обезврежена" className="weapon-icon" /></> : 
               <img src="/images/duel/bomb.png" alt="Бомба" className="weapon-icon" />; // Обезврежена письмом или нет
           } else if (isLoveLetter) {
             cellContent = <img src="/images/duel/letter.png" alt="Любовное письмо" className="weapon-icon" />;
           } else if (isTrap) {
             cellContent = <img src="/images/duel/trap.png" alt="Ловушка" className="weapon-icon" />;
           } else if (isOpponentPistol) {
-            cellContent = <img src="/images/duel/coffin.png" alt="Смерть" className="weapon-icon" />; // Я нашел пистолет соперника
+            cellContent = <img src="/images/duel/pistol.png" alt="Смерть" className="weapon-icon" />; // Я нашел пистолет соперника
           } else if (isOpponentSabre) {
             cellContent = <img src="/images/duel/sabre.png" alt="Сабля" className="weapon-icon" />
           } else {
@@ -692,11 +692,15 @@ const DuelGame = ({ poet1, poet2, category, currentUser, onGameEnd, onClose }) =
         )}
 
         {phase === 'finished' && gameState && (
-          <div className="duel-result">
+          <div className={`duel-result ${
+            gameState.winner === currentUser ? 'winner' : 
+            gameState.winner === opponent ? 'loser' : 
+            ''
+          }`}>
             {gameState.winner === currentUser ? (
-              <h3 className="winner">Он рифмовал — и победил</h3>
+              <h3>Победа!</h3>
             ) : gameState.winner === opponent ? (
-              <h3 className="loser">Он был хорош… пока не встретил соперника получше</h3>
+              <h3>Поражение!</h3>
             ) : (
               <h3 className="draw">Ничья!</h3>
             )}

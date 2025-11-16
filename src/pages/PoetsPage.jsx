@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
+import { generateContent } from '../ai/gemini';
+import { generatePoetBioPrompt } from '../ai/prompts';
 import './PoetsPage.css';
 
 const PoetsPage = () => {
-  const { poets, ratings, calculateScore, isLoading, addPoet, deletePoet } = usePoets();
+  const { poets, ratings, calculateScore, isLoading, addPoet, deletePoet, likes } = usePoets();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [newPoetName, setNewPoetName] = useState('');
@@ -15,8 +17,17 @@ const PoetsPage = () => {
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { poetId, poetName }
   const [showRatings, setShowRatings] = useState(false); // Показывать оценки всегда
+  const [showFavorites, setShowFavorites] = useState(false); // Показывать только любимых
   const [isFirstLoad, setIsFirstLoad] = useState(true); // Флаг первой загрузки для анимации
   const [showNotification, setShowNotification] = useState(false); // Нотификация о копировании
+  const [isGenerating, setIsGenerating] = useState(false); // Генерация AI
+  const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
+
+  // Получаем текущего пользователя из localStorage
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    setCurrentUser(user);
+  }, []);
 
   const handleSort = (newSortBy) => {
     setIsFirstLoad(false); // Убираем анимацию при изменении сортировки
@@ -80,33 +91,42 @@ const PoetsPage = () => {
     setDeleteConfirm(null);
   };
 
-  const copyPromptToClipboard = () => {
-    const poetName = newPoetName.trim() || '[имя поэта]';
-    const prompt = `Составь краткое досье на ${poetName} в виде списка (карточки) с полями (названия полей выдели жирным, каждое поле с новой строки - следуй формату):
-Полное имя
-Годы жизни
-Национальность и происхождение (например, русский, дворянское)
-Место рождения
-Место смерти (не только город, но и если известно место)
-Причина смерти
-Сделай ответ компактным, в виде списка, как карточку.
+  const generatePoetBio = async () => {
+    const poetName = newPoetName.trim();
+    if (!poetName) {
+      setError('Сначала введите имя поэта');
+      return;
+    }
 
-Пример досье:
-Полное имя: Александр Сергеевич Пушкин
-Годы жизни: 6 июня 1799 - 10 февраля 1837 (37 лет) - в скобках укажи возраст на момент смерти
-Национальность и происхождение: русский, дворянское
-Место рождения: Москва, в родовом имении дворян Пушкиных
-Место смерти: Санкт-Петербург, в квартире на набережной Мойки
-Причина смерти: смертельное ранение на дуэли`;
+    setIsGenerating(true);
+    setError('');
 
-    navigator.clipboard.writeText(prompt).then(() => {
-      setShowNotification(true);
-      setTimeout(() => {
-        setShowNotification(false);
-      }, 3000);
-    }).catch(err => {
-      console.error('Ошибка копирования:', err);
-    });
+    try {
+      // Генерируем промпт из модуля prompts.js
+      const prompt = generatePoetBioPrompt(poetName);
+      
+      // Получаем контент через модуль gemini.js
+      const generatedText = await generateContent(prompt);
+      
+      setNewPoetBio(generatedText);
+      
+    } catch (err) {
+      console.error('Ошибка генерации:', err);
+      setError(err.message || 'Ошибка при генерации информации');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Открыть Google Images для поиска портрета
+  const openGoogleImageSearch = () => {
+    const poetName = newPoetName.trim();
+    if (!poetName) {
+      setError('Сначала введите имя поэта');
+      return;
+    }
+    const googleImagesUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(poetName)}`;
+    window.open(googleImagesUrl, '_blank');
   };
 
   // Функция для получения имени (первое слово)
@@ -125,12 +145,26 @@ const PoetsPage = () => {
   const getAverageRating = (poetId) => {
     const maximScore = calculateScore('maxim', poetId);
     const olegScore = calculateScore('oleg', poetId);
-    return (maximScore + olegScore) / 2;
+    
+    // Если оба пользователя оценили - среднее
+    if (maximScore > 0 && olegScore > 0) {
+      return (maximScore + olegScore) / 2;
+    }
+    
+    // Если только один пользователь оценил - его балл
+    return maximScore > 0 ? maximScore : olegScore;
   };
 
-  // Сортировка поэтов
+  // Сортировка и фильтрация поэтов
   const getSortedPoets = () => {
-    const sorted = [...poets].sort((a, b) => {
+    // Фильтрация по избранным
+    let filteredPoets = [...poets];
+    if (showFavorites && currentUser) {
+      filteredPoets = filteredPoets.filter(poet => likes[currentUser]?.[poet.id]);
+    }
+
+    // Сортировка
+    const sorted = filteredPoets.sort((a, b) => {
       let comparison = 0;
 
       if (sortBy === 'date') {
@@ -208,6 +242,22 @@ const PoetsPage = () => {
           </label>
         </div>
 
+        <div className="ratings-toggle-inline">
+          <label className="toggle-label">
+            <input 
+              type="checkbox" 
+              checked={showFavorites}
+              onChange={(e) => {
+                setShowFavorites(e.target.checked);
+                setIsFirstLoad(false);
+              }}
+              className="toggle-checkbox"
+            />
+            <span className="toggle-switch"></span>
+            <span className="toggle-text">Любимые</span>
+          </label>
+        </div>
+
         <button 
           onClick={() => setShowModal(true)} 
           className="btn-add-poet"
@@ -245,13 +295,24 @@ const PoetsPage = () => {
               </div>
               
               <div className="form-field">
-                <label htmlFor="poet-image">URL портрета</label>
+                <div className="label-with-button">
+                  <label htmlFor="poet-image">URL портрета</label>
+                  <button 
+                    type="button" 
+                    onClick={openGoogleImageSearch}
+                    className="btn-copy-prompt"
+                    title="Открыть Google Images для поиска портрета"
+                  >
+                    Найти фото
+                  </button>
+                </div>
                 <input
                   id="poet-image"
                   type="url"
                   value={newPoetImageUrl}
                   onChange={(e) => setNewPoetImageUrl(e.target.value)}
                   className="form-input"
+                  placeholder="Вставьте ссылку на изображение"
                 />
 
               </div>
@@ -261,20 +322,22 @@ const PoetsPage = () => {
                   <label htmlFor="poet-bio">Досье</label>
                   <button 
                     type="button" 
-                    onClick={copyPromptToClipboard}
+                    onClick={generatePoetBio}
                     className="btn-copy-prompt"
-                    title="Скопировать промпт для получения досье"
+                    title="Сгенерировать досье с помощью AI"
+                    disabled={isGenerating}
                   >
-                    Промпт
+                    {isGenerating ? 'Генерация...' : 'AI ✨'}
                   </button>
                 </div>
                 <textarea
                   id="poet-bio"
                   value={newPoetBio}
                   onChange={(e) => setNewPoetBio(e.target.value)}
-                 
+                  placeholder={isGenerating ? 'Генерирую информацию...' : 'Введите информацию о поэте или нажмите AI для автогенерации'}
                   className="form-textarea"
                   rows="8"
+                  disabled={isGenerating}
                 />
 
               </div>
@@ -298,11 +361,20 @@ const PoetsPage = () => {
         </div>
       )}
 
-      {poets.length === 0 ? (
+      {sortedPoets.length === 0 ? (
         <div className="empty-state">
           <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
-          <p>Пока нет ни одного поэта в списке</p>
-          <p className="empty-hint">Добавьте первого поэта, чтобы начать соревнование</p>
+          {showFavorites ? (
+            <>
+              <p>У вас пока нет любимых поэтов</p>
+              <p className="empty-hint">Добавьте поэтов в избранное, нажав на ❤️ на странице поэта</p>
+            </>
+          ) : (
+            <>
+              <p>Пока нет ни одного поэта в списке</p>
+              <p className="empty-hint">Добавьте первого поэта, чтобы начать соревнование</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="poets-grid">
