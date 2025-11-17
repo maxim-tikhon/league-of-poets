@@ -242,7 +242,7 @@ const PoetsPage = () => {
           </label>
         </div>
 
-        <div className="ratings-toggle-inline">
+        {/* <div className="ratings-toggle-inline">
           <label className="toggle-label">
             <input 
               type="checkbox" 
@@ -256,7 +256,7 @@ const PoetsPage = () => {
             <span className="toggle-switch"></span>
             <span className="toggle-text">Любимые</span>
           </label>
-        </div>
+        </div> */}
 
         <button 
           onClick={() => setShowModal(true)} 

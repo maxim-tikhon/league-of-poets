@@ -29,6 +29,12 @@ const Layout = () => {
             <NavLink to="/overall-ranking" className={({ isActive }) => isActive ? 'nav-link active overall-link' : 'nav-link overall-link'}>
               Общий Рейтинг
             </NavLink>
+            {/* <NavLink to="/timeline" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Временная линия
+            </NavLink> */}
+            {/* <NavLink to="/head-to-head" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Статистика
+            </NavLink> */}
           </nav>
           <ThemeSelector />
         </div>

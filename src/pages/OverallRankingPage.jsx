@@ -28,6 +28,8 @@ const OverallRankingPage = () => {
   const [showScore, setShowScore] = useState(false); // Показывать ли балл во время анимации
   const [animationStep, setAnimationStep] = useState(0); // Текущая позиция анимирующего поэта в списке (0 = первое место, N-1 = последнее место)
   const animatingCardRef = useRef(null); // Ref для анимирующейся карточки
+  const animationFrameId = useRef(null); // ID для requestAnimationFrame
+  const animationTimeouts = useRef([]); // Массив ID таймаутов для очистки
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
   
   // Функция форматирования индивидуальных оценок (Максим/Олег)
@@ -280,82 +282,127 @@ const OverallRankingPage = () => {
       
       const totalPoets = rankings.length;
       
-      // НОВАЯ АНИМАЦИЯ: Поэт "ищет" свое место с интригой
-      // Длительность анимации зависит от количества поэтов
-      const baseDuration = 4000; // 4 секунды базовая длительность
-      const totalDuration = Math.max(baseDuration, totalPoets * 300); // +300мс на каждого поэта
+      // НОВАЯ АНИМАЦИЯ: Поэт хаотично перемещается по списку
+      const startPos = 0; // Всегда начинаем с самого верха
+      const target = poetIndex; // Целевая позиция
       
-      // Параметры "волн" - поэт колеблется вверх-вниз
-      const numWaves = 3 + Math.floor(Math.random() * 2); // 3-4 волны для интриги
-      const startPos = Math.floor(Math.random() * Math.min(3, totalPoets)); // Начинаем в топ-3
+      // 1. Определяем общее количество разрешённых шагов (2N - 4N)
+      const minSteps = totalPoets * 2;
+      const maxSteps = totalPoets * 4;
+      let allowedSteps = Math.floor(Math.random() * (maxSteps - minSteps + 1)) + minSteps;
       
-      // Через небольшую задержку запускаем движение
-      setTimeout(() => {
-        const startTime = Date.now();
+      // 2. Генерируем путь с хаотичными прыжками
+      const generatePath = () => {
+        const path = [];
+        let currentPos = startPos;
+        let remainingSteps = allowedSteps;
         
-        const animate = () => {
-          const elapsed = Date.now() - startTime;
-          let progress = Math.min(elapsed / totalDuration, 1);
+        // Добавляем стартовую позицию
+        path.push(currentPos);
+        
+        // Генерируем случайные прыжки, пока возможно
+        while (true) {
+          // Генерируем случайную новую позицию
+          let newPos;
           
-          // Применяем общий easing для всей анимации (ease-in-out)
-          // В начале медленно, середина быстрее, конец замедляется
-          const easeInOutQuart = (t) => {
-            return t < 0.5 
-              ? 8 * t * t * t * t 
-              : 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t);
-          };
-          
-          const easedProgress = easeInOutQuart(progress);
-          
-          // Создаем "волны" - поэт колеблется вверх-вниз с уменьшающейся амплитудой
-          // amplitude постепенно уменьшается с 60% до 0%
-          const waveAmplitude = (totalPoets - 1) * 0.6 * (1 - easedProgress);
-          
-          // Частота колебаний (количество волн за анимацию)
-          const waveFrequency = numWaves * Math.PI * 2;
-          const waveOffset = Math.sin(easedProgress * waveFrequency) * waveAmplitude;
-          
-          // Базовая позиция плавно движется от стартовой к финальной
-          const basePosition = startPos + (poetIndex - startPos) * easedProgress;
-          
-          // Итоговая позиция = базовая + волновое смещение
-          let currentPos = basePosition + waveOffset;
-          
-          // Ограничиваем позицию в пределах списка
-          currentPos = Math.max(0, Math.min(totalPoets - 1, currentPos));
-          
-          // В конце (последние 10%) плавно "защелкиваемся" на финальную позицию
-          if (progress >= 0.9) {
-            const finalProgress = (progress - 0.9) / 0.1; // 0..1 для последних 10%
-            const finalEase = 1 - Math.pow(1 - finalProgress, 3); // ease-out cubic
-            currentPos = currentPos + (poetIndex - currentPos) * finalEase;
+          // Первый прыжок - только вниз
+          if (currentPos === startPos && path.length === 1) {
+            newPos = Math.floor(Math.random() * totalPoets);
+            if (newPos === 0) newPos = 1; // Не остаёмся на месте
+          } else {
+            // Любая случайная позиция в списке
+            newPos = Math.floor(Math.random() * totalPoets);
           }
           
-          // Устанавливаем текущую позицию
-          setAnimationStep(currentPos);
+          // Считаем шаги для этого прыжка
+          const stepsToNew = Math.abs(newPos - currentPos);
           
-          if (progress < 1) {
-            requestAnimationFrame(animate);
+          // Считаем шаги от новой позиции до цели
+          const stepsToTarget = Math.abs(target - newPos);
+          
+          // Проверяем: хватит ли шагов для прыжка и возврата к цели?
+          if (stepsToNew + stepsToTarget <= remainingSteps) {
+            // Добавляем все промежуточные шаги
+            const direction = newPos > currentPos ? 1 : -1;
+            for (let i = 1; i <= stepsToNew; i++) {
+              currentPos += direction;
+              path.push(currentPos);
+            }
+            
+            remainingSteps -= stepsToNew;
           } else {
-            // Финальная точная позиция
-            setAnimationStep(poetIndex);
+            // Не хватает шагов - делаем финальный прыжок к цели
+            const direction = target > currentPos ? 1 : -1;
+            while (currentPos !== target) {
+              currentPos += direction;
+              path.push(currentPos);
+            }
+            break;
+          }
+        }
+        
+        return path;
+      };
+      
+      const path = generatePath();
+      const stepDelay = 400; // 400мс на каждый шаг
+      const totalDuration = path.length * stepDelay; // Общая длительность анимации
+      
+      // Через небольшую задержку запускаем пошаговое движение
+      const startTimeoutId = setTimeout(() => {
+        let currentIndex = 0;
+        
+        const showNextStep = () => {
+          if (currentIndex < path.length) {
+            setAnimationStep(path[currentIndex]);
+            currentIndex++;
+            
+            // Планируем следующий шаг
+            const timeoutId = setTimeout(showNextStep, stepDelay);
+            animationTimeouts.current.push(timeoutId);
           }
         };
         
-        requestAnimationFrame(animate);
+        showNextStep();
       }, 1000);
       
-      // После окончания анимации показываем балл
-      setTimeout(() => {
+      animationTimeouts.current.push(startTimeoutId);
+      
+      // После окончания анимации показываем балл и разворачиваем карточку
+      const endTimeoutId = setTimeout(() => {
         setShowScore(true);
         
+        // Разворачиваем карточку нового поэта
+        setExpandedCards(prev => {
+          const newSet = new Set(prev);
+          newSet.add(newestPoet.id);
+          return newSet;
+        });
         
         setAnimatingPoet(null);
         setAnimationStep(0);
         localStorage.setItem(animationKey, 'true');
       }, 1000 + totalDuration + 1000);
+      
+      animationTimeouts.current.push(endTimeoutId);
     }
   }, [isLoading, newestPoet, activeTab, overallRankings, allCategoryRankings, currentUser]);
+
+  // Очистка таймеров и анимаций при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      // Отменяем requestAnimationFrame если он был
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      
+      // Очищаем все таймауты
+      animationTimeouts.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      animationTimeouts.current = [];
+    };
+  }, []);
 
   // Автоматический скролл к анимирующемуся поэту (только если вышел за пределы viewport)
   useEffect(() => {
@@ -834,8 +881,8 @@ const OverallRankingPage = () => {
                   transition: { 
                     layout: { 
                       type: "tween",
-                      duration: 0.25,
-                      ease: [0.4, 0.0, 0.2, 1] // Material Design easing (быстрое начало, плавное замедление)
+                      duration: 0.35,
+                      ease: [0.25, 0.1, 0.25, 1] // Плавный easing для синхронизации с шагами
                     }
                   },
                   ref: animatingCardRef
@@ -1026,8 +1073,8 @@ const OverallRankingPage = () => {
                   transition: { 
                     layout: { 
                       type: "tween",
-                      duration: 0.25,
-                      ease: [0.4, 0.0, 0.2, 1] // Material Design easing (быстрое начало, плавное замедление)
+                      duration: 0.35,
+                      ease: [0.25, 0.1, 0.25, 1] // Плавный easing для синхронизации с шагами
                     }
                   },
                   ref: animatingCardRef

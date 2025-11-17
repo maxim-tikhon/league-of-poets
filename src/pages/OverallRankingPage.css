@@ -189,10 +189,11 @@
 
 .tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 2rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
   align-items: center;
+  min-height: 38px;
 }
 
 .tabs span:first-child {
@@ -208,7 +209,7 @@
 }
 
 .tab-btn {
-  padding: 0.5rem 1rem;
+  /* padding: 0.5rem 1rem; */
   border: none;
   background: transparent;
   border-radius: 8px;
@@ -223,13 +224,13 @@
 }
 
 .tab-btn:hover {
-  background: rgba(199, 163, 107, 0.08);
+  /* background: rgba(199, 163, 107, 0.08); */
   color: var(--ink);
 }
 
 .tab-btn.active {
-  background: rgba(199, 163, 107, 0.12);
-  color: var(--ink);
+  /* background: rgba(199, 163, 107, 0.12); */
+  color: var(--burgundy);
   font-weight: 500;
 }
 
@@ -253,7 +254,8 @@
 /* Вертикальная черта перед кнопкой "Награды" */
 .tab-btn-awards {
   position: relative;
-  margin-left: 1.5rem;
+  margin-left: 0.75rem;
+  padding-left: 0.75rem;
 }
 
 .tab-btn-awards::before {
@@ -271,8 +273,8 @@
 .score-system-toggle-inline {
   display: flex;
   align-items: center;
-  padding-left: 0.75rem;
-  margin-left: 0.75rem;
+  padding-left: 1.5rem;
+  /* margin-left: 0.75rem; */
   border-left: 1px solid rgba(199, 163, 107, 0.2);
   /* animation: fadeIn 0.3s ease-out; */
 }
@@ -328,7 +330,7 @@ body[data-theme="letterboxd"] .toggle-switch::after {
 }
 
 body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
-  background: rgba(0, 172, 28, 0.2);
+  background: rgba(0, 172, 28, 0.35);
   border: none;
 }
 
@@ -1493,13 +1495,16 @@ body[data-theme="letterboxd"] .tab-btn {
 }
 
 body[data-theme="letterboxd"] .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  /* background: rgba(255, 255, 255, 0.05); */
   color: white;
 }
 
 body[data-theme="letterboxd"] .tab-btn.active {
-  background: rgba(0, 172, 28, 0.2);
-  color: white;
+  /* background: rgba(0, 172, 28, 0.2);
+  color: white; */
+  /* background: rgba(0, 172, 28, 0.15); */
+  color: #00ac1c;
+
 }
 
 body[data-theme="letterboxd"] .overall-card {
@@ -1597,6 +1602,9 @@ body[data-theme="letterboxd"] .awards-list .award-card:hover {
 }
 
 body[data-theme="letterboxd"] .empty-state {
-  background: #1a1a1a;
+  /* background: #1a1a1a; */
+  background: transparent;
+
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
 }

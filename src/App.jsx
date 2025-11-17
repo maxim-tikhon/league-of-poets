@@ -8,6 +8,8 @@ import PoetDetailPage from './pages/PoetDetailPage';
 import MaximRankingPage from './pages/MaximRankingPage';
 import OlegRankingPage from './pages/OlegRankingPage';
 import OverallRankingPage from './pages/OverallRankingPage';
+import HeadToHeadPage from './pages/HeadToHeadPage';
+import TimelinePage from './pages/TimelinePage';
 import UserSelector from './components/UserSelector';
 import './App.css';
 
@@ -47,6 +49,8 @@ function App() {
             <Route path="maxim-ranking" element={<MaximRankingPage />} />
             <Route path="oleg-ranking" element={<OlegRankingPage />} />
             <Route path="overall-ranking" element={<OverallRankingPage />} />
+            {/* <Route path="head-to-head" element={<HeadToHeadPage />} />
+            <Route path="timeline" element={<TimelinePage />} /> */}
           </Route>
         </Routes>
       </Router>

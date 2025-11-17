@@ -29,7 +29,7 @@
 /* Панель сортировки - современный плоский дизайн */
 .sorting-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: 2rem;
   flex-wrap: wrap;
   /* padding: 1rem; */
   /* background: var(--cream);
@@ -37,6 +37,7 @@
   border: 1px solid rgba(199, 163, 107, 0.2); */
   align-items: center;
   margin-bottom: 2rem;
+  min-height: 38px;
 }
 
 .sorting-controls span {
@@ -45,7 +46,7 @@
 }
 
 .sort-btn {
-  padding: 0.5rem 1rem;
+  /* padding: 0.5rem 1rem; */
   border: none;
   background: transparent;
   border-radius: 6px;
@@ -57,12 +58,12 @@
 }
 
 .sort-btn:hover {
-  background: var(--hover-light);
-  color: var(--gold);
+  /* background: var(--hover-light); */
+  color: var(--ink);
 }
 
 .sort-btn.active {
-  background: rgba(199, 163, 107, 0.15);
+  /* background: rgba(199, 163, 107, 0.15); */
   color: var(--burgundy);
 }
 
@@ -93,7 +94,7 @@
 .ratings-toggle-inline {
   display: flex;
   align-items: center;
-  padding-left: 0.75rem;
+  padding-left: 1.5rem;
   /* margin-left: 0.5rem; */
   border-left: 1px solid rgba(199, 163, 107, 0.2);
   /* animation: fadeIn 0.3s ease-out; */
@@ -151,6 +152,12 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--ink);
+  transition: color 0.2s ease;
+}
+
+.toggle-label:hover .toggle-text {
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .error-message {
@@ -901,7 +908,7 @@ body[data-theme="letterboxd"] .add-poet-btn:hover {
 }
 
 body[data-theme="letterboxd"] .sort-option.active {
-  background: rgba(0, 172, 28, 0.2);
+  background: rgba(0, 172, 28, 0.35);
   color: white;
 }
 
@@ -926,6 +933,8 @@ body[data-theme="letterboxd"] .poet-card:hover {
 }
 
 body[data-theme="letterboxd"] .empty-state {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* background: #1a1a1a;e */
+  background: transparent;
+  /* border: 1px solid rgba(255, 255, 255, 0.1); */
+  border: none;
 }

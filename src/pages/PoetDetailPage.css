@@ -2,7 +2,6 @@
   max-width: 1210px;
   margin: 0 auto;
   /* padding: 3rem 2rem; */
-  min-height: 100vh;
   margin-top: 0.5rem;
 }
 
@@ -106,22 +105,16 @@
   margin-left: 1rem;
 }
 
-.like-icon {
-  width: 35px;
-  height: 30px;
-  cursor: pointer;
-  /* transition: transform 0.2s ease, opacity 0.2s ease;
-  opacity: 0.8; */
+.poet-detail-page .like-icon {
+  width: 32px;
+  height: 28px;
+  cursor: poin4er;
 }
 
-/* .like-icon:hover {
-  transform: scale(1.15);
-  opacity: 1;
+/* Увеличенные звездочки для страницы поэта */
+.poet-detail-page .star-wrapper .star {
+  font-size: 1.9rem;
 }
-
-.like-icon:active {
-  transform: scale(0.95);
-} */
 
 /* Tooltip */
 .rating-tooltip {
@@ -259,6 +252,10 @@
 
 .poet-portrait {
   flex-shrink: 0;
+  position: sticky;
+  top: 102px;
+  align-self: flex-start;
+  z-index: 10;
 }
 
 .poet-portrait img {
@@ -400,6 +397,7 @@
   
   .poet-portrait {
     margin-bottom: 2rem;
+    position: static;
   }
   
   .poet-portrait img {

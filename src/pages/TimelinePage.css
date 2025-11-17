@@ -1,0 +1,532 @@
+.tl-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Статистика */
+.tl-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.tl-stat-item {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tl-stat-label {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tl-stat-value {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--burgundy);
+}
+
+/* Фильтры по векам */
+.tl-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.tl-filter-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tl-filter-btn:hover {
+  color: var(--ink);
+}
+
+.tl-filter-btn.active {
+  color: var(--burgundy);
+  font-weight: 500;
+}
+
+/* Контейнер временной линии */
+.tl-container {
+  position: relative;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.tl-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.tl-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Шкала времени */
+.tl-scale {
+  position: relative;
+  height: 50px;
+  margin-bottom: 2rem;
+}
+
+.tl-scale-mark {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.tl-scale-year {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  position: relative;
+  background: var(--cream);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.tl-scale-mark.major::before {
+  content: '';
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 12px;
+  background: rgba(199, 163, 107, 0.5);
+}
+
+.tl-scale-mark.minor::before {
+  content: '';
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 8px;
+  background: rgba(199, 163, 107, 0.25);
+}
+
+/* Поэты на линии */
+.tl-poets {
+  position: relative;
+  min-height: 400px;
+  padding: 1rem 0;
+}
+
+.tl-poet {
+  position: absolute;
+  width: 100%;
+  height: 50px;
+  transition: all 0.2s ease;
+}
+
+/* Линия жизни */
+.tl-life-line {
+  position: absolute;
+  top: 25px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--burgundy));
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.tl-poet:hover .tl-life-line {
+  opacity: 1;
+  height: 4px;
+}
+
+/* Точки рождения и смерти */
+.tl-point {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid white;
+  transition: all 0.2s ease;
+  z-index: 20;
+}
+
+.tl-point.birth {
+  background: var(--gold);
+  width: 50px;
+  height: 50px;
+  box-shadow: 0 2px 8px rgba(199, 163, 107, 0.3);
+  overflow: visible;
+  cursor: pointer;
+  z-index: 50;
+}
+
+.tl-point.death {
+  background: var(--burgundy);
+  box-shadow: 0 2px 6px rgba(126, 62, 69, 0.3);
+  z-index: 20;
+}
+
+.tl-point.birth:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 4px 16px rgba(199, 163, 107, 0.5);
+  z-index: 1001;
+}
+
+.tl-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Tooltip при наведении */
+.tl-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  border: 1px solid rgba(199, 163, 107, 0.2);
+}
+
+.tl-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: white;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.tl-point.birth:hover .tl-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.tl-tooltip-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.tl-tooltip-years {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+/* Секция по векам */
+.tl-centuries {
+  margin-top: 3rem;
+}
+
+.tl-centuries-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+.tl-centuries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.tl-century-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.tl-century-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tl-century-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--burgundy);
+  margin: 0 0 0.5rem 0;
+}
+
+.tl-century-count {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+
+.tl-century-poets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tl-century-poet {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.tl-century-poet:hover {
+  background: rgba(199, 163, 107, 0.05);
+}
+
+.tl-century-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tl-century-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tl-century-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.tl-century-years {
+  font-size: 0.8rem;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+.tl-century-more {
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tl-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tl-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .tl-container {
+    padding: 1.5rem;
+  }
+
+  .tl-scale {
+    height: 45px;
+  }
+
+  .tl-scale-year {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .tl-poet {
+    height: 45px;
+  }
+
+  .tl-life-line {
+    top: 22px;
+  }
+
+  .tl-point.birth {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tl-tooltip {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.85rem;
+  }
+
+  .tl-tooltip-name {
+    font-size: 0.85rem;
+  }
+
+  .tl-tooltip-years {
+    font-size: 0.75rem;
+  }
+
+  .tl-centuries-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Letterboxd Theme */
+body[data-theme="letterboxd"] .tl-stat-item {
+  background: #1a1a1a;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .tl-stat-value {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .tl-filter-btn:hover {
+  background: rgba(0, 172, 28, 0.1);
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .tl-filter-btn.active {
+  background: rgba(0, 172, 28, 0.15);
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .tl-container {
+  background: #1a1a1a;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .tl-title {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .tl-header {
+  border-bottom-color: #456;
+}
+
+body[data-theme="letterboxd"] .tl-scale-year {
+  color: #e5e5e5;
+  background: #1a1a1a;
+}
+
+body[data-theme="letterboxd"] .tl-scale-mark.major::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body[data-theme="letterboxd"] .tl-scale-mark.minor::before {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+body[data-theme="letterboxd"] .tl-life-line {
+  background: linear-gradient(90deg, #00ac1c, #E50914);
+}
+
+body[data-theme="letterboxd"] .tl-point.birth {
+  background: #00ac1c;
+  border-color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0, 172, 28, 0.3);
+}
+
+body[data-theme="letterboxd"] .tl-point.birth:hover {
+  box-shadow: 0 4px 16px rgba(0, 172, 28, 0.5);
+}
+
+body[data-theme="letterboxd"] .tl-point.death {
+  background: #E50914;
+  border-color: #1a1a1a;
+  box-shadow: 0 2px 6px rgba(229, 9, 20, 0.3);
+}
+
+body[data-theme="letterboxd"] .tl-tooltip {
+  background: #253544;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .tl-tooltip::after {
+  border-top-color: #253544;
+}
+
+body[data-theme="letterboxd"] .tl-tooltip-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .tl-tooltip-years {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .tl-centuries-title {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .tl-century-card {
+  background: #1a1a1a;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .tl-century-title {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .tl-century-count {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .tl-century-poet:hover {
+  background: rgba(0, 172, 28, 0.05);
+}
+
+body[data-theme="letterboxd"] .tl-century-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .tl-century-years {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .tl-century-more {
+  color: #9ab;
+}
+

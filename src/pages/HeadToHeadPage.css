@@ -1,0 +1,273 @@
+.h2h-page {
+  max-width: 1210px;
+  margin: 0 auto;
+}
+
+/* Карточки статистики */
+.h2h-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.h2h-stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.h2h-stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.h2h-stat-label {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  margin-bottom: 0.75rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.h2h-stat-value {
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--burgundy);
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.h2h-stat-hint {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+/* Секции */
+.h2h-section-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2rem;
+}
+
+.h2h-section-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+/* Категориальное сравнение */
+.h2h-category-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.h2h-category-bar {
+  display: grid;
+  grid-template-columns: 120px 1fr 80px;
+  gap: 1rem;
+  align-items: center;
+}
+
+.h2h-category-name {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.h2h-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.h2h-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: rgba(199, 163, 107, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.h2h-bar-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  transition: width 0.3s ease;
+}
+
+.h2h-bar.maxim .h2h-bar-fill {
+  background: #7E3E45;
+}
+
+.h2h-bar.oleg .h2h-bar-fill {
+  background: #2c5f2d;
+}
+
+.h2h-bar-value {
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.h2h-bar-label {
+  position: absolute;
+  left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.h2h-category-diff {
+  text-align: right;
+  font-size: 0.9rem;
+  color: var(--ink-light);
+  font-weight: 500;
+}
+
+/* Секция согласия/несогласия */
+.h2h-agreement-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.h2h-section-card.half-width {
+  margin-bottom: 0;
+}
+
+.h2h-agreement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.h2h-agreement-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(199, 163, 107, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(199, 163, 107, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.h2h-agreement-item:hover {
+  background: rgba(199, 163, 107, 0.08);
+  border-color: rgba(199, 163, 107, 0.2);
+  transform: translateX(4px);
+}
+
+.h2h-poet-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.h2h-scores {
+  color: var(--ink-light);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.h2h-diff {
+  font-size: 0.85rem;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: right;
+}
+
+.h2h-diff.success {
+  color: #00ac1c;
+}
+
+.h2h-diff.error {
+  color: #E50914;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .h2h-stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .h2h-category-bar {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .h2h-category-diff {
+    text-align: left;
+  }
+
+  .h2h-agreement-section {
+    grid-template-columns: 1fr;
+  }
+
+  .h2h-section-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Letterboxd Theme */
+body[data-theme="letterboxd"] .h2h-stat-card {
+  background: #1a1a1a;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .h2h-stat-value {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .h2h-section-card {
+  background: #1a1a1a;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .h2h-section-title {
+  color: #e5e5e5;
+  border-bottom-color: #456;
+}
+
+body[data-theme="letterboxd"] .h2h-bar {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="letterboxd"] .h2h-agreement-item {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .h2h-agreement-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="letterboxd"] .h2h-poet-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .h2h-scores {
+  color: #9ab;
+}

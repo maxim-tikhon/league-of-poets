@@ -66,9 +66,9 @@ body[data-theme="letterboxd"] .theme-toggle-btn:hover {
 
 /* Letterboxd theme dropdown */
 body[data-theme="letterboxd"] .theme-dropdown {
-  background: #1a1a1a;
+  background: #2c3440;
   border: none;
-  /* border: 1px solid rgba(0, 172, 28, 0.3); */
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); */
 }
 
 body[data-theme="letterboxd"] .theme-dropdown-header {
@@ -77,17 +77,22 @@ body[data-theme="letterboxd"] .theme-dropdown-header {
 }
 
 body[data-theme="letterboxd"] .theme-option {
-  color: #e5e5e5
+  color: #e5e5e5;
 }
 
 body[data-theme="letterboxd"] .theme-option:hover {
-  /* background: rgba(0, 172, 28, 0.1); */
-  border: none;
+  /* background: rgba(0, 172, 28, 0.08); */
+  background: none;
 }
 
 body[data-theme="letterboxd"] .theme-option.active {
-  /* background: rgba(0, 172, 28, 0.2); */
+  /* background: rgba(0, 172, 28, 0.15); */
   background: none;
+  color: #00ac1c;
+  /* font-weight: 500; */
+}
+
+body[data-theme="letterboxd"] .theme-check {
   color: #00ac1c;
 }
 

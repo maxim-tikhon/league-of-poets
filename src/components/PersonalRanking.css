@@ -101,10 +101,11 @@
 
 .sorting-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: 2rem;
   flex-wrap: wrap;
   align-items: center;
   margin-bottom: 2rem;
+  min-height: 38px;
 }
 
 .sorting-controls .tooltip-wrapper {
@@ -115,7 +116,8 @@
 .score-system-toggle-inline {
   display: flex;
   align-items: center;
-  padding-left: 0.75rem;
+  padding-left: 1.5rem;
+  /* margin-left: 0.75rem; */
   border-left: 1px solid rgba(199, 163, 107, 0.2);
 }
 
@@ -161,7 +163,7 @@
 }
 
 body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
-  background: rgba(0, 172, 28, 0.2);
+  background: rgba(0, 172, 28, 0.35);
   border: none;
 }
 
@@ -173,6 +175,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .sort-btn-awards {
   position: relative;
   margin-left: 0.75rem;
+  padding-left: 0.75rem;
 }
 
 .sort-btn-awards::before {
@@ -334,7 +337,7 @@ body[data-theme="letterboxd"] .award-winner-card:hover {
 }
 
 .sort-btn {
-  padding: 0.5rem 1rem;
+  /* padding: 0.5rem 1rem; */
   border: none;
   background: transparent;
   border-radius: 6px;
@@ -346,7 +349,7 @@ body[data-theme="letterboxd"] .award-winner-card:hover {
 }
 
 .sort-btn:hover {
-  background: rgba(199, 163, 107, 0.08);
+  /* background: rgba(199, 163, 107, 0.08); */
   color: var(--ink);
 }
 
@@ -365,8 +368,8 @@ body[data-theme="letterboxd"] .award-winner-card:hover {
 }
 
 .sort-btn.active {
-  background: rgba(199, 163, 107, 0.12);
-  color: var(--ink);
+  background: transparent;
+  color: var(--burgundy);
   font-weight: 500;
 }
 
@@ -813,13 +816,13 @@ body[data-theme="letterboxd"] .sort-btn {
 }
 
 body[data-theme="letterboxd"] .sort-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  /* background: rgba(255, 255, 255, 0.05); */
   color: #e5e5e5;
 }
 
 body[data-theme="letterboxd"] .sort-btn.active {
-  background: rgba(0, 172, 28, 0.2);
-  color: white;
+  /* background: rgba(0, 172, 28, 0.15); */
+  color: #00ac1c;
 }
 
 body[data-theme="letterboxd"] .poet-ranking-card {
@@ -878,6 +881,7 @@ body[data-theme="letterboxd"] .poet-ranking-header {
 
 body[data-theme="letterboxd"] .empty-state {
   background: #1a1a1a;
-  border: 1px solid #14181c;
+  background: transparent;
+  /* border: 1px solid #14181c; */
   border: none;
 }
