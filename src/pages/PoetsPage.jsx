@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
-import { generateContent } from '../ai/gemini';
-import { generatePoetBioPrompt } from '../ai/prompts';
+import { generateContent, generateAIRating } from '../ai/gemini';
+import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingPrompt, parseAIRating, generateRandomPoetPrompt } from '../ai/prompts';
 import './PoetsPage.css';
 
 const PoetsPage = () => {
-  const { poets, ratings, calculateScore, isLoading, addPoet, deletePoet, likes } = usePoets();
+  const { poets, ratings, calculateScore, isLoading, addPoet, updatePoet, deletePoet, likes } = usePoets();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [newPoetName, setNewPoetName] = useState('');
   const [newPoetImageUrl, setNewPoetImageUrl] = useState('');
-  const [newPoetBio, setNewPoetBio] = useState('');
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('date'); // 'date', 'firstName', 'lastName', 'rating'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
@@ -20,8 +19,8 @@ const PoetsPage = () => {
   const [showFavorites, setShowFavorites] = useState(false); // Показывать только любимых
   const [isFirstLoad, setIsFirstLoad] = useState(true); // Флаг первой загрузки для анимации
   const [showNotification, setShowNotification] = useState(false); // Нотификация о копировании
-  const [isGenerating, setIsGenerating] = useState(false); // Генерация AI
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
+  const [isGeneratingPoet, setIsGeneratingPoet] = useState(false); // Генерация случайного поэта
 
   // Получаем текущего пользователя из localStorage
   useEffect(() => {
@@ -48,7 +47,42 @@ const PoetsPage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  // Генерация случайного поэта через AI
+  const handleGenerateRandomPoet = async () => {
+    setIsGeneratingPoet(true);
+    setError('');
+    
+    try {
+      // Список уже добавленных поэтов
+      const existingPoets = poets.map(p => p.name);
+      
+      // Запрашиваем у AI случайного поэта
+      const prompt = generateRandomPoetPrompt(existingPoets);
+      const response = await generateContent(prompt, 0.9); // Высокая temperature для случайности
+      
+      // Очищаем ответ от лишних символов
+      const poetName = response.trim().replace(/["""«»]/g, '');
+      
+      // Проверяем, что имя не пустое
+      if (poetName && poetName.length > 2) {
+        // Проверяем на дубликат
+        if (poets.some(p => p.name.toLowerCase() === poetName.toLowerCase())) {
+          setError('Этот поэт уже добавлен. Попробуйте ещё раз.');
+        } else {
+          setNewPoetName(poetName);
+        }
+      } else {
+        setError('AI не смог сгенерировать поэта. Попробуйте ещё раз.');
+      }
+    } catch (err) {
+      console.error('Ошибка генерации поэта:', err);
+      setError('Ошибка при генерации поэта');
+    } finally {
+      setIsGeneratingPoet(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -69,11 +103,64 @@ const PoetsPage = () => {
       return;
     }
 
-    addPoet(trimmedName, newPoetImageUrl.trim(), newPoetBio.trim());
+    // Создаем поэта сразу с базовой информацией
+    const newPoet = await addPoet(trimmedName, newPoetImageUrl.trim(), '', '', '', '', '', '');
+    
+    // Закрываем модалку сразу
     setNewPoetName('');
     setNewPoetImageUrl('');
-    setNewPoetBio('');
     setShowModal(false);
+    
+    // Генерируем информацию асинхронно в фоне
+    (async () => {
+      try {
+        // Генерируем досье
+        const bioPrompt = generatePoetBioPrompt(trimmedName);
+        const generatedBio = await generateContent(bioPrompt);
+        await updatePoet(newPoet.id, { bio: generatedBio });
+        
+        // Генерируем биографию (жизненный путь)
+        const lifeStoryPrompt = generatePoetLifeStoryPrompt(trimmedName);
+        const generatedLifeStory = await generateContent(lifeStoryPrompt);
+        await updatePoet(newPoet.id, { lifeStory: generatedLifeStory });
+        
+        // Генерируем влияние
+        const influencePrompt = generatePoetInfluencePrompt(trimmedName);
+        const generatedInfluence = await generateContent(influencePrompt);
+        await updatePoet(newPoet.id, { influence: generatedInfluence });
+        
+        // Генерируем творчество
+        const creativityPrompt = generatePoetCreativityPrompt(trimmedName);
+        const generatedCreativity = await generateContent(creativityPrompt);
+        await updatePoet(newPoet.id, { creativity: generatedCreativity });
+        
+        // Генерируем драму
+        const dramaPrompt = generatePoetDramaPrompt(trimmedName);
+        const generatedDrama = await generateContent(dramaPrompt);
+        await updatePoet(newPoet.id, { drama: generatedDrama });
+        
+        // Генерируем красоту
+        const beautyPrompt = generatePoetBeautyPrompt(trimmedName);
+        const generatedBeauty = await generateContent(beautyPrompt);
+        await updatePoet(newPoet.id, { beauty: generatedBeauty });
+
+        // Генерируем AI-рейтинг (3 запроса с усреднением для справедливости)
+        // Собираем существующие AI-рейтинги других поэтов для контекста
+        const existingAIRatings = poets
+          .filter(p => p.aiRatings && Object.keys(p.aiRatings).length > 0)
+          .map(p => ({
+            name: p.name,
+            ratings: p.aiRatings
+          }));
+        
+        const aiRatingPrompt = generateAIRatingPrompt(trimmedName, existingAIRatings);
+        const aiRatings = await generateAIRating(aiRatingPrompt, parseAIRating);
+        await updatePoet(newPoet.id, { aiRatings });
+
+      } catch (err) {
+        console.error('Ошибка фоновой генерации:', err);
+      }
+    })();
   };
 
   const handleDeleteClick = (poetId, poetName) => {
@@ -89,33 +176,6 @@ const PoetsPage = () => {
 
   const cancelDelete = () => {
     setDeleteConfirm(null);
-  };
-
-  const generatePoetBio = async () => {
-    const poetName = newPoetName.trim();
-    if (!poetName) {
-      setError('Сначала введите имя поэта');
-      return;
-    }
-
-    setIsGenerating(true);
-    setError('');
-
-    try {
-      // Генерируем промпт из модуля prompts.js
-      const prompt = generatePoetBioPrompt(poetName);
-      
-      // Получаем контент через модуль gemini.js
-      const generatedText = await generateContent(prompt);
-      
-      setNewPoetBio(generatedText);
-      
-    } catch (err) {
-      console.error('Ошибка генерации:', err);
-      setError(err.message || 'Ошибка при генерации информации');
-    } finally {
-      setIsGenerating(false);
-    }
   };
 
   // Открыть Google Images для поиска портрета
@@ -262,7 +322,7 @@ const PoetsPage = () => {
           onClick={() => setShowModal(true)} 
           className="btn-add-poet"
         >
-          Добавить поэта
+          Добавить
         </button>
       </div>
       
@@ -280,7 +340,18 @@ const PoetsPage = () => {
             <h2 className="modal-title">Новый поэт</h2>
             <form onSubmit={handleSubmit} className="poet-form">
               <div className="form-field">
-                <label htmlFor="poet-name">Имя и фамилия *</label>
+                <div className="label-with-button">
+                  <label htmlFor="poet-name">Имя и фамилия *</label>
+                  <button 
+                    type="button" 
+                    onClick={handleGenerateRandomPoet}
+                    className="btn-copy-prompt"
+                    title="Сгенерировать случайного русского поэта"
+                    disabled={isGeneratingPoet}
+                  >
+                    {isGeneratingPoet ? 'Генерация...' : 'Случайный поэт'}
+                  </button>
+                </div>
                 <input
                   id="poet-name"
                   type="text"
@@ -290,8 +361,9 @@ const PoetsPage = () => {
                     setError('');
                   }}
                   className="form-input"
-                  required
+                  placeholder="Имя Фамилия"
                 />
+                {error && <div className="field-error">{error}</div>}
               </div>
               
               <div className="form-field">
@@ -317,33 +389,6 @@ const PoetsPage = () => {
 
               </div>
               
-              <div className="form-field">
-                <div className="label-with-button">
-                  <label htmlFor="poet-bio">Досье</label>
-                  <button 
-                    type="button" 
-                    onClick={generatePoetBio}
-                    className="btn-copy-prompt"
-                    title="Сгенерировать досье с помощью AI"
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? 'Генерация...' : 'AI ✨'}
-                  </button>
-                </div>
-                <textarea
-                  id="poet-bio"
-                  value={newPoetBio}
-                  onChange={(e) => setNewPoetBio(e.target.value)}
-                  placeholder={isGenerating ? 'Генерирую информацию...' : 'Введите информацию о поэте или нажмите AI для автогенерации'}
-                  className="form-textarea"
-                  rows="8"
-                  disabled={isGenerating}
-                />
-
-              </div>
-              
-              {error && <p className="error-message">{error}</p>}
-              
               <div className="form-actions">
                 <button 
                   type="button" 
@@ -352,7 +397,10 @@ const PoetsPage = () => {
                 >
                   Отмена
                 </button>
-                <button type="submit" className="btn-add-confirm">
+                <button 
+                  type="submit" 
+                  className="btn-add-confirm"
+                >
                   Добавить
                 </button>
               </div>
@@ -406,7 +454,7 @@ const PoetsPage = () => {
                         </h3>
                         {hasRating && (
                           <div className={`poet-card-rating ${showRatings ? 'always-visible' : ''}`}>
-                            {((averageRating / 100) * 5).toFixed(1)}
+                            {(Math.round(averageRating * 100) / 100).toFixed(2)}
                           </div>
                         )}
                       </div>

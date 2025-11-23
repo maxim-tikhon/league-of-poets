@@ -182,11 +182,349 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* 3 колонки: Фото + Досье + Оценки */
+/* 2 основные колонки: Фото + Контент */
 .poet-content {
   display: flex;
   gap: 3rem;
   align-items: flex-start;
+}
+
+/* Правая колонка - весь контент */
+.poet-right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* gap: 3rem; */
+}
+
+/* Верхняя секция - Досье и Оценки рядом */
+.poet-top-section {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+/* Меню навигации контента */
+.poet-content-menu {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 38px;
+  margin-top: 1.5rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.2);
+  /* padding-bottom: 0.75rem; */
+}
+
+.menu-tab {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  font-size: 0.90rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.menu-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -3.5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.menu-tab:hover {
+  color: var(--ink);
+}
+
+.menu-tab:hover::after {
+  background: rgba(139, 69, 19, 0.2);
+}
+
+.menu-tab.active {
+  color: var(--burgundy);
+}
+
+.menu-tab.active::after {
+  background: var(--burgundy);
+}
+
+.menu-tab.active:hover::after {
+  background: var(--burgundy);
+}
+
+/* Контент вкладок */
+.poet-tab-content {
+  margin-top: 1rem;
+  /* min-height: 300px; */
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Биография (жизненный путь) */
+.life-story {
+  max-width: 800px;
+  line-height: 1.6;
+}
+
+.life-story-header {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-light);
+  margin: 1rem 0 0.75rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.life-story-header:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.life-story-paragraph {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+
+.no-content {
+  font-size: 1rem;
+  color: var(--ink-light);
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+/* Влияние */
+.influence-content {
+  max-width: 900px;
+  line-height: 1.6;
+}
+
+.influence-section-header {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 2rem 0 1.25rem 0;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.influence-section-header:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.influence-item {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.6;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.influence-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.influence-item-text {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+/* Творчество */
+.creativity-section {
+  max-width: 800px;
+  line-height: 1.6;
+}
+
+.creativity-item {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.6;
+}
+
+.creativity-label {
+  font-weight: 500;
+  color: var(--ink-light);
+}
+
+/* Драма */
+.drama-section {
+  max-width: 800px;
+  line-height: 1.6;
+}
+
+.drama-item {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.6;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.drama-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.drama-item-text {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+/* Красота */
+.beauty-section {
+  max-width: 800px;
+  line-height: 1.6;
+}
+
+.beauty-subsection-header {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-light);
+  margin: 1.5rem 0 0.35rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.beauty-subsection-header:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.beauty-item {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.6;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.beauty-item:last-child {
+  margin-bottom: 0.5rem;
+}
+
+.beauty-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.beauty-item-text {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+/* Стихотворения */
+.poems-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.poem-card {
+  background: rgba(199, 163, 107, 0.08);
+  border: none;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: inline-block;
+  white-space: nowrap;
+  box-shadow: inset 0 1px rgba(0, 0, 0, .03);
+}
+
+.poem-card:hover {
+  color: var(--ink);
+}
+
+/* Статусы стихотворений - цветовая кодировка */
+/* Просмотрено - зеленый */
+.poem-card.viewed {
+  border-left: 2px solid #00ac1c;
+  padding-left: 8px;
+}
+
+/* Лайкнуто - оранжевый/золотой */
+.poem-card.liked {
+  border-left: 2px solid #FFB800;
+  padding-left: 8px;
+}
+
+/* Выучено - голубой */
+.poem-card.memorized {
+  border-left: 2px solid #40BCF4;
+  padding-left: 8px;
+}
+
+.poem-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  font-size: 0.85rem;
+}
+
+.poem-add {
+  background: rgba(199, 163, 107, 0.05);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 1px rgba(0, 0, 0, .03);
+}
+
+.poem-add:hover {
+  color: var(--ink);
+}
+
+.poem-add-icon {
+  font-size: 1rem;
+  color: var(--gold);
+  font-weight: 300;
+  line-height: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
@@ -258,20 +596,51 @@
   z-index: 10;
 }
 
-.poet-portrait img {
+.poet-portrait-img-clickable {
   width: 280px;
   height: 380px;
   object-fit: cover;
   border-radius: 6px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+  cursor: zoom-in;
   /* margin-top: 0.6rem; */
 }
 
-/* .poet-portrait img:hover {
+/* .poet-portrait-img-clickable:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.12);
 } */
+
+/* Статистика по стихам под фото */
+.poem-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+  /* padding: 0.25rem; */
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.stat-icon {
+  width: 16px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.stat-count {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1;
+}
 
 .poet-bio-section {
   flex: 1;
@@ -289,7 +658,7 @@
 
 .bio-item {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.5;
 }
 
@@ -300,7 +669,7 @@
 }
 
 .bio-value {
-  color: var(--ink-light);
+  color: #9ab;
   display: inline;
 }
 
@@ -400,9 +769,36 @@
     position: static;
   }
   
-  .poet-portrait img {
+  .poet-portrait-img-clickable {
     width: 250px;
     height: 333px;
+  }
+  
+  .poem-stats {
+    gap: 0.6rem;
+    padding: 0.2rem;
+  }
+  
+  .stat-item {
+    gap: 0.25rem;
+  }
+  
+  .stat-icon {
+    width: 14px;
+    height: 12px;
+  }
+  
+  .stat-count {
+    font-size: 0.8rem;
+  }
+  
+  .poet-right-column {
+    width: 100%;
+  }
+  
+  .poet-top-section {
+    flex-direction: column;
+    gap: 2rem;
   }
   
   .poet-bio-section {
@@ -434,7 +830,7 @@
     font-size: 1.5rem;
   }
   
-  .poet-portrait img {
+  .poet-portrait-img-clickable {
     width: 200px;
     height: 267px;
   }
@@ -489,10 +885,6 @@ body[data-theme="letterboxd"] .rating-tooltip::before {
 }
 
 /* Lightbox для увеличенного изображения */
-.poet-portrait-img-clickable {
-  cursor: zoom-in;
-}
-
 .image-lightbox-overlay {
   position: fixed;
   top: 0;
@@ -715,6 +1107,12 @@ background-color: white;
   padding-top: 0.5rem;
 }
 
+/* Letterboxd Theme для статистики стихов */
+body[data-theme="letterboxd"] .stat-count {
+  color: #9ab;
+  font-weight: 400;
+}
+
 /* Letterboxd Theme для оценок */
 body[data-theme="letterboxd"] .poet-ratings-section {
   border-top-color: rgba(255, 255, 255, 0.1);
@@ -782,5 +1180,426 @@ body[data-theme="letterboxd"] .poet-action-btn:hover {
   
   .rating-category-card {
     width: 100%;
+  }
+}
+
+/* Letterboxd Theme для меню */
+body[data-theme="letterboxd"] .poet-content-menu {
+  border-bottom-color: #456;
+}
+
+body[data-theme="letterboxd"] .menu-tab {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .menu-tab:hover {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .menu-tab:hover::after {
+  background: rgba(0, 172, 28, 0.3);
+}
+
+body[data-theme="letterboxd"] .menu-tab.active {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .menu-tab.active::after {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .menu-tab.active:hover::after {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .tab-panel {
+  color: #e5e5e5;
+}
+
+/* Letterboxd Theme для биографии */
+body[data-theme="letterboxd"] .life-story-header {
+  color: #e5e5e5;
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .life-story-paragraph {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .no-content {
+  color: #9ab;
+}
+
+/* Letterboxd Theme для влияния */
+body[data-theme="letterboxd"] .influence-section-header {
+  color: #e5e5e5;
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .influence-item::before {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .influence-item-text {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .creativity-item {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .creativity-label {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .drama-item::before {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .drama-item-text {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .beauty-subsection-header {
+  color: #e5e5e5;
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .beauty-item::before {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .beauty-item-text {
+  color: #9ab;
+}
+
+/* Letterboxd Theme для стихотворений */
+body[data-theme="letterboxd"] .poem-card {
+  background: #283038;
+  border: none;
+  color: #9ab;
+  display: inline-block;
+  padding: 3px 6px;
+  white-space: nowrap;
+  border-radius: 3px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+}
+
+body[data-theme="letterboxd"] .poem-card:hover {
+  color: #e5e5e5;
+}
+
+/* Letterboxd theme - Статусы стихотворений */
+/* Просмотрено - зеленый */
+body[data-theme="letterboxd"] .poem-card.viewed {
+  border-left: 2px solid rgba(0, 172, 28, 0.6);
+  padding-left: 8px;
+}
+
+/* Лайкнуто - оранжевый */
+body[data-theme="letterboxd"] .poem-card.liked {
+  border-left: 2px solid rgba(255, 144, 16, 0.6);
+  padding-left: 8px;
+}
+
+/* Выучено - голубой */
+body[data-theme="letterboxd"] .poem-card.memorized {
+  border-left: 2px solid rgba(64, 188, 244, 0.6);
+  padding-left: 8px;
+}
+
+body[data-theme="letterboxd"] .poem-add {
+  background: #283038;
+  border: none;
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+}
+
+body[data-theme="letterboxd"] .poem-add:hover {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .poem-add-icon {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .poem-add:hover .poem-add-icon {
+  color: #00ac1c;
+}
+
+/* Модалка добавления стихотворения */
+.poem-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.poem-generation-section {
+  /* background: rgba(199, 163, 107, 0.05); */
+  /* border: 1px solid rgba(199, 163, 107, 0.15); */
+  border-radius: 6px;
+  /* padding: 1.25rem; */
+}
+
+.generation-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 0.5rem 0;
+}
+
+.generation-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.option-select {
+  flex: 1;
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.option-select:hover {
+  border-color: var(--gold);
+}
+
+.option-select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(199, 163, 107, 0.1);
+}
+
+.option-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-generate {
+  background: rgba(199, 163, 107, 0.1);
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 143px;
+}
+
+.btn-generate:hover:not(:disabled) {
+  background: rgba(199, 163, 107, 0.15);
+  border-color: rgba(199, 163, 107, 0.3);
+}
+
+.btn-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Letterboxd Theme для модалки добавления стихотворения */
+body[data-theme="letterboxd"] .poem-generation-section {
+  background: transparent;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .generation-title {
+  color: #b3b3b3;
+}
+
+body[data-theme="letterboxd"] .option-select {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+  border-color: #456;
+  border: none;
+}
+
+body[data-theme="letterboxd"] .btn-generate {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+  /* border-color: #456; */
+}
+
+body[data-theme="letterboxd"] .btn-generate:hover:not(:disabled) {
+  background: rgba(0, 172, 28, 0.1);
+  border-color: #00ac1c;
+}
+
+/* Кнопка добавления стихотворения */
+.btn-add-confirm {
+  font-family: 'Inter', sans-serif;
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-confirm:hover:not(:disabled) {
+  background: var(--gold-dark);
+  opacity: 0.95;
+}
+
+.btn-add-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+body[data-theme="letterboxd"] .btn-add-confirm {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-add-confirm:hover:not(:disabled) {
+  background: #009d1a;
+  opacity: 1;
+}
+
+/* === Модалка просмотра/редактирования стихотворения === */
+
+.poem-view-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.poem-view-modal .modal-title {
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.poem-title-link {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--ink);
+  text-decoration: none;
+  margin: 0 0 1.5rem 0;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.poem-title-link:hover {
+  color: var(--burgundy);
+}
+
+.poem-title-modal {
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.poem-title-modal:hover {
+  text-decoration: underline;
+}
+
+body[data-theme="letterboxd"] .poem-title-link {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .poem-title-link:hover {
+  opacity: 0.7;
+}
+
+.poem-view-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Статусы стихотворения */
+.poem-statuses {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-around;
+  /* padding: 1.5rem; */
+  /* background: rgba(199, 163, 107, 0.05); */
+  /* border: 1px solid rgba(199, 163, 107, 0.15); */
+  border-radius: 6px;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+/* .status-item:hover {
+  transform: translateY(-2px);
+} */
+
+.status-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  transition: all 0.2s ease;
+}
+
+/* Увеличенный размер только для глазка */
+.status-icon-viewed {
+  width: 52px;
+  height: 36px;
+}
+
+/* .status-item:hover .status-icon {
+  transform: scale(1.1);
+} */
+
+.status-label {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+  text-align: center;
+}
+
+
+/* Letterboxd тема для модалки стихотворения */
+body[data-theme="letterboxd"] .poem-statuses {
+  /* background: #253544; */
+  border: none;
+}
+
+body[data-theme="letterboxd"] .status-label {
+  color: #9ab;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+  .poem-view-modal .modal-title {
+    font-size: 1.15rem;
+  }
+  
+  .poem-statuses {
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .status-icon {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .status-icon-viewed {
+    width: 48px;
+    height: 30px;
+  }
+  
+  .status-label {
+    font-size: 0.8rem;
   }
 }

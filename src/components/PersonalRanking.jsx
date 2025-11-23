@@ -12,10 +12,10 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   const [sortBy, setSortBy] = useState('overall'); // 'overall', category key or 'awards'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [expandedCards, setExpandedCards] = useState([]); // Развернутые карточки
-  const [scoreSystem, setScoreSystem] = useState('five'); // 'five' or 'hundred'
   const [battleConflict, setBattleConflict] = useState(null); // { category, poet1, poet2, isWorstConflict }
   const changedPoetRef = useRef(null); // { poetId, category } - поэт, для которого изменилась оценка
   const originalPoetIdRef = useRef(null); // ID изначального поэта (для цепочки дуэлей)
+  const scrolledToPoetRef = useRef(null); // ID поэта, к которому уже был выполнен скролл
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
   const [currentTheme, setCurrentTheme] = useState('classic'); // Текущая тема
   
@@ -31,13 +31,11 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     setCurrentTheme(theme);
   }, []);
 
-  // Функция форматирования оценки в зависимости от выбранной системы
+  // Функция форматирования общего балла (2 знака после запятой)
   const formatScore = useCallback((score) => {
-    if (scoreSystem === 'five') {
-      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
-    }
-    return Math.round(score).toString(); // 100-балльная система - целые числа
-  }, [scoreSystem]);
+    // Математическое округление (2.965 → 2.97)
+    return (Math.round(score * 100) / 100).toFixed(2);
+  }, []);
 
   const getSortedPoets = () => {
     const poetsWithScores = poets
@@ -146,9 +144,26 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
         // Проверяем, есть ли явно выбранный лидер
         const explicitLeader = categoryLeaders[raterId]?.[category];
         
-        // Если есть явный лидер И он все еще в топе - он победитель
-        if (explicitLeader && topPoets.some(p => p.id === explicitLeader)) {
-          winners[category] = [explicitLeader];
+        if (explicitLeader) {
+          // Проверяем, что у явно выбранного лидера есть оценка в этой категории
+          const leaderHasRating = poetsWithRatings.some(p => p.id === explicitLeader);
+          const leaderStillOnTop = topPoets.some(p => p.id === explicitLeader);
+          
+          // Если у лидера нет оценки ИЛИ он больше не в топе - сбрасываем его статус и назначаем нового
+          if (!leaderHasRating || !leaderStillOnTop) {
+            setCategoryLeader(raterId, category, null);
+            
+            // Автоматически назначаем нового лидера, если есть только один с максимальным баллом
+            if (topPoets.length === 1) {
+              setCategoryLeader(raterId, category, topPoets[0].id);
+              winners[category] = [topPoets[0].id];
+            } else {
+              winners[category] = [];
+            }
+          } else {
+            // Если есть явный лидер И он все еще в топе - он победитель
+            winners[category] = [explicitLeader];
+          }
         }
         // Если только один поэт с максимальным рейтингом - он победитель
         else if (topPoets.length === 1) {
@@ -175,9 +190,26 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       // Проверяем, есть ли явно выбранный лидер
       const overallExplicitLeader = categoryLeaders[raterId]?.['overall'];
       
-      // Если есть явный лидер И он все еще в топе - он победитель
-      if (overallExplicitLeader && topPoets.some(p => p.id === overallExplicitLeader)) {
-        winners.overall = [overallExplicitLeader];
+      if (overallExplicitLeader) {
+        // Проверяем, что у явно выбранного лидера есть оценки
+        const leaderHasScores = poetsWithScores.some(p => p.id === overallExplicitLeader);
+        const leaderStillOnTop = topPoets.some(p => p.id === overallExplicitLeader);
+        
+        // Если у лидера нет оценок ИЛИ он больше не в топе - сбрасываем его статус и назначаем нового
+        if (!leaderHasScores || !leaderStillOnTop) {
+          setCategoryLeader(raterId, 'overall', null);
+          
+          // Автоматически назначаем нового лидера, если есть только один с максимальным баллом
+          if (topPoets.length === 1) {
+            setCategoryLeader(raterId, 'overall', topPoets[0].id);
+            winners.overall = [topPoets[0].id];
+          } else {
+            winners.overall = [];
+          }
+        } else {
+          // Если есть явный лидер И он все еще в топе - он победитель
+          winners.overall = [overallExplicitLeader];
+        }
       }
       // Если только один поэт с максимальным баллом - он победитель
       else if (topPoets.length === 1) {
@@ -191,7 +223,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     }
     
     return winners;
-  }, [poets, ratings, categoryLeaders, raterId, calculateScore]);
+  }, [poets, ratings, categoryLeaders, raterId, calculateScore, setCategoryLeader]);
 
   // Определяем худшего по общему баллу
   const categoryLosers = useMemo(() => {
@@ -215,9 +247,21 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       const explicitLoser = categoryLeaders[raterId]?.['overall_worst'];
       
       if (explicitLoser) {
-        // Если есть явно выбранный худший и он все еще среди худших - он и есть худший
+        // Проверяем, что у явно выбранного худшего есть оценки
+        const loserHasScores = poetsWithScores.some(p => p.id === explicitLoser);
         const loserStillAtBottom = lowestPoets.some(p => p.id === explicitLoser);
-        if (loserStillAtBottom) {
+        
+        // Если у худшего нет оценок ИЛИ он больше не в низу - сбрасываем его статус и назначаем нового
+        if (!loserHasScores || !loserStillAtBottom) {
+          setCategoryLeader(raterId, 'overall_worst', null);
+          
+          // Автоматически назначаем нового худшего, если есть только один с минимальным баллом
+          if (lowestPoets.length === 1) {
+            setCategoryLeader(raterId, 'overall_worst', lowestPoets[0].id);
+            losers.overall = [lowestPoets[0].id];
+          }
+        } else {
+          // Если есть явно выбранный худший, у него есть оценки, и он все еще среди худших - он и есть худший
           losers.overall = [explicitLoser];
         }
       } else if (lowestPoets.length === 1) {
@@ -227,7 +271,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     }
     
     return losers;
-  }, [poets, raterId, calculateScore, categoryLeaders]);
+  }, [poets, raterId, calculateScore, categoryLeaders, setCategoryLeader]);
   
   // Проверка дуэли для изменённого поэта
   const checkDuel = useCallback((poetId, changedCategory) => {
@@ -408,11 +452,108 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     // Если балл поэта > minOverallScore → он не претендует на "худшее", ничего не делаем
   }, [poets, ratings, raterId, categoryLeaders, setCategoryLeader, calculateScore]);
   
+  // Функция пересчета лидера для категории/награды
+  const recalculateLeader = useCallback((awardKey) => {
+    if (awardKey === 'overall') {
+      // Пересчитываем лучшего поэта
+      const poetsWithScores = poets.map(poet => ({
+        id: poet.id,
+        score: calculateScore(raterId, poet.id)
+      })).filter(p => p.score > 0);
+      
+      if (poetsWithScores.length > 0) {
+        poetsWithScores.sort((a, b) => b.score - a.score);
+        const topScore = poetsWithScores[0].score;
+        const topPoets = poetsWithScores.filter(p => Math.abs(p.score - topScore) < 0.01);
+        
+        if (topPoets.length === 1) {
+          setCategoryLeader(raterId, 'overall', topPoets[0].id);
+        } else {
+          setCategoryLeader(raterId, 'overall', null);
+        }
+      } else {
+        setCategoryLeader(raterId, 'overall', null);
+      }
+    } else if (awardKey === 'overall_worst') {
+      // Пересчитываем худшего поэта
+      const poetsWithScores = poets.map(poet => ({
+        id: poet.id,
+        score: calculateScore(raterId, poet.id)
+      })).filter(p => p.score > 0);
+      
+      if (poetsWithScores.length > 5) {
+        poetsWithScores.sort((a, b) => a.score - b.score);
+        const lowestScore = poetsWithScores[0].score;
+        const lowestPoets = poetsWithScores.filter(p => Math.abs(p.score - lowestScore) < 0.01);
+        
+        if (lowestPoets.length === 1) {
+          setCategoryLeader(raterId, 'overall_worst', lowestPoets[0].id);
+        } else {
+          setCategoryLeader(raterId, 'overall_worst', null);
+        }
+      } else {
+        setCategoryLeader(raterId, 'overall_worst', null);
+      }
+    } else {
+      // Пересчитываем категорийную награду
+      const poetsWithRatings = poets.map(poet => ({
+        id: poet.id,
+        rating: ratings[raterId]?.[poet.id]?.[awardKey] || 0
+      })).filter(p => p.rating > 0);
+      
+      if (poetsWithRatings.length > 0) {
+        poetsWithRatings.sort((a, b) => b.rating - a.rating);
+        const topRating = poetsWithRatings[0].rating;
+        const topPoets = poetsWithRatings.filter(p => Math.abs(p.rating - topRating) < 0.01);
+        
+        if (topPoets.length === 1) {
+          setCategoryLeader(raterId, awardKey, topPoets[0].id);
+        } else {
+          setCategoryLeader(raterId, awardKey, null);
+        }
+      } else {
+        setCategoryLeader(raterId, awardKey, null);
+      }
+    }
+  }, [poets, ratings, raterId, calculateScore, setCategoryLeader]);
+
   // Обработчик изменения рейтинга
   const handleRatingChange = (poetId, category, newValue) => {
+    const oldValue = ratings[raterId]?.[poetId]?.[category] || 0;
+    
     updateRating(raterId, poetId, category, newValue);
     changedPoetRef.current = { poetId, category };
     originalPoetIdRef.current = poetId; // Сохраняем изначального поэта
+    
+    // Если оценка уменьшилась или была сброшена, проверяем награды этого поэта
+    if (newValue < oldValue || newValue === 0) {
+      // Проверяем категорийную награду
+      const categoryLeader = categoryLeaders[raterId]?.[category];
+      if (categoryLeader === poetId) {
+        // Этот поэт был лидером категории - пересчитываем
+        setTimeout(() => {
+          recalculateLeader(category);
+        }, 100);
+      }
+      
+      // Проверяем общую награду (лучший поэт)
+      const overallLeader = categoryLeaders[raterId]?.['overall'];
+      if (overallLeader === poetId) {
+        // Этот поэт был лучшим - пересчитываем
+        setTimeout(() => {
+          recalculateLeader('overall');
+        }, 100);
+      }
+      
+      // Проверяем худшего поэта
+      const worstPoet = categoryLeaders[raterId]?.['overall_worst'];
+      if (worstPoet === poetId) {
+        // Этот поэт был худшим - пересчитываем
+        setTimeout(() => {
+          recalculateLeader('overall_worst');
+        }, 100);
+      }
+    }
   };
   
   // Проверяем дуэли после обновления рейтингов
@@ -458,6 +599,11 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     if (location.state?.poetId && poets.length > 0) {
       const poetId = location.state.poetId;
       
+      // Проверяем, не выполняли ли мы уже скролл для этого поэта
+      if (scrolledToPoetRef.current === poetId) {
+        return;
+      }
+      
       // Если сортировка по общему баллу - разворачиваем карточку
       if (sortBy === 'overall') {
         setExpandedCards([poetId]);
@@ -470,6 +616,9 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 300);
+      
+      // Сохраняем ID поэта, к которому выполнили скролл
+      scrolledToPoetRef.current = poetId;
       
       // Очищаем state после обработки
       window.history.replaceState({}, document.title);
@@ -487,8 +636,20 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   const renderWinnerBadges = (poetId) => {
     const badges = [];
     
-    // Всегда показываем все награды, независимо от выбранной категории
-    const categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+    // Определяем, какие награды показывать в зависимости от выбранной категории
+    let categoriesToShow = [];
+    
+    if (sortBy === 'overall') {
+      // На вкладке "Общий балл" показываем ВСЕ награды
+      categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+    } else if (sortBy === 'awards') {
+      // На вкладке "Награды" не показываем награды в карточках
+      // (там своя структура отображения)
+      categoriesToShow = [];
+    } else {
+      // На вкладке конкретной категории показываем ТОЛЬКО награду этой категории
+      categoriesToShow = [sortBy];
+    }
     
     // Награды за 1-е место (лучший)
     categoriesToShow.forEach(category => {
@@ -505,8 +666,8 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       }
     });
     
-    // Награда за последнее место (худший) - только по общему баллу
-    if (categoryLosers.overall && categoryLosers.overall.includes(poetId)) {
+    // Награда за последнее место (худший) - показываем только на вкладке "Общий балл"
+    if (sortBy === 'overall' && categoryLosers.overall && categoryLosers.overall.includes(poetId)) {
       badges.push(
           <img 
           key="overall-last"
@@ -622,68 +783,58 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           Награды
         </button>
         
-        {sortBy === 'overall' && (
-          <div className="score-system-toggle-inline">
-            <label className="toggle-label">
-              <input 
-                type="checkbox" 
-                checked={scoreSystem === 'hundred'}
-                onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
-                className="toggle-checkbox"
-              />
-              <span className="toggle-switch"></span>
-              <span className="toggle-text">5⇄100</span>
-            </label>
-          </div>
-        )}
       </div>
 
       {sortBy === 'awards' ? (
         // Вкладка "Награды" - показываем награды с победителями
         <div className="awards-list-new">
-          {[
-            { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
-            { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-            { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
-            { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
-            { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
-            { key: 'last', name: 'Худший поэт', badge: 'last.png' }
-          ].map(award => {
-            // Найти победителей для этой награды
-            const winners = award.key === 'last'
-              ? (categoryLosers.overall || [])
-              : (categoryWinners[award.key] || []);
-            
-            if (winners.length === 0) return null;
-            
-            return (
-              <div key={award.key} className="award-row">
-                <div className="award-badge-large">
-                  <img src={`/images/badges/${award.badge}`} alt={award.name} />
-                  <span className="award-name">{award.name}</span>
-                </div>
-                <div className="award-winners">
-                  {winners.map(poetId => {
-                    const poet = poets.find(p => p.id === poetId);
-                    if (!poet) return null;
-                    
-                    return (
-                      <Link key={poetId} to={`/poet/${poetId}`} className="award-winner-card">
-                        <div className="award-winner-image">
+          <div className="award-winners">
+            {[
+              { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
+              { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
+              { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
+              { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
+              { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
+              { key: 'last', name: 'Худший поэт', badge: 'last.png' }
+            ].map(award => {
+              // Найти победителей для этой награды
+              const winners = award.key === 'last'
+                ? (categoryLosers.overall || [])
+                : (categoryWinners[award.key] || []);
+              
+              if (winners.length === 0) return null;
+              
+              return winners.map(poetId => {
+                const poet = poets.find(p => p.id === poetId);
+                if (!poet) return null;
+                
+                return (
+                  <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
+                    <Link to={`/poet/${poetId}`} className="award-winner-card">
+                      <div className="award-winner-composition">
+                        <div className="award-badge-section">
+                          <img 
+                            src={`/images/badges/${award.badge}`} 
+                            alt={award.name}
+                            className="award-badge-large-img"
+                          />
+                        </div>
+                        <div className="award-poet-section">
                           {poet.imageUrl && (
                             <img src={poet.imageUrl} alt={poet.name} className="award-winner-avatar" />
                           )}
                         </div>
-                        <div className="award-winner-overlay">
-                          <span className="award-winner-name">{poet.name}</span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          }).filter(Boolean)}
+                      </div>
+                      <div className="award-winner-overlay">
+                        <div className="award-category-title">{award.name}</div>
+                        <div className="award-winner-name">{poet.name}</div>
+                      </div>
+                    </Link>
+                  </div>
+                );
+              });
+            }).flat().filter(Boolean)}
+          </div>
         </div>
       ) : (
       <div className="poets-ranking-list">
@@ -744,7 +895,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                 displayValue = formatScore(score);
               } else if (Object.keys(CATEGORIES).includes(sortBy)) {
                 const rating = poetRatings[sortBy] || 0;
-                displayValue = rating.toFixed(1);
+                displayValue = (Math.round(rating * 10) / 10).toFixed(1);
               } else {
                 // Для сортировки по дате или имени показываем общий балл
                 displayValue = formatScore(score);
@@ -848,7 +999,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                           <StarRating
                             value={rating}
                             onChange={(value) => handleRatingChange(poet.id, key, value)}
-                            readOnly={currentUser !== raterId}
+                            readOnly={true}
                           />
                         </div>
                       );

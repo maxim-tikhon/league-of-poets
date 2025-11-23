@@ -2,6 +2,44 @@
   display: flex;
   align-items: center;
   gap: 0.1rem;
+  position: relative;
+}
+
+.clear-rating-container {
+  position: absolute;
+  left: -2rem;
+  top: 0;
+  bottom: 0;
+  width: 2rem;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.clear-rating-btn {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.clear-rating-btn:hover {
+  opacity: 0.7;
 }
 
 .star-wrapper {
@@ -101,6 +139,10 @@
 /* Letterboxd Theme */
 body[data-theme="letterboxd"] .star-empty {
   color: #344454;
+}
+
+body[data-theme="letterboxd"] .clear-rating-btn {
+  color: #678;
 }
 
 /* body[data-theme="letterboxd"] .star-filled {

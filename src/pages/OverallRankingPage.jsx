@@ -5,6 +5,8 @@ import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import StarRating from '../components/StarRating';
 import DuelGame from '../components/DuelGame';
 import Tooltip from '../components/Tooltip';
+import { generateContent } from '../ai/gemini';
+import { generateAITiebreakerPrompt, parseAITiebreaker } from '../ai/prompts';
 import './OverallRankingPage.css';
 
 const OverallRankingPage = () => {
@@ -15,15 +17,16 @@ const OverallRankingPage = () => {
     ratings, 
     categoryLeaders: rawCategoryLeaders, 
     overallDuelWinners: rawOverallDuelWinners, 
+    aiChoiceTiebreaker,
     isLoading, 
     getOverallRankings, 
     getCategoryRankings, 
-    setOverallDuelWinner 
+    setOverallDuelWinner,
+    setAIChoiceWinner 
   } = poetsContext;
   
   const [activeTab, setActiveTab] = useState('overall'); // 'overall' or category key
   const [expandedCards, setExpandedCards] = useState(new Set()); // ID развернутых карточек для overall
-  const [scoreSystem, setScoreSystem] = useState('five'); // 'five' or 'hundred'
   const [animatingPoet, setAnimatingPoet] = useState(null); // ID поэта, который анимируется
   const [showScore, setShowScore] = useState(false); // Показывать ли балл во время анимации
   const [animationStep, setAnimationStep] = useState(0); // Текущая позиция анимирующего поэта в списке (0 = первое место, N-1 = последнее место)
@@ -32,21 +35,17 @@ const OverallRankingPage = () => {
   const animationTimeouts = useRef([]); // Массив ID таймаутов для очистки
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
   
-  // Функция форматирования индивидуальных оценок (Максим/Олег)
+  // Функция форматирования общего балла пользователя (2 знака после запятой)
   const formatScore = useCallback((score) => {
-    if (scoreSystem === 'five') {
-      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
-    }
-    return Math.round(score).toString(); // 100-балльная система - целые числа
-  }, [scoreSystem]);
+    // Математическое округление (2.965 → 2.97)
+    return (Math.round(score * 100) / 100).toFixed(2);
+  }, []);
 
-  // Функция форматирования среднего значения (всегда с десятичными)
+  // Функция форматирования среднего балла (2 знака после запятой)
   const formatAverageScore = useCallback((score) => {
-    if (scoreSystem === 'five') {
-      return (score / 20).toFixed(2); // Конвертация из 100-балльной в 5-балльную
-    }
-    return score.toFixed(1); // 100-балльная система - с одной десятичной
-  }, [scoreSystem]);
+    // Математическое округление (2.965 → 2.97)
+    return (Math.round(score * 100) / 100).toFixed(2);
+  }, []);
   
   // Получаем текущего пользователя из localStorage
   const currentUser = localStorage.getItem('currentUser');
@@ -97,6 +96,137 @@ const OverallRankingPage = () => {
       return newSet;
     });
   };
+  
+  // Подсчет баллов "Выбор читателей" для поэта
+  const calculateReadersChoiceScore = useCallback((poetId) => {
+    const poet = poets.find(p => p.id === poetId);
+    if (!poet || !poet.poems) return 0;
+    
+    const poemsArray = Object.values(poet.poems);
+    
+    let score = 0;
+    poemsArray.forEach(poem => {
+      // Просмотры: 1 балл за каждого пользователя
+      if (poem.viewed?.maxim) score += 1;
+      if (poem.viewed?.oleg) score += 1;
+      
+      // Лайки: 3 балла за каждого пользователя
+      if (poem.liked?.maxim) score += 3;
+      if (poem.liked?.oleg) score += 3;
+      
+      // Выучено: 10 баллов за каждого пользователя
+      if (poem.memorized?.maxim) score += 10;
+      if (poem.memorized?.oleg) score += 10;
+    });
+    
+    return score;
+  }, [poets]);
+  
+  // Статистика стихов поэта (для отображения)
+  const getPoemStats = useCallback((poetId) => {
+    const poet = poets.find(p => p.id === poetId);
+    if (!poet || !poet.poems) return { viewed: 0, liked: 0, memorized: 0 };
+    
+    const poemsArray = Object.values(poet.poems);
+    
+    return {
+      viewed: poemsArray.reduce((sum, p) => sum + (p.viewed?.maxim ? 1 : 0) + (p.viewed?.oleg ? 1 : 0), 0),
+      liked: poemsArray.reduce((sum, p) => sum + (p.liked?.maxim ? 1 : 0) + (p.liked?.oleg ? 1 : 0), 0),
+      memorized: poemsArray.reduce((sum, p) => sum + (p.memorized?.maxim ? 1 : 0) + (p.memorized?.oleg ? 1 : 0), 0)
+    };
+  }, [poets]);
+  
+  // Подсчет AI-рейтинга для поэта (средневзвешенное по категориям)
+  const calculateAIScore = useCallback((poetId) => {
+    const poet = poets.find(p => p.id === poetId);
+    if (!poet || !poet.aiRatings) return 0;
+    
+    const aiRatings = poet.aiRatings;
+    
+    // Используем те же коэффициенты что и для обычных оценок
+    const score = 
+      (aiRatings.creativity || 0) * CATEGORIES.creativity.coefficient +
+      (aiRatings.influence || 0) * CATEGORIES.influence.coefficient +
+      (aiRatings.drama || 0) * CATEGORIES.drama.coefficient +
+      (aiRatings.beauty || 0) * CATEGORIES.beauty.coefficient;
+    
+    // Считаем сумму коэффициентов
+    const totalCoefficient = 
+      CATEGORIES.creativity.coefficient +
+      CATEGORIES.influence.coefficient +
+      CATEGORIES.drama.coefficient +
+      CATEGORIES.beauty.coefficient;
+    
+    // Возвращаем средневзвешенное
+    return totalCoefficient > 0 ? score / totalCoefficient : 0;
+  }, [poets]);
+  
+  // Функция проверки и разрешения ничьей для "Выбор ИИ"
+  const checkAIChoiceTiebreaker = useCallback(async () => {
+    // Подсчитываем AI-баллы для всех поэтов с оценками
+    const aiRankings = poets
+      .map(poet => ({
+        poet,
+        score: calculateAIScore(poet.id)
+      }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+    
+    if (aiRankings.length === 0) return;
+    
+    // Определяем топовый балл и всех поэтов с этим баллом
+    const topScore = aiRankings[0].score;
+    const topPoets = aiRankings.filter(p => Math.abs(p.score - topScore) < 0.001); // Допуск для float
+    
+    // Если только один поэт с максимальным баллом - тайбрейкер не нужен
+    if (topPoets.length === 1) {
+      // Если тайбрейкер существует, но больше не актуален - удаляем его
+      if (aiChoiceTiebreaker) {
+        await setAIChoiceWinner(null, [], 0);
+      }
+      return;
+    }
+    
+    // Есть несколько поэтов с одинаковым баллом - нужен тайбрейкер
+    const topPoetIds = topPoets.map(p => p.poet.id).sort();
+    
+    // Проверяем, нужно ли запускать новый тайбрейкер
+    const needNewTiebreaker = 
+      !aiChoiceTiebreaker || // Тайбрейкера еще нет
+      Math.abs(aiChoiceTiebreaker.topScore - topScore) > 0.001 || // Балл изменился
+      JSON.stringify(aiChoiceTiebreaker.participants.sort()) !== JSON.stringify(topPoetIds); // Состав изменился
+    
+    if (!needNewTiebreaker) return;
+    
+    // Запускаем AI-тайбрейкер
+    console.log('🤖 Запуск AI-тайбрейкера для выбора победителя среди:', topPoets.map(p => p.poet.name));
+    
+    try {
+      const prompt = generateAITiebreakerPrompt(topPoets.map(p => p.poet));
+      const response = await generateContent(prompt, 0.7); // Немного креативности для выбора
+      const winnerId = parseAITiebreaker(response, topPoets.map(p => p.poet));
+      
+      if (winnerId) {
+        console.log('✅ AI выбрал победителя:', poets.find(p => p.id === winnerId)?.name);
+        await setAIChoiceWinner(winnerId, topPoetIds, topScore);
+      } else {
+        console.warn('⚠️ AI не смог определить победителя');
+        // Используем первого в списке как fallback
+        await setAIChoiceWinner(topPoetIds[0], topPoetIds, topScore);
+      }
+    } catch (error) {
+      console.error('❌ Ошибка при запуске AI-тайбрейкера:', error);
+      // Используем первого в списке как fallback
+      await setAIChoiceWinner(topPoetIds[0], topPoetIds, topScore);
+    }
+  }, [poets, aiChoiceTiebreaker, calculateAIScore, setAIChoiceWinner]);
+  
+  // Запускаем тайбрейкер только при открытии вкладки "Выбор ИИ"
+  useEffect(() => {
+    if (activeTab === 'ai-choice' && !isLoading && poets.length > 0) {
+      checkAIChoiceTiebreaker();
+    }
+  }, [activeTab, isLoading, poets.length, checkAIChoiceTiebreaker]);
   
   // Предварительно рассчитываем все рейтинги категорий (ОПТИМИЗАЦИЯ)
   // Зависим напрямую от poets и ratings, а не от функции getCategoryRankings
@@ -643,8 +773,20 @@ const OverallRankingPage = () => {
   const renderWinnerBadges = (poetId) => {
     const badges = [];
     
-    // Всегда показываем все награды, независимо от выбранной вкладки
-    const categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+    // Определяем, какие награды показывать в зависимости от активной вкладки
+    let categoriesToShow = [];
+    
+    if (activeTab === 'overall') {
+      // На вкладке "Общий балл" показываем ВСЕ награды
+      categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+    } else if (activeTab === 'awards' || activeTab === 'readers-choice' || activeTab === 'ai-choice') {
+      // На вкладках "Награды", "Выбор читателей" и "Выбор ИИ" не показываем награды в карточках
+      // (там своя структура отображения)
+      categoriesToShow = [];
+    } else {
+      // На вкладке конкретной категории показываем ТОЛЬКО награду этой категории
+      categoriesToShow = [activeTab];
+    }
     
     // Награды за 1-е место (лучший)
     categoriesToShow.forEach(category => {
@@ -661,8 +803,64 @@ const OverallRankingPage = () => {
       }
     });
     
-    // Награда за последнее место (худший) - только по общему баллу
-    if (categoryLosers.overall && categoryLosers.overall.includes(poetId)) {
+    // Награда "Выбор читателей" - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall') {
+      const readersRankings = poets
+        .map(poet => ({
+          id: poet.id,
+          score: calculateReadersChoiceScore(poet.id)
+        }))
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+      
+      if (readersRankings.length > 0 && readersRankings[0].id === poetId) {
+        badges.push(
+          <img 
+            key="readers-choice"
+            src={`/images/badges/readers-choice.png`}
+            alt="Выбор читателей"
+            className="winner-badge"
+          />
+        );
+      }
+    }
+    
+    // Награда "Выбор ИИ" - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall') {
+      let aiWinnerId = null;
+      
+      // Если есть результат тайбрейкера - используем его
+      if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
+        aiWinnerId = aiChoiceTiebreaker.winner;
+      } else {
+        // Иначе определяем победителя по максимальному баллу
+        const aiRankings = poets
+          .map(poet => ({
+            id: poet.id,
+            score: calculateAIScore(poet.id)
+          }))
+          .filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score);
+        
+        if (aiRankings.length > 0) {
+          aiWinnerId = aiRankings[0].id;
+        }
+      }
+      
+      if (aiWinnerId === poetId) {
+        badges.push(
+          <img 
+            key="ai-choice"
+            src={`/images/badges/ai-choice.png`}
+            alt="Выбор ИИ"
+            className="winner-badge"
+          />
+        );
+      }
+    }
+    
+    // Награда за последнее место (худший) - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && categoryLosers.overall && categoryLosers.overall.includes(poetId)) {
       badges.push(
         <img 
           key="overall-last"
@@ -774,74 +972,303 @@ const OverallRankingPage = () => {
         
         {/* Вкладка "Награды" - отделена от других */}
         <button
+          className={`tab-btn tab-btn-readers ${activeTab === 'readers-choice' ? 'active' : ''}`}
+          onClick={() => setActiveTab('readers-choice')}
+        >
+          Выбор читателей
+        </button>
+        
+        <button
+          className={`tab-btn ${activeTab === 'ai-choice' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ai-choice')}
+        >
+          Выбор ИИ
+        </button>
+        
+        <button
           className={`tab-btn tab-btn-awards ${activeTab === 'awards' ? 'active' : ''}`}
           onClick={() => setActiveTab('awards')}
         >
           Награды
         </button>
         
-        {activeTab === 'overall' && (
-          <div className="score-system-toggle-inline">
-            <label className="toggle-label">
-              <input 
-                type="checkbox" 
-                checked={scoreSystem === 'hundred'}
-                onChange={(e) => setScoreSystem(e.target.checked ? 'hundred' : 'five')}
-                className="toggle-checkbox"
-              />
-              <span className="toggle-switch"></span>
-              <span className="toggle-text">5⇄100</span>
-            </label>
-          </div>
-        )}
       </div>
 
       {activeTab === 'awards' ? (
         // Вкладка "Награды" - показываем награды с победителями
         <div className="awards-list-new">
-          {[
-            { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
-            { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-            { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
-            { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
-            { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
-            { key: 'last', name: 'Худший поэт', badge: 'last.png' }
-          ].map(award => {
-            // Найти победителей для этой награды
-            const winners = award.key === 'last'
-              ? (categoryLosers.overall || [])
-              : (categoryWinners[award.key] || []);
-            
-            if (winners.length === 0) return null;
-            
-            return (
-              <div key={award.key} className="award-row">
-                <div className="award-badge-large">
-                  <img src={`/images/badges/${award.badge}`} alt={award.name} />
-                  <span className="award-name">{award.name}</span>
-                </div>
-                <div className="award-winners">
-                  {winners.map(poetId => {
-                    const poet = poets.find(p => p.id === poetId);
-                    if (!poet) return null;
-                    
-                    return (
-                      <Link key={poetId} to={`/poet/${poetId}`} className="award-winner-card">
-                        <div className="award-winner-image">
+          <div className="award-winners">
+            {[
+              { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
+              { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
+              { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
+              { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
+              { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
+              { key: 'readers-choice', name: 'Выбор читателей', badge: 'readers-choice.png' },
+              { key: 'ai-choice', name: 'Выбор ИИ', badge: 'ai-choice.png' },
+              { key: 'last', name: 'Худший поэт', badge: 'last.png' }
+            ].map(award => {
+              // Найти победителей для этой награды
+              let winners = [];
+              
+              if (award.key === 'last') {
+                winners = categoryLosers.overall || [];
+              } else if (award.key === 'readers-choice') {
+                // Для "Выбор читателей" - находим поэта с максимальным баллом
+                const readersRankings = poets
+                  .map(poet => ({
+                    id: poet.id,
+                    score: calculateReadersChoiceScore(poet.id)
+                  }))
+                  .filter(item => item.score > 0)
+                  .sort((a, b) => b.score - a.score);
+                
+                winners = readersRankings.length > 0 ? [readersRankings[0].id] : [];
+              } else if (award.key === 'ai-choice') {
+                // Для "Выбор ИИ" - используем результат тайбрейкера, если есть
+                if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
+                  winners = [aiChoiceTiebreaker.winner];
+                } else {
+                  // Иначе находим поэта с максимальным AI-баллом
+                  const aiRankings = poets
+                    .map(poet => ({
+                      id: poet.id,
+                      score: calculateAIScore(poet.id)
+                    }))
+                    .filter(item => item.score > 0)
+                    .sort((a, b) => b.score - a.score);
+                  
+                  winners = aiRankings.length > 0 ? [aiRankings[0].id] : [];
+                }
+              } else {
+                winners = categoryWinners[award.key] || [];
+              }
+              
+              if (winners.length === 0) return null;
+              
+              return winners.map(poetId => {
+                const poet = poets.find(p => p.id === poetId);
+                if (!poet) return null;
+                
+                return (
+                  <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
+                    <Link to={`/poet/${poetId}`} className="award-winner-card">
+                      <div className="award-winner-composition">
+                        <div className="award-badge-section">
+                          <img 
+                            src={`/images/badges/${award.badge}`} 
+                            alt={award.name}
+                            className="award-badge-large-img"
+                          />
+                        </div>
+                        <div className="award-poet-section">
                           {poet.imageUrl && (
                             <img src={poet.imageUrl} alt={poet.name} className="award-winner-avatar" />
                           )}
                         </div>
-                        <div className="award-winner-overlay">
-                          <span className="award-winner-name">{poet.name}</span>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                      </div>
+                      <div className="award-winner-overlay">
+                        <div className="award-category-title">{award.name}</div>
+                        <div className="award-winner-name">{poet.name}</div>
+                      </div>
+                    </Link>
+                  </div>
+                );
+              });
+            }).flat().filter(Boolean)}
+          </div>
+        </div>
+      ) : activeTab === 'readers-choice' ? (
+        // Вкладка "Выбор читателей" - показываем рейтинг по взаимодействию со стихами
+        <div className="category-list">
+          {(() => {
+            // Подсчитываем баллы для всех поэтов
+            const readersRankings = poets
+              .map(poet => ({
+                poet,
+                score: calculateReadersChoiceScore(poet.id),
+                stats: getPoemStats(poet.id)
+              }))
+              .filter(item => item.score > 0) // Только поэты с баллами
+              .sort((a, b) => b.score - a.score); // Сортируем по убыванию
+            
+            if (readersRankings.length === 0) {
+              return (
+                <div className="empty-state">
+                  <p>Пока нет взаимодействий со стихами</p>
                 </div>
-              </div>
-            );
-          }).filter(Boolean)}
+              );
+            }
+            
+            // Определяем победителя (первый в списке)
+            const winnerId = readersRankings[0].poet.id;
+            
+            return readersRankings.map((item, index) => {
+              const { poet, score, stats } = item;
+              const rank = index + 1;
+              const isWinner = index === 0;
+              
+              return (
+                <div 
+                  key={poet.id}
+                  className="category-rank-card compact"
+                >
+                  <span className="category-rank-number compact">#{rank}</span>
+                  
+                  {poet.imageUrl && (
+                    <div className="overall-avatar compact">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
+                  )}
+                  
+                  <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
+                    <h3 className="category-poet-name compact">{poet.name}</h3>
+                  </Link>
+                  
+                  <div className="overall-card-right-section">
+                    {isWinner && (
+                      <div className="winner-badges">
+                        <img 
+                          src="/images/badges/readers-choice.png" 
+                          alt="Выбор читателей"
+                          className="winner-badge"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="scores-compact-row">
+                      {/* Статистика стихов */}
+                      <div className="readers-stats-inline">
+                        <div className="readers-stat-mini">
+                          <img src="/images/viewed.png" alt="Просмотрено" />
+                          <span>{stats.viewed}</span>
+                        </div>
+                        <div className="readers-stat-mini">
+                          <img src="/images/like.png" alt="Лайков" />
+                          <span>{stats.liked}</span>
+                        </div>
+                        <div className="readers-stat-mini">
+                          <img src="/images/memorized.png" alt="Выучено" />
+                          <span>{stats.memorized}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Голубой блок с баллами */}
+                      <div className="score-compact-item average">
+                        <span className="score-compact-value">{score}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      ) : activeTab === 'ai-choice' ? (
+        // Вкладка "Выбор ИИ" - показываем рейтинг по AI-оценкам
+        <div className="category-list">
+          {(() => {
+            // Подсчитываем AI-баллы для всех поэтов
+            let aiRankings = poets
+              .map(poet => {
+                const aiScore = calculateAIScore(poet.id);
+                return {
+                  poet,
+                  aiScore,
+                  aiRatings: poet.aiRatings || {}
+                };
+              })
+              .filter(item => item.aiScore > 0) // Только поэты с AI-оценками
+              .sort((a, b) => b.aiScore - a.aiScore); // Сортируем по убыванию
+            
+            if (aiRankings.length === 0) {
+              return (
+                <div className="empty-state">
+                  <p>Пока нет AI-оценок</p>
+                </div>
+              );
+            }
+            
+            // Определяем победителя - используем результат тайбрейкера, если есть
+            let winnerId = null;
+            if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
+              winnerId = aiChoiceTiebreaker.winner;
+              
+              // Если есть тайбрейкер, перемещаем победителя на 1-е место
+              const winnerIndex = aiRankings.findIndex(item => item.poet.id === winnerId);
+              if (winnerIndex > 0) {
+                // Извлекаем победителя и ставим его первым
+                const winner = aiRankings.splice(winnerIndex, 1)[0];
+                aiRankings.unshift(winner);
+              }
+            } else {
+              winnerId = aiRankings[0].poet.id;
+            }
+            
+            return aiRankings.map((item, index) => {
+              const { poet, aiScore, aiRatings } = item;
+              const rank = index + 1;
+              const isWinner = poet.id === winnerId;
+              
+              return (
+                <div 
+                  key={poet.id}
+                  className="category-rank-card compact"
+                >
+                  <span className="category-rank-number compact">#{rank}</span>
+                  
+                  {poet.imageUrl && (
+                    <div className="overall-avatar compact">
+                      <img src={poet.imageUrl} alt={poet.name} />
+                    </div>
+                  )}
+                  
+                  <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
+                    <h3 className="category-poet-name compact">{poet.name}</h3>
+                  </Link>
+                  
+                  <div className="overall-card-right-section">
+                    {isWinner && (
+                      <div className="winner-badges">
+                        <img 
+                          src="/images/badges/ai-choice.png" 
+                          alt="Выбор ИИ"
+                          className="winner-badge"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="scores-compact-row">
+                      {/* AI-оценки по категориям */}
+                      <div className="ai-ratings-inline">
+                        <div className="ai-rating-mini" title="Творчество">
+                          <span className="ai-rating-label">Т:</span>
+                          <span className="ai-rating-value">{aiRatings.creativity?.toFixed(1) || '—'}</span>
+                        </div>
+                        <div className="ai-rating-mini" title="Влияние">
+                          <span className="ai-rating-label">В:</span>
+                          <span className="ai-rating-value">{aiRatings.influence?.toFixed(1) || '—'}</span>
+                        </div>
+                        <div className="ai-rating-mini" title="Драма">
+                          <span className="ai-rating-label">Д:</span>
+                          <span className="ai-rating-value">{aiRatings.drama?.toFixed(1) || '—'}</span>
+                        </div>
+                        <div className="ai-rating-mini" title="Красота">
+                          <span className="ai-rating-label">К:</span>
+                          <span className="ai-rating-value">{aiRatings.beauty?.toFixed(1) || '—'}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Голубой блок со средним AI-баллом */}
+                      <div className="score-compact-item average">
+                        <span className="score-compact-value">{aiScore.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       ) : activeTab === 'overall' ? (
         <div className="overall-list">

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePoets } from '../context/PoetsContext';
+import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import './AwardsPage.css';
 
 const AwardsPage = () => {
@@ -10,7 +10,8 @@ const AwardsPage = () => {
     calculateScore,
     calculateAverageScore,
     categoryLeaders,
-    overallDuelWinners
+    overallDuelWinners,
+    aiChoiceTiebreaker
   } = usePoets();
   
   const navigate = useNavigate();
@@ -279,6 +280,94 @@ const AwardsPage = () => {
     return null;
   };
 
+  // Подсчет баллов "Выбор читателей" для поэта
+  const calculateReadersChoiceScore = (poetId) => {
+    const poet = poets.find(p => p.id === poetId);
+    if (!poet || !poet.poems) return 0;
+    
+    const poemsArray = Object.values(poet.poems);
+    
+    let score = 0;
+    poemsArray.forEach(poem => {
+      // Просмотры: 1 балл за каждого пользователя
+      if (poem.viewed?.maxim) score += 1;
+      if (poem.viewed?.oleg) score += 1;
+      
+      // Лайки: 3 балла за каждого пользователя
+      if (poem.liked?.maxim) score += 3;
+      if (poem.liked?.oleg) score += 3;
+      
+      // Выучено: 10 баллов за каждого пользователя
+      if (poem.memorized?.maxim) score += 10;
+      if (poem.memorized?.oleg) score += 10;
+    });
+    
+    return score;
+  };
+
+  // Получаем победителя "Выбор читателей"
+  const getReadersChoiceWinner = useMemo(() => {
+    const readersRankings = poets
+      .map(poet => ({
+        poet,
+        score: calculateReadersChoiceScore(poet.id)
+      }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+    
+    if (readersRankings.length === 0) return null;
+    
+    // Победитель - поэт с максимальным баллом
+    return readersRankings[0].poet;
+  }, [poets]);
+  
+  // Подсчет AI-рейтинга для поэта (используем те же коэффициенты из CATEGORIES)
+  const calculateAIScore = (poetId) => {
+    const poet = poets.find(p => p.id === poetId);
+    if (!poet || !poet.aiRatings) return 0;
+    
+    const aiRatings = poet.aiRatings;
+    
+    // Используем те же коэффициенты что и для обычных оценок (импортируются из контекста)
+    const score = 
+      (aiRatings.creativity || 0) * CATEGORIES.creativity.coefficient +
+      (aiRatings.influence || 0) * CATEGORIES.influence.coefficient +
+      (aiRatings.drama || 0) * CATEGORIES.drama.coefficient +
+      (aiRatings.beauty || 0) * CATEGORIES.beauty.coefficient;
+    
+    // Считаем сумму коэффициентов
+    const totalCoefficient = 
+      CATEGORIES.creativity.coefficient +
+      CATEGORIES.influence.coefficient +
+      CATEGORIES.drama.coefficient +
+      CATEGORIES.beauty.coefficient;
+    
+    // Возвращаем средневзвешенное (в 5-балльной системе)
+    return totalCoefficient > 0 ? score / totalCoefficient : 0;
+  };
+  
+  // Получаем победителя "Выбор ИИ"
+  const getAIChoiceWinner = useMemo(() => {
+    // Если есть результат тайбрейкера - используем его
+    if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
+      return getPoetById(aiChoiceTiebreaker.winner);
+    }
+    
+    // Иначе определяем по максимальному AI-баллу
+    const aiRankings = poets
+      .map(poet => ({
+        poet,
+        score: calculateAIScore(poet.id)
+      }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+    
+    if (aiRankings.length === 0) return null;
+    
+    // Победитель - поэт с максимальным AI-баллом
+    return aiRankings[0].poet;
+  }, [poets, aiChoiceTiebreaker]);
+
   // Данные для таблицы наград (в нужном порядке)
   const awardsData = useMemo(() => [
     {
@@ -322,6 +411,22 @@ const AwardsPage = () => {
       oleg: getPersonalCategoryLeader('oleg', 'beauty')
     },
     {
+      id: 'readers-choice',
+      title: 'Выбор читателей',
+      icon: '/images/badges/readers-choice.png',
+      overall: getReadersChoiceWinner,
+      maxim: null, // Эта награда только для общего рейтинга
+      oleg: null   // Эта награда только для общего рейтинга
+    },
+    {
+      id: 'ai-choice',
+      title: 'Выбор ИИ',
+      icon: '/images/badges/ai-choice.png',
+      overall: getAIChoiceWinner,
+      maxim: null, // Эта награда только для общего рейтинга
+      oleg: null   // Эта награда только для общего рейтинга
+    },
+    {
       id: 'worst',
       title: 'Худший поэт',
       icon: '/images/badges/last.png',
@@ -329,7 +434,7 @@ const AwardsPage = () => {
       maxim: getPersonalWorstPoet('maxim'),
       oleg: getPersonalWorstPoet('oleg')
     }
-  ], [getBestOverallPoet, getWorstOverallPoet, poets, ratings, categoryLeaders]);
+  ], [getBestOverallPoet, getWorstOverallPoet, getReadersChoiceWinner, getAIChoiceWinner, poets, ratings, categoryLeaders]);
 
   // Рендер карточки победителя
   const renderWinner = (poet) => {

@@ -3,10 +3,18 @@ import './StarRating.css';
 
 const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
   const [hoverValue, setHoverValue] = React.useState(null);
+  const [isHoveringClearArea, setIsHoveringClearArea] = React.useState(false);
 
   const handleClick = (rating) => {
     if (!readOnly && onChange) {
       onChange(rating);
+    }
+  };
+
+  const handleClearRating = () => {
+    if (!readOnly && onChange) {
+      onChange(0);
+      setIsHoveringClearArea(false);
     }
   };
 
@@ -19,6 +27,18 @@ const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
   const handleMouseLeave = () => {
     if (!readOnly) {
       setHoverValue(null);
+    }
+  };
+
+  const handleClearAreaMouseEnter = () => {
+    if (!readOnly) {
+      setIsHoveringClearArea(true);
+    }
+  };
+
+  const handleClearAreaMouseLeave = () => {
+    if (!readOnly) {
+      setIsHoveringClearArea(false);
     }
   };
 
@@ -63,6 +83,29 @@ const StarRating = ({ value, onChange, readOnly = false, maxRating = 5 }) => {
 
   return (
     <div className="star-rating" onMouseLeave={handleMouseLeave}>
+      {!readOnly && value > 0 && (
+        <div 
+          className="clear-rating-container"
+          onMouseEnter={handleClearAreaMouseEnter}
+          onMouseLeave={handleClearAreaMouseLeave}
+        >
+          {isHoveringClearArea && (
+            <button
+              className="clear-rating-btn"
+              onClick={handleClearRating}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClearRating();
+              }}
+              title="Сбросить оценку"
+              type="button"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
       {Array.from({ length: maxRating }, (_, i) => renderStar(i))}
       {/* <span className="rating-value">{value.toFixed(1)}</span> */}
     </div>

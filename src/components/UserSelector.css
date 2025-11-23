@@ -51,7 +51,7 @@
 
 .user-selector-title {
   font-size: 2rem;
-  color: var(--gold);
+  color: white;
   margin: 0;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -78,6 +78,7 @@
   justify-content: center;
   padding: 1.5rem 1rem;
   background: white;
+  /* border: 2px solid rgba(0, 0, 0, 0.1); */
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -89,13 +90,17 @@
 }
 
 .user-btn:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */
+  /* border-color: rgba(0, 172, 28, 0.3); */
+  /* transform: translateY(-2px); */
 }
 
 .user-btn.selected {
-  background: var(--ink);
+  background: #00ac1c;
   color: white;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  /* border-color: #00ac1c; */
+  /* box-shadow: 0 4px 20px rgba(0, 172, 28, 0.4); */
+  /* transform: scale(1.03); */
 }
 
 .user-name {
@@ -122,8 +127,9 @@
 }
 
 .confirm-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
+  background: #3a5a3d;
 }
 
 @media (max-width: 768px) {
@@ -156,6 +162,24 @@ body[data-theme="letterboxd"] .user-selector-modal {
 
 body[data-theme="letterboxd"] .user-btn {
   background: #14181c url(/images/content-bg.png) 0 -1px repeat-x;
+  border-color: #456;
+}
+
+/* body[data-theme="letterboxd"] .user-btn:hover {
+  border-color: rgba(0, 172, 28, 0.5);
+} */
+
+body[data-theme="letterboxd"] .user-btn.selected {
+  /* background: #00ac1c; */
+  color: white;
+  background: rgba(255, 144, 16, 0.15);
+  /* box-shadow: 0 4px 20px rgba(0, 172, 28, 0.4); */
+  /* transform: scale(1.02); */
+}
+
+body[data-theme="letterboxd"] .user-btn.selected:hover {
+  /* background: #00ac1c; */
+  /* box-shadow: 0 6px 24px rgba(0, 172, 28, 0.5); */
 }
 
 body[data-theme="letterboxd"] .confirm-btn {

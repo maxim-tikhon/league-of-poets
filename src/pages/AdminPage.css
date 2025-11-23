@@ -1,0 +1,1018 @@
+/* === Страница админки === */
+
+.admin-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-header {
+  margin-bottom: 3rem;
+}
+
+.admin-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.admin-header h1 {
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-backup {
+  background: transparent;
+  color: var(--gold);
+  border: 2px solid rgba(199, 163, 107, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-backup:hover:not(:disabled) {
+  background: rgba(199, 163, 107, 0.08);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.btn-backup:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-export {
+  color: var(--ink);
+}
+
+.btn-export:hover:not(:disabled) {
+  color: var(--gold);
+}
+
+.btn-import {
+  color: var(--ink);
+}
+
+.btn-import:hover {
+  color: var(--gold);
+}
+
+.btn-delete-all {
+  background: transparent;
+  color: var(--burgundy);
+  border: 2px solid rgba(139, 69, 19, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-delete-all:hover:not(:disabled) {
+  background: rgba(139, 69, 19, 0.05);
+  border-color: var(--burgundy);
+  transform: translateY(-1px);
+}
+
+.btn-delete-all:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-subtitle {
+  font-size: 1.1rem;
+  color: var(--ink-light);
+  font-weight: 400;
+  margin: 0;
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* === Секции === */
+
+.admin-section {
+  background: var(--cream);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.poems-count {
+  font-size: 1rem;
+  color: var(--ink-light);
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--ink-light);
+  font-size: 1rem;
+  padding: 2rem;
+  margin: 0;
+}
+
+/* === Список поэтов === */
+
+.poets-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.poet-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: rgba(199, 163, 107, 0.05);
+  border: 2px solid rgba(199, 163, 107, 0.15);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.poet-item-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+}
+
+.poet-item:hover {
+  background: rgba(199, 163, 107, 0.1);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.poet-item.active {
+  background: rgba(199, 163, 107, 0.15);
+  border-color: var(--burgundy);
+  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+}
+
+.poet-item-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(199, 163, 107, 0.2);
+}
+
+.poet-item.active .poet-item-avatar {
+  border-color: var(--burgundy);
+}
+
+.poet-item-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: center;
+}
+
+.poet-item-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  /* gap: 0.25rem; */
+}
+
+.btn-edit-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.btn-edit-icon:hover {
+  opacity: 1;
+  background: rgba(199, 163, 107, 0.1);
+  transform: scale(1.1);
+}
+
+/* === Список стихотворений === */
+
+.poems-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.poem-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(199, 163, 107, 0.05);
+  border: 1px solid rgba(199, 163, 107, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.poem-item:hover {
+  background: rgba(199, 163, 107, 0.1);
+  border-color: var(--gold);
+  transform: translateX(4px);
+}
+
+.poem-item-title {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink);
+  flex: 1;
+}
+
+.poem-item-date {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+/* === Модалка редактирования === */
+
+.admin-edit-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.admin-edit-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Действия в модалке админки */
+.admin-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.btn-save-poem {
+  flex: 1;
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-poem:hover {
+  background: var(--burgundy);
+  color: var(--cream);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
+}
+
+.btn-delete-poem {
+  flex: 1;
+  background: transparent;
+  color: var(--burgundy);
+  border: 1px solid rgba(139, 69, 19, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-poem:hover {
+  background: rgba(139, 69, 19, 0.05);
+  border-color: var(--burgundy);
+}
+
+.delete-confirm-text {
+  flex: 1 0 100%;
+  text-align: center;
+  color: var(--burgundy);
+  font-weight: 500;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.btn-confirm-delete {
+  flex: 1;
+  background: var(--burgundy);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-delete:hover {
+  background: #6B2E0D;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+.btn-cancel-delete {
+  flex: 1;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-delete:hover {
+  background: rgba(199, 163, 107, 0.1);
+  border-color: var(--gold);
+}
+
+/* === Модалка удаления всех данных === */
+
+.delete-all-modal {
+  max-width: 550px;
+  width: 90%;
+}
+
+.delete-all-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.delete-all-warning {
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.delete-all-list {
+  list-style: none;
+  padding: 1rem 1.5rem;
+  margin: 0;
+  background: rgba(139, 69, 19, 0.05);
+  border-left: 3px solid var(--burgundy);
+  border-radius: 4px;
+}
+
+.delete-all-list li {
+  font-size: 0.95rem;
+  color: var(--ink);
+  padding: 0.35rem 0;
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.delete-all-list li::before {
+  content: '✕';
+  position: absolute;
+  left: 0;
+  color: var(--burgundy);
+  font-weight: 700;
+}
+
+.delete-all-warning-final {
+  font-size: 1.05rem;
+  color: var(--burgundy);
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+  padding: 1rem;
+  background: rgba(139, 69, 19, 0.08);
+  border-radius: 6px;
+}
+
+.delete-all-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.btn-confirm-delete-all {
+  flex: 1;
+  background: var(--burgundy);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-delete-all:hover {
+  background: #6B2E0D;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+/* === Модалка редактирования биографии === */
+
+.bio-modal {
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bio-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.bio-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-generate-bio {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-generate-bio:hover:not(:disabled) {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+}
+
+.btn-generate-bio:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bio-textarea {
+  flex: 1;
+  min-height: 400px;
+  padding: 1rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.bio-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(199, 163, 107, 0.1);
+}
+
+.bio-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bio-modal-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.btn-cancel-bio,
+.btn-save-bio {
+  flex: 1;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-bio {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.3);
+}
+
+.btn-cancel-bio:hover {
+  background: rgba(199, 163, 107, 0.1);
+  border-color: var(--gold);
+}
+
+.btn-save-bio {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+}
+
+.btn-save-bio:hover:not(:disabled) {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+}
+
+.btn-save-bio:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === Letterboxd тема === */
+
+body[data-theme="letterboxd"] .admin-page {
+  background: transparent;
+}
+
+body[data-theme="letterboxd"] .admin-header h1 {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .admin-subtitle {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .admin-section {
+  background: #14181c;
+  border: 1px solid #456;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="letterboxd"] .section-title {
+  color: #e5e5e5;
+  border-bottom-color: #456;
+}
+
+body[data-theme="letterboxd"] .poems-count {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .empty-message {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .poet-item {
+  background: #253544;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .poet-item:hover {
+  background: #2c3a4a;
+  border-color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .poet-item.active {
+  background: #2c3a4a;
+  border-color: #00ac1c;
+  box-shadow: 0 0 0 2px rgba(0, 172, 28, 0.2);
+}
+
+body[data-theme="letterboxd"] .poet-item-avatar {
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .poet-item.active .poet-item-avatar {
+  border-color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .poet-item-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .poem-item {
+  background: #253544;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .poem-item:hover {
+  background: #2c3a4a;
+  border-color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .poem-item-title {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .poem-item-date {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .btn-backup {
+  color: #9ab;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-backup:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #678;
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .btn-export {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .btn-export:hover:not(:disabled) {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .btn-import {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .btn-import:hover {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .btn-delete-all {
+  color: #E50914;
+  border-color: rgba(229, 9, 20, 0.3);
+}
+
+body[data-theme="letterboxd"] .btn-delete-all:hover:not(:disabled) {
+  background: rgba(229, 9, 20, 0.05);
+  border-color: #E50914;
+}
+
+body[data-theme="letterboxd"] .delete-all-warning,
+body[data-theme="letterboxd"] .delete-all-list li {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .delete-all-list {
+  background: rgba(229, 9, 20, 0.1);
+  border-left-color: #E50914;
+}
+
+body[data-theme="letterboxd"] .delete-all-list li::before {
+  color: #E50914;
+}
+
+body[data-theme="letterboxd"] .delete-all-warning-final {
+  color: #ff6b6b;
+  background: rgba(229, 9, 20, 0.15);
+}
+
+body[data-theme="letterboxd"] .delete-all-actions {
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-confirm-delete-all {
+  background: #E50914;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-confirm-delete-all:hover {
+  background: rgba(229, 9, 20, 0.9);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+body[data-theme="letterboxd"] .admin-actions {
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-save-poem {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-save-poem:hover {
+  background: rgba(0, 172, 28, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 172, 28, 0.3);
+}
+
+body[data-theme="letterboxd"] .btn-delete-poem {
+  color: #E50914;
+  border-color: rgba(229, 9, 20, 0.3);
+}
+
+body[data-theme="letterboxd"] .btn-delete-poem:hover {
+  background: rgba(229, 9, 20, 0.05);
+  border-color: #E50914;
+}
+
+body[data-theme="letterboxd"] .delete-confirm-text {
+  color: #E50914;
+}
+
+body[data-theme="letterboxd"] .btn-confirm-delete {
+  background: #E50914;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-confirm-delete:hover {
+  background: rgba(229, 9, 20, 0.9);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+body[data-theme="letterboxd"] .btn-cancel-delete {
+  color: #e5e5e5;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-cancel-delete:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #678;
+}
+
+body[data-theme="letterboxd"] .btn-edit-icon:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="letterboxd"] .bio-modal {
+  background: #14181c url(/images/content-bg.png) 0 -1px repeat-x;
+}
+
+body[data-theme="letterboxd"] .btn-generate-bio {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-generate-bio:hover:not(:disabled) {
+  background: #009d1a;
+}
+
+body[data-theme="letterboxd"] .bio-textarea {
+  background: #253544;
+  color: #e5e5e5;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .bio-textarea:focus {
+  border-color: #00ac1c;
+  box-shadow: 0 0 0 3px rgba(0, 172, 28, 0.1);
+}
+
+body[data-theme="letterboxd"] .bio-modal-actions {
+  border-top-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-cancel-bio {
+  color: #e5e5e5;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .btn-cancel-bio:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #678;
+}
+
+body[data-theme="letterboxd"] .btn-save-bio {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-save-bio:hover:not(:disabled) {
+  background: #009d1a;
+}
+
+/* === Адаптация для мобильных === */
+
+@media (max-width: 968px) {
+  .admin-page {
+    padding: 1.5rem 1rem;
+  }
+  
+  .admin-header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+  
+  .admin-header h1 {
+    font-size: 2rem;
+    text-align: center;
+  }
+  
+  .admin-header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+  
+  .btn-backup,
+  .btn-delete-all {
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    justify-content: center;
+  }
+  
+  .admin-subtitle {
+    font-size: 1rem;
+  }
+  
+  .delete-all-modal {
+    max-width: 95%;
+  }
+  
+  .delete-all-warning {
+    font-size: 0.95rem;
+  }
+  
+  .delete-all-list {
+    padding: 0.85rem 1.25rem;
+  }
+  
+  .delete-all-list li {
+    font-size: 0.9rem;
+  }
+  
+  .delete-all-warning-final {
+    font-size: 1rem;
+  }
+  
+  .delete-all-actions {
+    flex-direction: column;
+  }
+  
+  .btn-confirm-delete-all {
+    padding: 0.85rem 1.25rem;
+  }
+  
+  .admin-content {
+    gap: 2rem;
+  }
+  
+  .admin-section {
+    padding: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+  
+  .poets-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .poet-item {
+    padding: 1rem;
+  }
+  
+  .poet-item-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .poet-item-name {
+    font-size: 0.9rem;
+  }
+  
+  .poem-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+  }
+  
+  .poem-item-title {
+    font-size: 0.95rem;
+  }
+  
+  .poem-item-date {
+    font-size: 0.8rem;
+  }
+  
+  .bio-modal {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+  
+  .bio-textarea {
+    min-height: 300px;
+    font-size: 0.9rem;
+  }
+  
+  .bio-modal-actions {
+    flex-direction: column;
+  }
+  
+  .btn-cancel-bio,
+  .btn-save-bio {
+    padding: 0.85rem 1.25rem;
+  }
+}
+
+
+/* AI-рейтинг */
+.ai-ratings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.ai-rating-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-rating-item label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ai-rating-item input {
+  padding: 0.75rem;
+  border: 1px solid rgba(199, 163, 107, 0.3);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: var(--cream);
+  color: var(--ink);
+  transition: border-color 0.2s ease;
+}
+
+.ai-rating-item input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.ai-rating-item input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Letterboxd theme */
+body[data-theme="letterboxd"] .ai-rating-item label {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .ai-rating-item input {
+  background: #1a1a1a;
+  border-color: #456;
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .ai-rating-item input:focus {
+  border-color: #00ac1c;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ai-ratings-grid {
+    grid-template-columns: 1fr;
+  }
+}

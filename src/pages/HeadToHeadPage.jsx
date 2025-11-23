@@ -37,8 +37,8 @@ const HeadToHeadPage = () => {
       olegTotal += olegScore;
       totalDifference += absDifference;
 
-      if (absDifference <= 10) agreementCount++; // 10 баллов = 0.5 в 5-балльной
-      if (absDifference >= 40) disagreementCount++; // 40 баллов = 2.0 в 5-балльной
+      if (absDifference <= 0.5) agreementCount++; // Разница <= 0.5 балла
+      if (absDifference >= 1.0) disagreementCount++; // Разница >= 2.0 балла
 
       // Разногласия по категориям
       const categoryDifferences = {};
@@ -64,7 +64,8 @@ const HeadToHeadPage = () => {
     const avgDifference = totalDifference / count;
     
     // Вкусовая совместимость (100% - процент расхождения)
-    const compatibility = Math.max(0, 100 - (avgDifference / 100 * 100));
+    // avgDifference теперь в 5-балльной системе, поэтому делим на 5
+    const compatibility = Math.max(0, 100 - (avgDifference / 5 * 100));
 
     // Средние по категориям
     const categoryAverages = {};
@@ -133,23 +134,23 @@ const HeadToHeadPage = () => {
         <div className="h2h-stat-card">
           <div className="h2h-stat-label">Совместимость вкусов</div>
           <div className="h2h-stat-value">{statistics.compatibility.toFixed(0)}%</div>
-          <div className="h2h-stat-hint">{statistics.count} поэтов оценены обоими</div>
+          <div className="h2h-stat-hint">Оценено поэтов: {statistics.count}</div>
         </div>
 
         <div className="h2h-stat-card">
-          <div className="h2h-stat-label">Строже судья</div>
+          <div className="h2h-stat-label">Строже</div>
           <div className="h2h-stat-value">
             {statistics.stricterJudge === 'maxim' ? 'Максим' : 'Олег'}
           </div>
           <div className="h2h-stat-hint">
-            {(statistics.maximAverage / 20).toFixed(2)} vs {(statistics.olegAverage / 20).toFixed(2)}
+            {(Math.round(statistics.maximAverage * 100) / 100).toFixed(2)} vs {(Math.round(statistics.olegAverage * 100) / 100).toFixed(2)}
           </div>
         </div>
 
         <div className="h2h-stat-card">
           <div className="h2h-stat-label">Разногласия</div>
           <div className="h2h-stat-value">{statistics.disagreementCount}</div>
-          <div className="h2h-stat-hint">Поэтов с разницей ≥2.0 балла</div>
+          <div className="h2h-stat-hint">Поэтов с разницей ≥ 1.0 балла</div>
         </div>
       </div>
 
@@ -201,9 +202,9 @@ const HeadToHeadPage = () => {
               >
                 <span className="h2h-poet-name">{comp.poet.name}</span>
                 <span className="h2h-scores">
-                  {(comp.maximScore / 20).toFixed(1)} / {(comp.olegScore / 20).toFixed(1)}
+                  {(Math.round(comp.maximScore * 100) / 100).toFixed(2)} / {(Math.round(comp.olegScore * 100) / 100).toFixed(2)}
                 </span>
-                <span className="h2h-diff success">({(comp.absDifference / 20).toFixed(1)})</span>
+                <span className="h2h-diff success">({(Math.round(comp.absDifference * 100) / 100).toFixed(2)})</span>
               </div>
             ))}
           </div>
@@ -220,9 +221,9 @@ const HeadToHeadPage = () => {
               >
                 <span className="h2h-poet-name">{comp.poet.name}</span>
                 <span className="h2h-scores">
-                  {(comp.maximScore / 20).toFixed(1)} / {(comp.olegScore / 20).toFixed(1)}
+                  {(Math.round(comp.maximScore * 100) / 100).toFixed(2)} / {(Math.round(comp.olegScore * 100) / 100).toFixed(2)}
                 </span>
-                <span className="h2h-diff error">({(comp.absDifference / 20).toFixed(1)})</span>
+                <span className="h2h-diff error">({(Math.round(comp.absDifference * 100) / 100).toFixed(2)})</span>
               </div>
             ))}
           </div>

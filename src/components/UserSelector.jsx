@@ -19,7 +19,7 @@ const UserSelector = ({ onSelectUser }) => {
     <div className="user-selector-overlay">
       <div className="user-selector-modal">
         <div className="user-selector-header">
-          <img src="/images/logo2.png" alt="Лига Поэтов" className="selector-logo" />
+          <img src="/images/logo.png" alt="Лига Поэтов" className="selector-logo" />
           <h1 className="user-selector-title">Лига Поэтов</h1>
         </div>
         <h2 className="user-selector-subtitle">Выберите пользователя</h2>

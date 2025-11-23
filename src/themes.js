@@ -53,6 +53,6 @@ export const applyTheme = (themeName) => {
 
 // Получить текущую тему
 export const getCurrentTheme = () => {
-  return localStorage.getItem('selectedTheme') || 'classic';
+  return localStorage.getItem('selectedTheme') || 'letterboxd';
 };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
-import ThemeSelector from './ThemeSelector';
+// import ThemeSelector from './ThemeSelector';
 import './Layout.css';
 
 const Layout = () => {
@@ -29,6 +29,9 @@ const Layout = () => {
             <NavLink to="/overall-ranking" className={({ isActive }) => isActive ? 'nav-link active overall-link' : 'nav-link overall-link'}>
               Общий Рейтинг
             </NavLink>
+            {/* <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Админка
+            </NavLink> */}
             {/* <NavLink to="/timeline" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Временная линия
             </NavLink> */}
@@ -36,7 +39,7 @@ const Layout = () => {
               Статистика
             </NavLink> */}
           </nav>
-          <ThemeSelector />
+          {/* <ThemeSelector /> */}
         </div>
       </header>
       

@@ -12,12 +12,14 @@ export const usePoets = () => {
   return context;
 };
 
-// Категории и их коэффициенты
+// Категории и их коэффициенты (5-балльная система)
+// Коэффициенты рассчитаны так, чтобы максимум был 5.0
+// 9:5:4:2 → 0.45:0.25:0.2:0.1 (сумма = 1.0, умноженная на 5)
 export const CATEGORIES = {
-  creativity: { name: 'Творчество', coefficient: 8, description: 'Образность, язык, ритм, глубина мыслей, стиль, эмоциональность и т.д.' },
-  influence: { name: 'Влияние', coefficient: 6, description: 'Влияние на культуру, общество, других авторов, личные поступки и дела' },
-  drama: { name: 'Драма', coefficient: 4, description: 'Степень трагичности жизни, страдания, утраты, судьба и т.д.' },
-  beauty: { name: 'Красота', coefficient: 2, description: 'Внешность, харизма, обаяние' }   
+  creativity: { name: 'Творчество', coefficient: 0.45, description: 'Образность, язык, ритм, глубина мыслей, стиль, эмоциональность и т.д.' },
+  influence: { name: 'Влияние', coefficient: 0.25, description: 'Влияние на культуру, общество, других авторов, личные поступки и дела' },
+  drama: { name: 'Драма', coefficient: 0.2, description: 'Степень трагичности жизни, страдания, утраты, судьба и т.д.' },
+  beauty: { name: 'Красота', coefficient: 0.1, description: 'Внешность, харизма, обаяние' }   
 };
 
 export const PoetsProvider = ({ children }) => {
@@ -31,6 +33,7 @@ export const PoetsProvider = ({ children }) => {
     oleg: {}
   });
   const [overallDuelWinners, setOverallDuelWinners] = useState({});
+  const [aiChoiceTiebreaker, setAIChoiceTiebreaker] = useState(null);
   const [likes, setLikes] = useState({
     maxim: {},
     oleg: {}
@@ -112,6 +115,18 @@ export const PoetsProvider = ({ children }) => {
     
     return () => unsubscribe();
   }, []);
+  
+  // Подписка на результат AI-тайбрейкера для "Выбор ИИ"
+  useEffect(() => {
+    const aiTiebreakerRef = ref(database, 'aiChoiceTiebreaker');
+    
+    const unsubscribe = onValue(aiTiebreakerRef, (snapshot) => {
+      const data = snapshot.val();
+      setAIChoiceTiebreaker(data || null);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   // Подписка на изменения лайков в Firebase
   useEffect(() => {
@@ -133,12 +148,17 @@ export const PoetsProvider = ({ children }) => {
   }, []);
 
   // Добавить поэта
-  const addPoet = async (name, imageUrl = '', bio = '') => {
+  const addPoet = async (name, imageUrl = '', bio = '', lifeStory = '', influence = '', creativity = '', drama = '', beauty = '') => {
     const id = Date.now().toString();
     const newPoet = {
       name: name.trim(),
       imageUrl: imageUrl.trim(),
       bio: bio.trim(),
+      lifeStory: lifeStory.trim(),
+      influence: influence.trim(),
+      creativity: creativity.trim(),
+      drama: drama.trim(),
+      beauty: beauty.trim(),
       addedAt: new Date().toISOString()
     };
     
@@ -172,6 +192,10 @@ export const PoetsProvider = ({ children }) => {
     await remove(ref(database, `ratings/maxim/${poetId}`));
     await remove(ref(database, `ratings/oleg/${poetId}`));
     
+    // Удаляем его лайки
+    await remove(ref(database, `likes/maxim/${poetId}`));
+    await remove(ref(database, `likes/oleg/${poetId}`));
+    
     // Удаляем его из лидеров категорий, если он там есть
     const updates = {};
     Object.keys(CATEGORIES).forEach(category => {
@@ -200,6 +224,16 @@ export const PoetsProvider = ({ children }) => {
       const participants = overallDuelData.participants || [];
       if (winnerId === poetId || participants.includes(poetId)) {
         updates['overallDuelWinners/overall'] = null;
+      }
+    }
+    
+    // Проверяем AI-тайбрейкер для "Выбор ИИ"
+    if (aiChoiceTiebreaker) {
+      const winnerId = aiChoiceTiebreaker.winner;
+      const participants = aiChoiceTiebreaker.participants || [];
+      // Удаляем тайбрейкер если poetId был победителем или участником
+      if (winnerId === poetId || participants.includes(poetId)) {
+        updates['aiChoiceTiebreaker'] = null;
       }
     }
     
@@ -245,6 +279,16 @@ export const PoetsProvider = ({ children }) => {
     await set(ref(database, `overallDuelWinners/${category}`), {
       winner: winnerId,
       participants: [poet1Id, poet2Id].sort() // Сортируем для консистентности
+    });
+  };
+  
+  // Сохранить результат AI-тайбрейкера для "Выбор ИИ"
+  const setAIChoiceWinner = async (winnerId, participants, topScore) => {
+    await set(ref(database, 'aiChoiceTiebreaker'), {
+      winner: winnerId,
+      participants: participants.sort(), // ID всех поэтов с одинаковым топовым баллом
+      topScore: topScore, // Балл победителей для отслеживания изменений
+      timestamp: Date.now()
     });
   };
 
@@ -320,11 +364,41 @@ export const PoetsProvider = ({ children }) => {
     await set(ref(database, `likes/${user}/${poetId}`), !currentLikeStatus);
   };
 
+  // === Функции для работы со стихотворениями ===
+  
+  // Добавить стихотворение поэту
+  const addPoem = async (poetId, title, url = '') => {
+    const poemId = `poem_${Date.now()}`;
+    const newPoem = {
+      title: title.trim(),
+      url: url.trim(),
+      viewed: { maxim: false, oleg: false },
+      liked: { maxim: false, oleg: false },
+      memorized: { maxim: false, oleg: false },
+      addedAt: new Date().toISOString()
+    };
+    
+    await set(ref(database, `poets/${poetId}/poems/${poemId}`), newPoem);
+    return poemId;
+  };
+  
+  // Обновить статус стихотворения для пользователя
+  const updatePoemStatus = async (poetId, poemId, user, field, value) => {
+    // field может быть: 'viewed', 'liked', 'memorized'
+    await set(ref(database, `poets/${poetId}/poems/${poemId}/${field}/${user}`), value);
+  };
+  
+  // Удалить стихотворение
+  const deletePoem = async (poetId, poemId) => {
+    await remove(ref(database, `poets/${poetId}/poems/${poemId}`));
+  };
+
   const value = {
     poets,
     ratings,
     categoryLeaders,
     overallDuelWinners,
+    aiChoiceTiebreaker,
     likes,
     isLoading,
     addPoet,
@@ -333,7 +407,11 @@ export const PoetsProvider = ({ children }) => {
     updateRating,
     setCategoryLeader,
     setOverallDuelWinner,
+    setAIChoiceWinner,
     toggleLike,
+    addPoem,
+    updatePoemStatus,
+    deletePoem,
     calculateScore,
     calculateAverageScore,
     getCategoryRankings,

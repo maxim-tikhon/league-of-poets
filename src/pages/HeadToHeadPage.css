@@ -12,17 +12,17 @@
 }
 
 .h2h-stat-card {
-  background: white;
+  /* background: white; */
   padding: 2rem;
   border-radius: 8px;
   border: 1px solid rgba(199, 163, 107, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); */
   text-align: center;
   transition: all 0.2s ease;
 }
 
 .h2h-stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */
 }
 
 .h2h-stat-label {
@@ -35,7 +35,7 @@
 }
 
 .h2h-stat-value {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 500;
   color: var(--burgundy);
   margin-bottom: 0.5rem;
@@ -50,11 +50,11 @@
 
 /* Секции */
 .h2h-section-card {
-  background: white;
-  padding: 2rem;
+  /* background: white; */
+  /* padding: 2rem; */
   border-radius: 8px;
-  border: 1px solid rgba(199, 163, 107, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* border: 1px solid rgba(199, 163, 107, 0.15); */
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); */
   margin-bottom: 2rem;
 }
 
@@ -113,11 +113,11 @@
 }
 
 .h2h-bar.maxim .h2h-bar-fill {
-  background: #7E3E45;
+  background: rgba(255, 144, 16, 0.2)
 }
 
 .h2h-bar.oleg .h2h-bar-fill {
-  background: #2c5f2d;
+  background: rgba(0, 172, 28, 0.2);
 }
 
 .h2h-bar-value {
@@ -165,7 +165,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background: rgba(199, 163, 107, 0.03);
+  /* background: rgba(199, 163, 107, 0.03); */
   border-radius: 6px;
   border: 1px solid rgba(199, 163, 107, 0.1);
   cursor: pointer;
@@ -173,9 +173,9 @@
 }
 
 .h2h-agreement-item:hover {
-  background: rgba(199, 163, 107, 0.08);
-  border-color: rgba(199, 163, 107, 0.2);
-  transform: translateX(4px);
+  /* background: rgba(199, 163, 107, 0.08); */
+  /* border-color: rgba(199, 163, 107, 0.2); */
+  /* transform: translateX(4px); */
 }
 
 .h2h-poet-name {
@@ -232,17 +232,17 @@
 
 /* Letterboxd Theme */
 body[data-theme="letterboxd"] .h2h-stat-card {
-  background: #1a1a1a;
+  /* background: #445566; */
   border-color: #456;
 }
 
 body[data-theme="letterboxd"] .h2h-stat-value {
-  color: #00ac1c;
+  color: var(--ink);
 }
 
 body[data-theme="letterboxd"] .h2h-section-card {
-  background: #1a1a1a;
-  border-color: #456;
+  /* background: #1a1a1a;
+  border-color: #456; */
 }
 
 body[data-theme="letterboxd"] .h2h-section-title {
@@ -255,13 +255,13 @@ body[data-theme="letterboxd"] .h2h-bar {
 }
 
 body[data-theme="letterboxd"] .h2h-agreement-item {
-  background: rgba(255, 255, 255, 0.02);
+  /* background: rgba(255, 255, 255, 0.02); */
   border-color: #456;
 }
 
 body[data-theme="letterboxd"] .h2h-agreement-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  /* background: rgba(255, 255, 255, 0.05); */
+  /* border-color: rgba(255, 255, 255, 0.1); */
 }
 
 body[data-theme="letterboxd"] .h2h-poet-name {

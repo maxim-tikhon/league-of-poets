@@ -25,6 +25,7 @@ body {
   color: var(--ink);
   min-height: 100vh;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 /* Letterboxd тема - фон с текстурой */

@@ -4,13 +4,19 @@ import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import StarRating from '../components/StarRating';
 import BattleModal from '../components/BattleModal';
 import { generateContent } from '../ai/gemini';
-import { generatePoetBioPrompt } from '../ai/prompts';
+import { 
+  generatePoetBioPrompt, 
+  generateRandomPoemPrompt, 
+  generatePopularPoemPrompt, 
+  generateThemedPoemPrompt,
+  POEM_GENERATION_OPTIONS
+} from '../ai/prompts';
 import './PoetDetailPage.css';
 
 const PoetDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { poets, ratings, calculateScore, isLoading, updateRating, categoryLeaders, setCategoryLeader, deletePoet, updatePoet, likes, toggleLike } = usePoets();
+  const { poets, ratings, calculateScore, isLoading, updateRating, categoryLeaders, setCategoryLeader, deletePoet: deletePoetFunc, updatePoet, likes, toggleLike, addPoem, updatePoemStatus } = usePoets();
   
   const poet = poets.find(p => p.id === id);
   const [enlargedImage, setEnlargedImage] = useState(null); // Для lightbox
@@ -28,6 +34,39 @@ const PoetDetailPage = () => {
   const [editError, setEditError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('classic');
+  
+  // Активная вкладка контента
+  const [activeTab, setActiveTab] = useState('poems');
+  
+  // Стихотворения поэта из Firebase
+  const poems = poet?.poems ? Object.keys(poet.poems).map(key => ({
+    id: key,
+    ...poet.poems[key]
+  })).sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt)) : [];
+  
+  // Общая статистика по стихам (для всех пользователей)
+  const poemStats = {
+    viewed: poems.reduce((sum, p) => {
+      return sum + (p.viewed?.['maxim'] ? 1 : 0) + (p.viewed?.['oleg'] ? 1 : 0);
+    }, 0),
+    liked: poems.reduce((sum, p) => {
+      return sum + (p.liked?.['maxim'] ? 1 : 0) + (p.liked?.['oleg'] ? 1 : 0);
+    }, 0),
+    memorized: poems.reduce((sum, p) => {
+      return sum + (p.memorized?.['maxim'] ? 1 : 0) + (p.memorized?.['oleg'] ? 1 : 0);
+    }, 0)
+  };
+  
+  // Модалка добавления стихотворения
+  const [showAddPoemModal, setShowAddPoemModal] = useState(false);
+  const [newPoemTitle, setNewPoemTitle] = useState('');
+  const [poemError, setPoemError] = useState('');
+  const [isGeneratingPoem, setIsGeneratingPoem] = useState(false);
+  const [selectedOption, setSelectedOption] = useState('random');
+  
+  // Модалка просмотра стихотворения
+  const [showPoemModal, setShowPoemModal] = useState(false);
+  const [selectedPoem, setSelectedPoem] = useState(null);
   
   // Получение текущего пользователя из localStorage
   useEffect(() => {
@@ -90,29 +129,25 @@ const PoetDetailPage = () => {
     return maximScore > 0 || olegScore > 0;
   };
   
-  // Расчет общей средней оценки (в 5-балльной шкале)
+  // Расчет общей средней оценки (уже в 5-балльной шкале)
   const getOverallAverage = () => {
     if (!poet) return 0;
     const maximScore = calculateScore('maxim', poet.id);
     const olegScore = calculateScore('oleg', poet.id);
     
     // Если оба пользователя оценили - среднее
-    let averageScore;
     if (maximScore > 0 && olegScore > 0) {
-      averageScore = (maximScore + olegScore) / 2;
-    } else {
-      // Если только один пользователь оценил - его балл
-      averageScore = maximScore > 0 ? maximScore : olegScore;
+      return (maximScore + olegScore) / 2;
     }
     
-    return (averageScore / 100) * 5; // Конвертация в 5-балльную систему
+    // Если только один пользователь оценил - его балл
+    return maximScore > 0 ? maximScore : olegScore;
   };
   
-  // Получить персональный общий рейтинг текущего пользователя (в 5-балльной шкале)
+  // Получить персональный общий рейтинг текущего пользователя (уже в 5-балльной шкале)
   const getPersonalOverallRating = () => {
     if (!poet || !currentUser) return 0;
-    const userScore = calculateScore(currentUser, poet.id);
-    return (userScore / 100) * 5; // Конвертация в 5-балльную систему
+    return calculateScore(currentUser, poet.id);
   };
   
   // Проверка конфликта: есть ли другие поэты с таким же максимальным баллом
@@ -332,6 +367,354 @@ const PoetDetailPage = () => {
     window.open(googleImagesUrl, '_blank');
   };
   
+  // === Функции для работы со стихотворениями ===
+  
+  // Проверка на дубликаты
+  const isPoemDuplicate = (title) => {
+    return poems.some(poem => poem.title.toLowerCase() === title.toLowerCase());
+  };
+  
+  // Добавление стихотворения
+  // Поиск ссылки на стихотворение через RapidAPI
+  const searchPoemUrl = async (poetName, poemTitle) => {
+    try {
+      const query = `${poetName} ${poemTitle} site:rustih.ru`;
+      const url = `https://google-search74.p.rapidapi.com/?query=${encodeURIComponent(query)}&limit=1&related_keywords=true`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': '58cedd75c1msha8a949d550cd81dp15949fjsn3430eac905e0',
+          'X-RapidAPI-Host': 'google-search74.p.rapidapi.com'
+        }
+      });
+      
+      const data = await response.json();
+      
+      // Получаем первый результат
+      if (data.results && data.results.length > 0) {
+        return data.results[0].url || '';
+      }
+      
+      return '';
+    } catch (error) {
+      console.error('Ошибка поиска ссылки:', error);
+      return '';
+    }
+  };
+
+  const handleAddPoem = async () => {
+    const trimmedTitle = newPoemTitle.trim();
+    
+    if (!trimmedTitle) {
+      setPoemError('Введите название стихотворения');
+      return;
+    }
+    
+    if (isPoemDuplicate(trimmedTitle)) {
+      setPoemError('Такое стихотворение уже добавлено');
+      return;
+    }
+    
+    try {
+      // Ищем ссылку на стихотворение
+      const poemUrl = await searchPoemUrl(poet.name, trimmedTitle);
+      
+      // Добавляем стихотворение в Firebase с ссылкой
+      await addPoem(poet.id, trimmedTitle, poemUrl);
+      
+      // Закрываем модалку и очищаем форму
+      setShowAddPoemModal(false);
+      setNewPoemTitle('');
+      setPoemError('');
+      setSelectedOption('random');
+    } catch (err) {
+      console.error('Ошибка добавления стихотворения:', err);
+      setPoemError('Ошибка при добавлении стихотворения');
+    }
+  };
+  
+  // Универсальная функция генерации стихотворения
+  const generatePoem = async () => {
+    if (!poet) return;
+    
+    setIsGeneratingPoem(true);
+    setPoemError('');
+    
+    try {
+      const existingTitles = poems.map(p => p.title);
+      let prompt;
+      
+      // Определяем какой промпт использовать
+      if (selectedOption === 'random') {
+        prompt = generateRandomPoemPrompt(poet.name, existingTitles);
+      } else if (selectedOption === 'popular') {
+        prompt = generatePopularPoemPrompt(poet.name, existingTitles);
+      } else {
+        // Для всех тем используем themed prompt
+        prompt = generateThemedPoemPrompt(poet.name, selectedOption, existingTitles);
+      }
+      
+      const generatedTitle = await generateContent(prompt);
+      const cleanedTitle = generatedTitle.trim().replace(/^["«]|["»]$/g, '');
+      
+      if (isPoemDuplicate(cleanedTitle)) {
+        setPoemError('Сгенерированное стихотворение уже есть в списке');
+      } else {
+        setNewPoemTitle(cleanedTitle);
+      }
+    } catch (err) {
+      console.error('Ошибка генерации:', err);
+      setPoemError(err.message || 'Ошибка при генерации стихотворения');
+    } finally {
+      setIsGeneratingPoem(false);
+    }
+  };
+  
+  // === Функции для модалки просмотра стихотворения ===
+  
+  // Открыть модалку стихотворения
+  const handlePoemClick = (poem) => {
+    setSelectedPoem(poem);
+    setShowPoemModal(true);
+  };
+  
+  // Закрыть модалку стихотворения
+  const closePoemModal = () => {
+    setShowPoemModal(false);
+    setSelectedPoem(null);
+  };
+  
+  // Переключить статус (viewed, liked, memorized)
+  const togglePoemStatus = async (field) => {
+    if (!selectedPoem || !currentUser) return;
+    
+    const currentValue = selectedPoem[field]?.[currentUser] || false;
+    
+    try {
+      await updatePoemStatus(poet.id, selectedPoem.id, currentUser, field, !currentValue);
+      
+      // Обновляем локальное состояние
+      setSelectedPoem({
+        ...selectedPoem,
+        [field]: {
+          ...selectedPoem[field],
+          [currentUser]: !currentValue
+        }
+      });
+    } catch (err) {
+      console.error(`Ошибка обновления ${field}:`, err);
+    }
+  };
+  
+  // Парсинг биографии с выделением подзаголовков
+  const parseLifeStory = (text) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements = [];
+    let currentParagraph = [];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Пропускаем пустые строки
+      if (!trimmedLine) {
+        // Если накопился параграф, добавляем его
+        if (currentParagraph.length > 0) {
+          elements.push(
+            <p key={`p-${index}`} className="life-story-paragraph">
+              {currentParagraph.join(' ')}
+            </p>
+          );
+          currentParagraph = [];
+        }
+        return;
+      }
+      
+      // Проверяем, является ли строка подзаголовком 
+      // Форматы: "YYYY — событие", "YYYY-YYYY — событие", "Осень YYYY — событие", "Январь YYYY — событие"
+      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
+      
+      if (isHeader) {
+        // Если накопился параграф перед заголовком, добавляем его
+        if (currentParagraph.length > 0) {
+          elements.push(
+            <p key={`p-${index}`} className="life-story-paragraph">
+              {currentParagraph.join(' ')}
+            </p>
+          );
+          currentParagraph = [];
+        }
+        
+        // Добавляем подзаголовок
+        elements.push(
+          <h3 key={`h-${index}`} className="life-story-header">
+            {trimmedLine}
+          </h3>
+        );
+      } else {
+        // Накапливаем строки параграфа
+        currentParagraph.push(trimmedLine);
+      }
+    });
+    
+    // Добавляем последний параграф, если есть
+    if (currentParagraph.length > 0) {
+      elements.push(
+        <p key={`p-last`} className="life-story-paragraph">
+          {currentParagraph.join(' ')}
+        </p>
+      );
+    }
+    
+    return elements;
+  };
+  
+  // Парсинг информации о влиянии
+  const parseInfluence = (text) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements = [];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Пропускаем пустые строки
+      if (!trimmedLine) return;
+      
+      // Проверяем, является ли строка пунктом (начинается с "ПУНКТ" или "пункт")
+      const isPunkt = trimmedLine.toLowerCase().startsWith('пункт');
+      
+      if (isPunkt) {
+        // Удаляем маркер "пункт" (регистронезависимо) и отображаем как элемент списка
+        const textWithoutPunkt = trimmedLine.replace(/^пункт\s*/i, '').trim();
+        
+        elements.push(
+          <div key={`item-${index}`} className="influence-item">
+            <span className="influence-item-text">{textWithoutPunkt}</span>
+          </div>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  // Парсинг информации о творчестве
+  const parseCreativity = (text) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements = [];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Пропускаем пустые строки
+      if (!trimmedLine) return;
+      
+      // Проверяем, содержит ли строка формат "Название: текст"
+      const match = trimmedLine.match(/^([^:]+):\s*(.+)$/);
+      
+      if (match) {
+        const label = match[1].trim();
+        const value = match[2].trim();
+        
+        elements.push(
+          <div key={`creativity-${index}`} className="creativity-item">
+            <span className="creativity-label">{label}:</span> {value}
+          </div>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  // Парсинг информации о драме
+  const parseDrama = (text) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements = [];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Пропускаем пустые строки
+      if (!trimmedLine) return;
+      
+      // Проверяем, является ли строка фактом (начинается с "ФАКТ" или "факт")
+      const isFact = trimmedLine.toLowerCase().startsWith('факт');
+      
+      if (isFact) {
+        // Удаляем маркер "факт" (регистронезависимо) и отображаем как элемент списка
+        const textWithoutFact = trimmedLine.replace(/^факт\s*/i, '').trim();
+        
+        elements.push(
+          <div key={`drama-${index}`} className="drama-item">
+            <span className="drama-item-text">{textWithoutFact}</span>
+          </div>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  // Парсинг информации о красоте
+  const parseBeauty = (text) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements = [];
+    let currentHeader = null;
+    let currentItems = [];
+    
+    const flushSection = () => {
+      if (currentHeader && currentItems.length > 0) {
+        elements.push(
+          <div key={`section-${elements.length}`}>
+            <h3 className="beauty-subsection-header">{currentHeader}</h3>
+            {currentItems.map((item, idx) => (
+              <div key={`item-${elements.length}-${idx}`} className="beauty-item">
+                <span className="beauty-item-text">{item}</span>
+              </div>
+            ))}
+          </div>
+        );
+        currentItems = [];
+      }
+    };
+    
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+      
+      // Пропускаем пустые строки
+      if (!trimmedLine) return;
+      
+      // Проверяем, является ли строка пунктом (начинается с "ПУНКТ" или "пункт")
+      const isPunkt = trimmedLine.toLowerCase().startsWith('пункт');
+      
+      if (isPunkt) {
+        // Это пункт - удаляем маркер и добавляем в текущую секцию
+        const textWithoutPunkt = trimmedLine.replace(/^пункт\s*/i, '').trim();
+        currentItems.push(textWithoutPunkt);
+      } else {
+        // Это заголовок - сохраняем предыдущую секцию и начинаем новую
+        flushSection();
+        currentHeader = trimmedLine;
+      }
+    });
+    
+    // Не забываем добавить последнюю секцию
+    flushSection();
+    
+    return elements;
+  };
+  
   // Открытие модалки удаления
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -339,7 +722,7 @@ const PoetDetailPage = () => {
   
   // Подтверждение удаления
   const confirmDelete = () => {
-    deletePoet(poet.id);
+    deletePoetFunc(poet.id);
     navigate('/');
   };
 
@@ -361,7 +744,7 @@ const PoetDetailPage = () => {
       <div className="poet-detail-page fade-in">
         <div className="not-found">
           <h2>Поэт не найден</h2>
-          <button onClick={() => navigate('/poets')} className="btn">
+          <button onClick={() => navigate('/')} className="btn">
             Вернуться к списку
           </button>
         </div>
@@ -413,7 +796,7 @@ const PoetDetailPage = () => {
   return (
     <div className="poet-detail-page fade-in">
       <div className="poet-detail-container">
-        {/* 3 колонки: Фото + Досье + Оценки */}
+        {/* 2 основные колонки: Фото слева + Контент справа */}
         <div className="poet-content">
           {/* Колонка 1 - фото */}
           {poet.imageUrl && (
@@ -424,11 +807,43 @@ const PoetDetailPage = () => {
                 onClick={() => setEnlargedImage({ url: poet.imageUrl, name: poet.name })}
                 className="poet-portrait-img-clickable"
               />
+              
+              {/* Статистика по стихам */}
+              <div className="poem-stats">
+                <div className="stat-item">
+                  <img 
+                    src={currentTheme === 'classic' ? '/images/viewed.png' : '/images/viewed.png'} 
+                    alt="Просмотрено" 
+                    className="stat-icon"
+                  />
+                  <span className="stat-count">{poemStats.viewed}</span>
+                </div>
+                <div className="stat-item">
+                  <img 
+                    src={currentTheme === 'classic' ? '/images/clike.png' : '/images/like.png'} 
+                    alt="Нравится" 
+                    className="stat-icon"
+                  />
+                  <span className="stat-count">{poemStats.liked}</span>
+                </div>
+                <div className="stat-item">
+                  <img 
+                    src={currentTheme === 'classic' ? '/images/memorized.png' : '/images/memorized.png'} 
+                    alt="Выучено" 
+                    className="stat-icon"
+                  />
+                  <span className="stat-count">{poemStats.memorized}</span>
+                </div>
+              </div>
             </div>
           )}
           
-          {/* Колонка 2 - имя + досье */}
-          <div className="poet-bio-section">
+          {/* Колонка 2 - весь контент справа */}
+          <div className="poet-right-column">
+            {/* Верхняя часть: Досье и Оценки рядом */}
+            <div className="poet-top-section">
+              {/* Досье */}
+              <div className="poet-bio-section">
             {/* Имя поэта */}
             <div className="poet-header-inline">
               <h1 className="poet-detail-name">{poet.name}</h1>
@@ -449,10 +864,10 @@ const PoetDetailPage = () => {
                 <p>Досье пока не добавлено</p>
               </div>
             )}
-          </div>
-          
-          {/* Колонка 3 - оценки по категориям */}
-          {currentUser && (
+              </div>
+              
+              {/* Оценки */}
+              {currentUser && (
                 <div className="poet-ratings-section">
                   {/* Блок с лайком и рейтингами */}
                   <div className="poet-ratings-header">
@@ -477,7 +892,7 @@ const PoetDetailPage = () => {
                         onClick={() => navigate(`/${currentUser}-ranking`, { state: { poetId: poet.id } })}
                       >
                         <div className="rating-overall-value">
-                          {getPersonalOverallRating() > 0 ? getPersonalOverallRating().toFixed(2) : '—'}
+                          {getPersonalOverallRating() > 0 ? (Math.round(getPersonalOverallRating() * 100) / 100).toFixed(2) : '—'}
                         </div>
                       </div>
                     </div>
@@ -489,7 +904,7 @@ const PoetDetailPage = () => {
                         onClick={() => navigate('/overall-ranking', { state: { poetId: poet.id } })}
                       >
                         <div className="rating-overall-value">
-                          {hasRatings() && !isNewPoet() ? getOverallAverage().toFixed(2) : '—'}
+                          {hasRatings() && !isNewPoet() ? (Math.round(getOverallAverage() * 100) / 100).toFixed(2) : '—'}
                         </div>
                       </div>
                     </div>
@@ -530,6 +945,140 @@ const PoetDetailPage = () => {
                   </div>
                 </div>
               )}
+            </div>
+            
+            {/* Меню навигации контента */}
+            <div className="poet-content-menu">
+          <button 
+            className={`menu-tab ${activeTab === 'poems' ? 'active' : ''}`}
+            onClick={() => setActiveTab('poems')}
+          >
+            Стихи
+          </button>
+          <button 
+            className={`menu-tab ${activeTab === 'biography' ? 'active' : ''}`}
+            onClick={() => setActiveTab('biography')}
+          >
+            Биография
+          </button>
+          <button 
+            className={`menu-tab ${activeTab === 'creativity' ? 'active' : ''}`}
+            onClick={() => setActiveTab('creativity')}
+          >
+            Творчество
+          </button>
+          <button 
+            className={`menu-tab ${activeTab === 'influence' ? 'active' : ''}`}
+            onClick={() => setActiveTab('influence')}
+          >
+            Влияние
+          </button>
+          <button 
+            className={`menu-tab ${activeTab === 'drama' ? 'active' : ''}`}
+            onClick={() => setActiveTab('drama')}
+          >
+            Драма
+          </button>
+          <button 
+            className={`menu-tab ${activeTab === 'beauty' ? 'active' : ''}`}
+            onClick={() => setActiveTab('beauty')}
+          >
+            Красота
+          </button>
+            </div>
+            
+            {/* Контент выбранной вкладки */}
+            <div className="poet-tab-content">
+          {activeTab === 'biography' && (
+            <div className="tab-panel">
+              {poet.lifeStory ? (
+                <div className="life-story">
+                  {parseLifeStory(poet.lifeStory)}
+                </div>
+              ) : (
+                <p className="no-content">Биография пока не добавлена</p>
+              )}
+            </div>
+          )}
+          {activeTab === 'poems' && (
+            <div className="tab-panel">
+              <div className="poems-grid">
+                {poems.map((poem) => {
+                  // Определяем приоритет статуса: выучено > лайкнуто > просмотрено
+                  let statusClass = '';
+                  if (poem.memorized?.[currentUser]) {
+                    statusClass = 'memorized';
+                  } else if (poem.liked?.[currentUser]) {
+                    statusClass = 'liked';
+                  } else if (poem.viewed?.[currentUser]) {
+                    statusClass = 'viewed';
+                  }
+                  
+                  return (
+                    <div 
+                      key={poem.id} 
+                      className={`poem-card ${statusClass}`}
+                      onClick={() => handlePoemClick(poem)}
+                    >
+                      <span className="poem-title">{poem.title}</span>
+                    </div>
+                  );
+                })}
+                <div 
+                  className="poem-card poem-add"
+                  onClick={() => setShowAddPoemModal(true)}
+                >
+                  <span className="poem-add-icon">+</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'creativity' && (
+            <div className="tab-panel">
+              {poet.creativity ? (
+                <div className="creativity-section">
+                  {parseCreativity(poet.creativity)}
+                </div>
+              ) : (
+                <div className="no-content">Информация о творчестве не найдена</div>
+              )}
+            </div>
+          )}
+          {activeTab === 'influence' && (
+            <div className="tab-panel">
+              {poet.influence ? (
+                <div className="influence-content">
+                  {parseInfluence(poet.influence)}
+                </div>
+              ) : (
+                <p className="no-content">Информация о влиянии пока не добавлена</p>
+              )}
+            </div>
+          )}
+          {activeTab === 'drama' && (
+            <div className="tab-panel">
+              {poet.drama ? (
+                <div className="drama-section">
+                  {parseDrama(poet.drama)}
+                </div>
+              ) : (
+                <div className="no-content">Информация о драме не найдена</div>
+              )}
+            </div>
+          )}
+          {activeTab === 'beauty' && (
+            <div className="tab-panel">
+              {poet.beauty ? (
+                <div className="beauty-section">
+                  {parseBeauty(poet.beauty)}
+                </div>
+              ) : (
+                <div className="no-content">Информация о красоте не найдена</div>
+              )}
+            </div>
+          )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -628,7 +1177,7 @@ const PoetDetailPage = () => {
                 />
               </div>
               
-              {editError && <p className="error-message">{editError}</p>}
+              {editError && <div className="form-error">{editError}</div>}
               
               <div className="form-actions">
                 <button 
@@ -663,6 +1212,162 @@ const PoetDetailPage = () => {
               <button onClick={confirmDelete} className="btn-delete-confirm">
                 Удалить
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Модалка добавления стихотворения */}
+      {showAddPoemModal && (
+        <div className="modal-overlay" onClick={() => setShowAddPoemModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close" 
+              onClick={() => setShowAddPoemModal(false)}
+              title="Закрыть"
+            >
+              ✕
+            </button>
+            <h2 className="modal-title">Добавить стихотворение</h2>
+            
+            <div className="poem-form">
+              <div className="form-field">
+                <label htmlFor="poem-title">Название</label>
+                <input
+                  id="poem-title"
+                  type="text"
+                  value={newPoemTitle}
+                  onChange={(e) => {
+                    setNewPoemTitle(e.target.value);
+                    setPoemError('');
+                  }}
+                  className="form-input"
+                  placeholder="Введите название или сгенерируйте"
+                  disabled={isGeneratingPoem}
+                />
+                {poemError && <div className="field-error">{poemError}</div>}
+              </div>
+              
+              <div className="poem-generation-section">
+                <p className="generation-title">Генерация с помощью AI</p>
+                
+                <div className="generation-controls">
+                  <select
+                    id="poem-option"
+                    value={selectedOption}
+                    onChange={(e) => setSelectedOption(e.target.value)}
+                    className="option-select"
+                    disabled={isGeneratingPoem}
+                  >
+                    {POEM_GENERATION_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={generatePoem}
+                    className="btn-generate"
+                    disabled={isGeneratingPoem}
+                  >
+                    {isGeneratingPoem ? 'Генерация...' : 'Сгенерировать'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="form-actions">
+                <button 
+                  onClick={() => setShowAddPoemModal(false)} 
+                  className="btn-cancel"
+                  disabled={isGeneratingPoem}
+                >
+                  Отмена
+                </button>
+                <button 
+                  onClick={handleAddPoem} 
+                  className="btn-add-confirm"
+                  disabled={isGeneratingPoem}
+                >
+                  Добавить
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Модалка просмотра стихотворения */}
+      {showPoemModal && selectedPoem && (
+        <div className="modal-overlay" onClick={closePoemModal}>
+          <div className="modal-content poem-view-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close" 
+              onClick={closePoemModal}
+              title="Закрыть"
+            >
+              ✕
+            </button>
+            
+            {selectedPoem.url ? (
+              <a 
+                href={selectedPoem.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="modal-title poem-title-link"
+                title="Открыть на rustih.ru"
+              >
+                <span className="poem-title-modal">{selectedPoem.title}</span>
+              </a>
+            ) : (
+              <h2 className="modal-title">{selectedPoem.title}</h2>
+            )}
+            
+            <div className="poem-view-content">
+              {/* Статусы стихотворения */}
+              <div className="poem-statuses">
+                {/* Просмотрено */}
+                <div className="status-item" onClick={() => togglePoemStatus('viewed')}>
+                  <img 
+                    src={selectedPoem.viewed?.[currentUser] 
+                      ? currentTheme === 'classic' ? '/images/viewed.png' : '/images/viewed.png'
+                      : currentTheme === 'classic' ? '/images/notviewed.png' : '/images/notviewed.png'
+                    }
+                    alt={selectedPoem.viewed?.[currentUser] ? 'Просмотрено' : 'Не просмотрено'}
+                    className="status-icon status-icon-viewed"
+                    title={selectedPoem.viewed?.[currentUser] ? 'Просмотрено' : 'Не просмотрено'}
+                  />
+                  <span className="status-label">Просмотрено</span>
+                </div>
+                
+                {/* Нравится */}
+                <div className="status-item" onClick={() => togglePoemStatus('liked')}>
+                  <img 
+                    src={selectedPoem.liked?.[currentUser] 
+                      ? currentTheme === 'classic' ? '/images/clike.png' : '/images/like.png'
+                      : '/images/notlike.png'
+                    }
+                    alt={selectedPoem.liked?.[currentUser] ? 'Нравится' : 'Не нравится'}
+                    className="status-icon"
+                    title={selectedPoem.liked?.[currentUser] ? 'Нравится' : 'Не нравится'}
+                  />
+                  <span className="status-label">Нравится</span>
+                </div>
+                
+                {/* Выучено наизусть */}
+                <div className="status-item" onClick={() => togglePoemStatus('memorized')}>
+                  <img 
+                    src={selectedPoem.memorized?.[currentUser] 
+                      ? currentTheme === 'classic' ? '/images/memorized.png' : '/images/memorized.png'
+                      : currentTheme === 'classic' ? '/images/notmemorized.png' : '/images/notmemorized.png'
+                    }
+                    alt={selectedPoem.memorized?.[currentUser] ? 'Выучено' : 'Не выучено'}
+                    className="status-icon"
+                    title={selectedPoem.memorized?.[currentUser] ? 'Выучено наизусть' : 'Не выучено'}
+                  />
+                  <span className="status-label">Выучено</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -167,6 +167,28 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   margin: 0;
 }
 
+.generating-message {
+  color: var(--gold);
+  font-size: 0.9rem;
+  margin: 1rem 0 0 0;
+  text-align: center;
+  font-weight: 500;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+body[data-theme="letterboxd"] .generating-message {
+  color: #00ac1c;
+}
+
 .empty-state {
   text-align: center;
   padding: 5rem 2rem;
@@ -450,6 +472,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   text-align: left;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+  line-height: 1.2;
 }
 
 .poet-form {
@@ -462,6 +485,31 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* Ошибка внутри поля */
+.field-error {
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(139, 69, 19, 0.08);
+  border-left: 3px solid var(--burgundy);
+  border-radius: 4px;
+  color: var(--burgundy);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Общая ошибка формы */
+.form-error {
+  padding: 0.75rem 1rem;
+  background: rgba(139, 69, 19, 0.08);
+  border: 1px solid rgba(139, 69, 19, 0.2);
+  border-left: 3px solid var(--burgundy);
+  border-radius: 6px;
+  color: var(--burgundy);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .label-with-button {
@@ -537,7 +585,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(199, 163, 107, 0.1);
 }
@@ -868,6 +916,19 @@ body[data-theme="letterboxd"] .btn-add-confirm:hover {
 
 body[data-theme="letterboxd"] .form-field label {
   color: #b3b3b3;
+}
+
+body[data-theme="letterboxd"] .field-error {
+  background: rgba(229, 9, 20, 0.1);
+  border-left-color: #E50914;
+  color: #ff6b6b;
+}
+
+body[data-theme="letterboxd"] .form-error {
+  background: rgba(229, 9, 20, 0.1);
+  border-color: rgba(229, 9, 20, 0.3);
+  border-left-color: #E50914;
+  color: #ff6b6b;
 }
 
 body[data-theme="letterboxd"] .form-input,
