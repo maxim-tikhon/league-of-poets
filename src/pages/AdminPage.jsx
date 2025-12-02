@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { usePoets } from '../context/PoetsContext';
 import { ref, set } from 'firebase/database';
 import { database } from '../firebase/config';
-import { generateContent, generateAIRating } from '../ai/gemini';
-import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingPrompt, parseAIRating } from '../ai/prompts';
+import { generateContent, generateAIRatingByCat } from '../ai/gemini';
+import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -14,9 +14,12 @@ const AdminPage = () => {
     overallDuelWinners,
     aiChoiceTiebreaker,
     likes,
+    updatePoet,
     updatePoemStatus, 
     deletePoem: deletePoemFunc, 
-    deletePoet 
+    deletePoet,
+    calculateScore,
+    CATEGORIES
   } = usePoets();
   
   const [selectedPoet, setSelectedPoet] = useState(null);
@@ -56,6 +59,70 @@ const AdminPage = () => {
   const [showAIRatingModal, setShowAIRatingModal] = useState(false);
   const [editAIRatings, setEditAIRatings] = useState({ creativity: 0, influence: 0, drama: 0, beauty: 0 });
   const [isGeneratingAIRating, setIsGeneratingAIRating] = useState(false);
+  
+  // Состояния для настройки позиции фото
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [editImagePositionY, setEditImagePositionY] = useState(25);
+  
+  // Состояния для ручного назначения победителей
+  const [showAssignLeaderModal, setShowAssignLeaderModal] = useState(false);
+  const [assignUser, setAssignUser] = useState('maxim'); // maxim или oleg
+  const [assignCategory, setAssignCategory] = useState('overall'); // overall, overall_worst, или категория
+  
+  // Получить всех претендентов на победу в выбранной категории
+  const getContenders = () => {
+    if (!poets || poets.length === 0) return [];
+    
+    if (assignCategory === 'overall') {
+      // Для общего балла - ищем максимальный score
+      const scoresMap = poets.map(poet => ({
+        ...poet,
+        score: calculateScore(assignUser, poet.id)
+      })).filter(p => p.score > 0);
+      
+      if (scoresMap.length === 0) return [];
+      
+      const maxScore = Math.max(...scoresMap.map(p => p.score));
+      return scoresMap.filter(p => Math.abs(p.score - maxScore) < 0.01);
+      
+    } else if (assignCategory === 'overall_worst') {
+      // Для худшего поэта - ищем минимальный score (минимум 6 поэтов)
+      const scoresMap = poets.map(poet => ({
+        ...poet,
+        score: calculateScore(assignUser, poet.id)
+      })).filter(p => p.score > 0);
+      
+      if (scoresMap.length <= 5) return [];
+      
+      const minScore = Math.min(...scoresMap.map(p => p.score));
+      return scoresMap.filter(p => Math.abs(p.score - minScore) < 0.01);
+      
+    } else {
+      // Для категории - ищем максимальный рейтинг
+      const ratingsMap = poets.map(poet => ({
+        ...poet,
+        rating: ratings[assignUser]?.[poet.id]?.[assignCategory] || 0
+      })).filter(p => p.rating > 0);
+      
+      if (ratingsMap.length === 0) return [];
+      
+      const maxRating = Math.max(...ratingsMap.map(p => p.rating));
+      return ratingsMap.filter(p => Math.abs(p.rating - maxRating) < 0.01);
+    }
+  };
+  
+  // Назначить победителя
+  const assignLeader = async (poetId) => {
+    try {
+      const leaderRef = ref(database, `categoryLeaders/${assignUser}/${assignCategory}`);
+      await set(leaderRef, poetId);
+      alert('Победитель назначен!');
+      setShowAssignLeaderModal(false);
+    } catch (error) {
+      console.error('Error assigning leader:', error);
+      alert('Ошибка при назначении победителя');
+    }
+  };
   
   // Получить все стихотворения выбранного поэта
   const poems = selectedPoet?.poems 
@@ -471,6 +538,32 @@ const AdminPage = () => {
     setIsGeneratingAIRating(false);
   };
   
+  // Открыть модалку настройки фото
+  const handleEditPhoto = (poet) => {
+    setSelectedPoet(poet);
+    setEditImagePositionY(poet.imagePositionY !== undefined ? poet.imagePositionY : 25);
+    setShowPhotoModal(true);
+  };
+  
+  // Закрыть модалку настройки фото
+  const closePhotoModal = () => {
+    setShowPhotoModal(false);
+    setEditImagePositionY(25);
+  };
+  
+  // Сохранить позицию фото
+  const handleSavePhoto = async () => {
+    if (!selectedPoet) return;
+    
+    try {
+      await updatePoet(selectedPoet.id, { imagePositionY: editImagePositionY });
+      closePhotoModal();
+    } catch (err) {
+      console.error('Ошибка сохранения позиции фото:', err);
+      alert('Ошибка при сохранении');
+    }
+  };
+  
   // Генерация AI-рейтинга
   const handleGenerateAIRating = async () => {
     if (!selectedPoet) return;
@@ -485,15 +578,89 @@ const AdminPage = () => {
           ratings: p.aiRatings
         }));
       
-      const prompt = generateAIRatingPrompt(selectedPoet.name, existingAIRatings);
-      // Делаем 3 запроса и усредняем для справедливости
-      const ratings = await generateAIRating(prompt, parseAIRating);
+      // Делаем 4 отдельных запроса (по одному на каждую категорию)
+      const ratings = await generateAIRatingByCat(
+        selectedPoet.name,
+        {
+          creativity: generateAIRatingCreativityPrompt,
+          influence: generateAIRatingMoralPrompt,
+          drama: generateAIRatingDramaPrompt,
+          beauty: generateAIRatingBeautyPrompt
+        },
+        existingAIRatings
+      );
       setEditAIRatings(ratings);
     } catch (err) {
       console.error('Ошибка генерации AI-рейтинга:', err);
       alert('Ошибка при генерации AI-рейтинга');
     }
     setIsGeneratingAIRating(false);
+  };
+  
+  // Копирование промптов для AI-рейтинга
+  const handleCopyPrompts = () => {
+    if (!selectedPoet) return;
+    
+    // Собираем существующие AI-рейтинги других поэтов для контекста
+    const existingAIRatings = poets
+      .filter(p => p.id !== selectedPoet.id && p.aiRatings && Object.keys(p.aiRatings).length > 0)
+      .map(p => ({
+        name: p.name,
+        ratings: p.aiRatings
+      }));
+    
+    // Генерируем все 4 промпта
+    const creativityPrompt = generateAIRatingCreativityPrompt(selectedPoet.name, existingAIRatings);
+    const moralPrompt = generateAIRatingMoralPrompt(selectedPoet.name, existingAIRatings);
+    const dramaPrompt = generateAIRatingDramaPrompt(selectedPoet.name, existingAIRatings);
+    const beautyPrompt = generateAIRatingBeautyPrompt(selectedPoet.name, existingAIRatings);
+    
+    // Формируем текст для копирования
+    const allPrompts = `
+════════════════════════════════════════════════════════════════
+📝 ТВОРЧЕСТВО (Creativity)
+════════════════════════════════════════════════════════════════
+
+${creativityPrompt}
+
+
+════════════════════════════════════════════════════════════════
+📝 МОРАЛЬ (Morality)
+════════════════════════════════════════════════════════════════
+
+${moralPrompt}
+
+
+════════════════════════════════════════════════════════════════
+📝 ДРАМА (Drama)
+════════════════════════════════════════════════════════════════
+
+${dramaPrompt}
+
+
+════════════════════════════════════════════════════════════════
+📝 КРАСОТА (Beauty)
+════════════════════════════════════════════════════════════════
+
+${beautyPrompt}
+
+
+════════════════════════════════════════════════════════════════
+⚠️ ВАЖНО
+════════════════════════════════════════════════════════════════
+
+Note: В конкурсе будут участвовать все выдающиеся поэты, поэтому придется ставить и низкие оценки. В целом весь диапазон оценок. Считай себя строгим критиком, но справедливым.
+`.trim();
+    
+    // Копируем в буфер обмена
+    navigator.clipboard.writeText(allPrompts)
+      .then(() => {
+        alert('✅ Промпты скопированы в буфер обмена!');
+      })
+      .catch(err => {
+        console.error('Ошибка копирования:', err);
+        alert('❌ Не удалось скопировать промпты');
+      });
   };
   
   // Сохранение AI-рейтинга
@@ -547,6 +714,43 @@ const AdminPage = () => {
       </div>
       
       <div className="admin-content">
+        {/* Назначение победителей вручную */}
+        <div className="admin-section assign-leader-section">
+          <h2 className="section-title">Назначить победителя вручную</h2>
+          <p className="section-description">Используйте, если дуэль не запустилась или есть более 2 претендентов</p>
+          
+          <div className="assign-controls">
+            <div className="assign-row">
+              <label>
+                Пользователь:
+                <select value={assignUser} onChange={(e) => setAssignUser(e.target.value)}>
+                  <option value="maxim">Максим</option>
+                  <option value="oleg">Олег</option>
+                </select>
+              </label>
+              
+              <label>
+                Категория:
+                <select value={assignCategory} onChange={(e) => setAssignCategory(e.target.value)}>
+                  <option value="overall">Общий балл</option>
+                  <option value="overall_worst">Худший поэт</option>
+                  <option value="creativity">Творчество</option>
+                  <option value="influence">Мораль</option>
+                  <option value="drama">Драма</option>
+                  <option value="beauty">Красота</option>
+                </select>
+              </label>
+              
+              <button 
+                className="btn-show-contenders"
+                onClick={() => setShowAssignLeaderModal(true)}
+              >
+                Показать претендентов
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Список поэтов */}
         <div className="admin-section">
           <h2 className="section-title">Выберите поэта</h2>
@@ -561,6 +765,9 @@ const AdminPage = () => {
                     src={poet.imageUrl} 
                     alt={poet.name}
                     className="poet-item-avatar"
+                    style={{ 
+                      objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                    }}
                   />
                   <span className="poet-item-name">{poet.name}</span>
                 </div>
@@ -624,6 +831,16 @@ const AdminPage = () => {
                     title="AI-рейтинг"
                   >
                     🤖
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditPhoto(poet);
+                    }}
+                    title="Настроить фото"
+                  >
+                    📸
                   </button>
                 </div>
               </div>
@@ -858,7 +1075,7 @@ const AdminPage = () => {
             </button>
             
             <h2 className="modal-title">
-              Влияние: {selectedPoet?.name}
+              Мораль: {selectedPoet?.name}
             </h2>
             
             <div className="bio-modal-content">
@@ -1090,6 +1307,13 @@ const AdminPage = () => {
                 >
                   {isGeneratingAIRating ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
                 </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyPrompts}
+                  title="Скопировать промпты в буфер обмена"
+                >
+                  📋 Промпты
+                </button>
               </div>
               
               <div className="ai-ratings-grid">
@@ -1107,7 +1331,7 @@ const AdminPage = () => {
                 </div>
                 
                 <div className="ai-rating-item">
-                  <label>Влияние (1-5):</label>
+                  <label>Мораль (1-5):</label>
                   <input
                     type="number"
                     min="0"
@@ -1162,6 +1386,156 @@ const AdminPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Модалка настройки фото */}
+      {showPhotoModal && (
+        <div className="modal-overlay" onClick={closePhotoModal}>
+          <div className="modal-content bio-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close" 
+              onClick={closePhotoModal}
+              title="Закрыть"
+            >
+              ✕
+            </button>
+            
+            <h2 className="modal-title">
+              📸 Настройка фото: {selectedPoet?.name}
+            </h2>
+            
+            <div className="bio-modal-content">
+              {/* Превью фото */}
+              {selectedPoet?.imageUrl && (
+                <div className="photo-preview-container">
+                  <div className="photo-preview-wrapper">
+                    <img 
+                      src={selectedPoet.imageUrl} 
+                      alt={selectedPoet.name}
+                      className="photo-preview-image"
+                      style={{ 
+                        objectPosition: `center ${editImagePositionY}%`
+                      }}
+                    />
+                  </div>
+                  <p className="photo-preview-label">Превью (280×380px)</p>
+                </div>
+              )}
+              
+              {/* Слайдер позиции */}
+              <div className="position-slider-container">
+                <label className="slider-label">
+                  Вертикальная позиция: {editImagePositionY}%
+                </label>
+                <input 
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={editImagePositionY}
+                  onChange={(e) => setEditImagePositionY(Number(e.target.value))}
+                  className="position-slider"
+                />
+                <p className="slider-hint">
+                  0% = верх фото (небо) • 25% = лицо • 50% = середина • 100% = низ фото
+                </p>
+              </div>
+              
+              <div className="bio-modal-actions">
+                <button 
+                  className="btn-cancel-bio" 
+                  onClick={closePhotoModal}
+                >
+                  Отмена
+                </button>
+                <button 
+                  className="btn-save-bio" 
+                  onClick={handleSavePhoto}
+                >
+                  Сохранить
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Модалка назначения победителя */}
+      {showAssignLeaderModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignLeaderModal(false)}>
+          <div className="modal-content assign-leader-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close" 
+              onClick={() => setShowAssignLeaderModal(false)}
+              title="Закрыть"
+            >
+              ×
+            </button>
+            
+            <h2 className="modal-title">
+              Назначить победителя: {assignUser === 'maxim' ? 'Максим' : 'Олег'}
+            </h2>
+            
+            <div className="assign-category-info">
+              <strong>Категория:</strong> {
+                assignCategory === 'overall' ? 'Общий балл' :
+                assignCategory === 'overall_worst' ? 'Худший поэт' :
+                CATEGORIES[assignCategory]?.name || assignCategory
+              }
+            </div>
+            
+            {(() => {
+              const contenders = getContenders();
+              
+              if (contenders.length === 0) {
+                return <p className="no-contenders">Нет претендентов (все поэты имеют разные баллы или недостаточно поэтов)</p>;
+              }
+              
+              if (contenders.length === 1) {
+                return (
+                  <div>
+                    <p className="single-contender">Только один претендент:</p>
+                    <div className="contender-card">
+                      <img src={contenders[0].imageUrl} alt={contenders[0].name} />
+                      <div>
+                        <h3>{contenders[0].name}</h3>
+                        <p>Балл: {(contenders[0].score || contenders[0].rating).toFixed(2)}</p>
+                      </div>
+                      <button 
+                        className="btn-assign-leader"
+                        onClick={() => assignLeader(contenders[0].id)}
+                      >
+                        Назначить
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div>
+                  <p className="contenders-count">Претендентов: {contenders.length}</p>
+                  <div className="contenders-list">
+                    {contenders.map(poet => (
+                      <div key={poet.id} className="contender-card">
+                        <img src={poet.imageUrl} alt={poet.name} />
+                        <div>
+                          <h3>{poet.name}</h3>
+                          <p>Балл: {(poet.score || poet.rating).toFixed(2)}</p>
+                        </div>
+                        <button 
+                          className="btn-assign-leader"
+                          onClick={() => assignLeader(poet.id)}
+                        >
+                          Назначить
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

@@ -31,14 +31,7 @@ const MODEL_NAME = 'gemini-flash-latest';
  *   - Художественные тексты, стихи
  *   - Разнообразные, неожиданные формулировки
  */
-const GENERATION_TEMPERATURE = 0.5;
-
-/**
- * Количество попыток для усреднения AI-рейтингов
- * Чем больше - тем справедливее, но дольше
- * Рекомендуется: 3 (оптимальный баланс) или 5 (максимальная точность)
- */
-const AI_RATING_ATTEMPTS = 3;
+const GENERATION_TEMPERATURE = 0.1;
 
 /**
  * Инициализация Gemini AI клиента
@@ -108,7 +101,59 @@ export const generateContent = async (prompt, temperature = GENERATION_TEMPERATU
 };
 
 /**
- * Генерация AI-рейтинга с максимальной объективностью
+ * НОВАЯ ВЕРСИЯ: Генерация AI-рейтинга по отдельным категориям
+ * Делает 4 отдельных запроса (по одному на каждую категорию)
+ * @param {string} poetName - Имя поэта
+ * @param {Object} promptFunctions - Объект с функциями промптов {creativity, influence, drama, beauty}
+ * @param {Array} existingRatings - Массив уже оцененных поэтов для контекста
+ * @returns {Promise<Object>} - Рейтинг { creativity, influence, drama, beauty }
+ */
+export const generateAIRatingByCat = async (poetName, promptFunctions, existingRatings = []) => {
+  const ratings = {
+    creativity: 0,
+    influence: 0,
+    drama: 0,
+    beauty: 0
+  };
+  
+  const categories = [
+    { key: 'creativity', promptFunc: promptFunctions.creativity },
+    { key: 'influence', promptFunc: promptFunctions.influence },
+    { key: 'drama', promptFunc: promptFunctions.drama },
+    { key: 'beauty', promptFunc: promptFunctions.beauty }
+  ];
+  
+  // Делаем 4 отдельных запроса (по одному на категорию)
+  for (const { key, promptFunc } of categories) {
+    try {
+      const prompt = promptFunc(poetName, existingRatings);
+      const response = await generateContent(prompt, 0); // temperature = 0 для детерминизма
+      
+      // Парсим одиночное число из ответа (0.5-5 с шагом 0.5)
+      const match = response.match(/([0-5](?:\.[05])?|0\.5)/);
+      if (match) {
+        const rating = parseFloat(match[1]);
+        
+        // Проверка валидности (от 0.5 до 5, с шагом 0.5)
+        if (rating >= 0.5 && rating <= 5 && (rating * 2) % 1 === 0) {
+          ratings[key] = rating;
+        } else {
+          console.warn(`Некорректная оценка для ${key}: ${rating}`);
+        }
+      } else {
+        console.warn(`Не удалось распарсить оценку для ${key} из ответа:`, response);
+      }
+    } catch (err) {
+      console.error(`Ошибка при генерации ${key}:`, err);
+      // Оставляем 0 для этой категории
+    }
+  }
+  
+  return ratings;
+};
+
+/**
+ * УСТАРЕВШАЯ ВЕРСИЯ: Генерация AI-рейтинга с усреднением
  * Делает несколько запросов и усредняет результаты для большей справедливости
  * @param {string} prompt - Промпт для генерации
  * @param {function} parseFunction - Функция для парсинга ответа AI
@@ -178,7 +223,7 @@ export const checkAPIAvailability = async () => {
       contents: 'Test',
       generationConfig: {
         temperature: GENERATION_TEMPERATURE,
-        maxOutputTokens: 100,
+        //maxOutputTokens: 100,
       },
     });
     return true;

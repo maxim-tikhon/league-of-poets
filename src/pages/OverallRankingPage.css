@@ -116,7 +116,7 @@
   background: rgba(199, 163, 107, 0.03);
   border: 1px solid rgba(199, 163, 107, 0.15);
   border-radius: 6px;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -413,7 +413,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   border-width: 1px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -463,24 +463,24 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-card.expanded {
   display: flex;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1rem;
   background: white;
   border: 1px solid rgba(199, 163, 107, 0.2);
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 0.6rem 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   cursor: pointer;
 }
 
 .overall-card.expanded .rank-number {
-  color: var(--ink);
+  /* color: var(--ink);
   font-weight: 400;
   font-size: 1.6rem;
   flex-shrink: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-width: 2.5rem;
   text-align: left;
-  align-self: center;
+  align-self: center; */
 }
 
 .overall-avatar {
@@ -506,6 +506,8 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   color: inherit;
   transition: opacity 0.2s ease;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .overall-poet-name-link:hover,
@@ -552,22 +554,22 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 
 
 /* Имя поэта в заголовке */
-.overall-card.expanded .overall-poet-name {
+/* .overall-card.expanded .overall-poet-name {
   flex: 0 0 auto;
   margin: 0;
   font-size: 1.4rem;
   font-weight: 400;
-}
+} */
 
 /* Оценки в заголовке */
-.scores-compact-row.expanded {
+/* .scores-compact-row.expanded {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
-}
+} */
 
-.scores-compact-row.expanded .score-compact-item {
+/* .scores-compact-row.expanded .score-compact-item {
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
   font-size: 1.1rem;
@@ -580,11 +582,11 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 
 .scores-compact-row.expanded .score-compact-value {
   font-size: 1.1rem;
-}
+} */
 
-.scores-compact-row.expanded .score-compact-item.average .score-compact-value {
+/* .scores-compact-row.expanded .score-compact-item.average .score-compact-value {
   font-size: 1.1rem;
-}
+} */
 
 /* Сетка категорий */
 .overall-card.expanded .overall-ratings-grid {
@@ -816,8 +818,8 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
 /* Больше размер для некомпактного режима */
 .overall-card:not(.compact) .winner-badge,
 .category-rank-card:not(.compact) .winner-badge {
-  width: 60px;
-  height: 60px;
+  width: 55px;
+  height: 55px;
 }
 
 .winner-badge:hover {
@@ -873,6 +875,11 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
 .overall-avatar.compact {
   width: 2.5rem;
   height: 2.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  align-self: center;
 }
 
 .overall-content {
@@ -886,13 +893,15 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
   /* color: var(--burgundy); */
 }
 
-.overall-poet-name.compact {
+.overall-poet-name {
   flex: 1;
   font-size: 1.1rem;
   margin: 0;
   font-weight: 400;
   min-width: 150px;
   color: var(--ink);
+  display: flex;
+  align-items: center;
 }
 
 /* Компактное отображение оценок */
@@ -1231,7 +1240,6 @@ body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, bod
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
   transition: transform 0.5s ease;
 }
 /* 
@@ -1417,7 +1425,7 @@ body[data-theme="letterboxd"] .award-winner-name {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   border-width: 1px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -1461,7 +1469,7 @@ body[data-theme="letterboxd"] .award-winner-name {
   flex: 1;
   font-size: 1.1rem;
   margin: 0;
-  font-weight: 600;
+  font-weight: 400;
   min-width: 150px;
   color: var(--ink);
 }
@@ -1524,11 +1532,11 @@ body[data-theme="letterboxd"] .award-winner-name {
     gap: 1rem;
   }
   
-  .overall-poet-name.expanded {
+  /* .overall-poet-name.expanded {
     font-size: 1.5rem;
     min-width: 100%;
     text-align: center;
-  }
+  } */
   
   .scores-compact-row.expanded {
     flex-wrap: wrap;
@@ -1553,7 +1561,7 @@ body[data-theme="letterboxd"] .award-winner-name {
     gap: 0.75rem;
   }
   
-  .overall-poet-name.compact {
+  .overall-poet-name {
     min-width: 100%;
     font-size: 1rem;
   }

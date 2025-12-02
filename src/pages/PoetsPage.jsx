@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
-import { generateContent, generateAIRating } from '../ai/gemini';
-import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingPrompt, parseAIRating, generateRandomPoetPrompt } from '../ai/prompts';
+import { generateContent, generateAIRatingByCat } from '../ai/gemini';
+import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt, generateRandomPoetPrompt } from '../ai/prompts';
 import './PoetsPage.css';
 
 const PoetsPage = () => {
@@ -153,8 +153,17 @@ const PoetsPage = () => {
             ratings: p.aiRatings
           }));
         
-        const aiRatingPrompt = generateAIRatingPrompt(trimmedName, existingAIRatings);
-        const aiRatings = await generateAIRating(aiRatingPrompt, parseAIRating);
+        // Генерируем AI рейтинги (4 отдельных запроса, по одному на категорию)
+        const aiRatings = await generateAIRatingByCat(
+          trimmedName,
+          {
+            creativity: generateAIRatingCreativityPrompt,
+            influence: generateAIRatingMoralPrompt,
+            drama: generateAIRatingDramaPrompt,
+            beauty: generateAIRatingBeautyPrompt
+          },
+          existingAIRatings
+        );
         await updatePoet(newPoet.id, { aiRatings });
 
       } catch (err) {
@@ -435,7 +444,13 @@ const PoetsPage = () => {
                 <div className="poet-card-image">
                   {poet.imageUrl ? (
                     <>
-                      <img src={poet.imageUrl} alt={poet.name} />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name}
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                       <div className="poet-card-overlay">
                         <h3 className="poet-card-name">
                           {(() => {
@@ -452,8 +467,8 @@ const PoetsPage = () => {
                             return poet.name;
                           })()}
                         </h3>
-                        {hasRating && (
-                          <div className={`poet-card-rating ${showRatings ? 'always-visible' : ''}`}>
+                        {hasRating && showRatings && (
+                          <div className="poet-card-rating always-visible">
                             {(Math.round(averageRating * 100) / 100).toFixed(2)}
                           </div>
                         )}
@@ -466,14 +481,14 @@ const PoetsPage = () => {
                     </div>
                   )}
                 </div>
-                <button
+                {/* <button
                   onClick={(e) => {
                     e.stopPropagation(); // Предотвращаем переход на страницу поэта
                     handleDeleteClick(poet.id, poet.name);
                   }}
                   className="btn-delete-card"
                   title="Удалить поэта"
-                ></button>
+                ></button> */}
               </div>
             );
           })}

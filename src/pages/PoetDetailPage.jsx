@@ -68,6 +68,7 @@ const PoetDetailPage = () => {
   const [showPoemModal, setShowPoemModal] = useState(false);
   const [selectedPoem, setSelectedPoem] = useState(null);
   
+  
   // Получение текущего пользователя из localStorage
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -150,19 +151,70 @@ const PoetDetailPage = () => {
     return calculateScore(currentUser, poet.id);
   };
   
-  // Проверка конфликта: есть ли другие поэты с таким же максимальным баллом
-  const checkForConflict = useCallback((changedPoetId, category) => {
-    if (!currentUser) return;
+  // Проверка конфликта: есть ли другие поэты с таким же максимальным/минимальным баллом
+  // Возвращает true, если дуэль была запущена
+  const checkForConflict = useCallback((changedPoetId, category, changedCategory = null, newRatingValue = null) => {
+    if (!currentUser) return false;
     
-    // Для общего балла используем calculateScore, для категорий - рейтинг категории
-    const poetsWithRatings = poets.map(poet => ({
-      id: poet.id,
-      name: poet.name,
-      imageUrl: poet.imageUrl,
-      rating: category === 'overall' 
-        ? calculateScore(currentUser, poet.id)
-        : (ratings[currentUser]?.[poet.id]?.[category] || 0)
-    })).filter(p => p.rating > 0);
+    
+    // Для overall_worst используем calculateScore, для категорий - рейтинг категории
+    const poetsWithRatings = poets.map(poet => {
+      let rating;
+      
+      if (category === 'overall' || category === 'overall_worst') {
+        // Для overall пересчитываем score с учетом нового значения
+        if (poet.id === changedPoetId && changedCategory && newRatingValue !== null) {
+          const poetRatings = ratings[currentUser]?.[poet.id] || {};
+          const updatedRatings = { ...poetRatings, [changedCategory]: newRatingValue };
+          
+          if (category === 'overall' && poet.id === changedPoetId) {
+          }
+          
+          let totalScore = 0;
+          let totalWeight = 0;
+          
+          if (category === 'overall' && poet.id === changedPoetId) {
+          }
+          
+          Object.entries(CATEGORIES).forEach(([key, { coefficient }]) => {
+            const ratingValue = updatedRatings[key] || 0;
+            
+            if (category === 'overall' && poet.id === changedPoetId) {
+            }
+            
+            if (ratingValue > 0) {
+              totalScore += ratingValue * coefficient;
+              totalWeight += coefficient;
+            }
+          });
+          rating = totalWeight > 0 ? totalScore / totalWeight : 0;
+          
+          if (category === 'overall' && poet.id === changedPoetId) {
+          }
+          
+          if (category === 'overall' && poet.id === changedPoetId) {
+          }
+        } else {
+          rating = calculateScore(currentUser, poet.id);
+          if (category === 'overall' && poet.id === changedPoetId) {
+          }
+        }
+      } else {
+        rating = (poet.id === changedPoetId && newRatingValue !== null)
+          ? newRatingValue // ← Используем новое значение для измененного поэта!
+          : (ratings[currentUser]?.[poet.id]?.[category] || 0);
+      }
+      
+      return {
+        id: poet.id,
+        name: poet.name,
+        imageUrl: poet.imageUrl,
+        rating
+      };
+    }).filter(p => p.rating > 0);
+    
+    if (category === 'overall') {
+    }
     
     if (poetsWithRatings.length === 0) {
       // Нет поэтов с рейтингом - сбрасываем лидера если был
@@ -170,15 +222,66 @@ const PoetDetailPage = () => {
       if (explicitLeader) {
         setCategoryLeader(currentUser, category, null);
       }
-      return;
+      return false;
     }
     
-    // Находим максимальный рейтинг
-    poetsWithRatings.sort((a, b) => b.rating - a.rating);
+    // Для overall_worst проверяем худшего поэта (минимальный балл)
+    // Для остальных - лучшего (максимальный балл)
+    const isWorstCategory = category === 'overall_worst';
+    
+    if (isWorstCategory) {
+      // Проверяем только если поэтов достаточно (>5)
+      if (poetsWithRatings.length <= 5) {
+        return false;
+      }
+    }
+    
+    // Находим максимальный или минимальный рейтинг
+    poetsWithRatings.sort((a, b) => isWorstCategory ? a.rating - b.rating : b.rating - a.rating);
     const topRating = poetsWithRatings[0].rating;
     const topPoets = poetsWithRatings.filter(p => Math.abs(p.rating - topRating) < 0.01);
     
+    if (isWorstCategory) {
+    } else {
+    }
+    topPoets.forEach(p => {
+    });
+    
     const explicitLeader = categoryLeaders[currentUser]?.[category];
+    if (isWorstCategory) {
+    } else {
+    }
+    
+    // ВАЖНО: Сначала проверяем, не потерял ли текущий лидер свою позицию
+    if (explicitLeader) {
+      const leaderStillInTop = topPoets.some(p => p.id === explicitLeader);
+      
+      if (!leaderStillInTop) {
+        // Текущий лидер больше не в топе - сбрасываем
+        setCategoryLeader(currentUser, category, null);
+        
+        // Если после сброса остался только ОДИН претендент - автоматически назначаем
+        if (topPoets.length === 1) {
+          setCategoryLeader(currentUser, category, topPoets[0].id);
+          return false;
+        }
+        // Если несколько претендентов - запускаем дуэль между ними
+        else if (topPoets.length > 1) {
+          const challenger = topPoets.find(p => p.id === changedPoetId);
+          const opponent = topPoets.find(p => p.id !== changedPoetId);
+          if (challenger && opponent) {
+            setBattleConflict({
+              category: isWorstCategory ? 'overall' : category,
+              poet1: challenger,
+              poet2: opponent,
+              isWorstConflict: isWorstCategory
+            });
+            return true;
+          }
+        }
+        return false;
+      }
+    }
     
     // Если только один поэт с максимальным рейтингом
     if (topPoets.length === 1) {
@@ -193,10 +296,13 @@ const PoetDetailPage = () => {
         setCategoryLeader(currentUser, category, newLeader);
       }
       // Если это тот же лидер - ничего не делать
-      return;
+      else {
+      }
+      return false; // Дуэль не запущена
     }
     
     // Если несколько поэтов с топовым рейтингом - показываем дуэль
+    
     if (explicitLeader) {
       const leaderStillOnTop = topPoets.some(p => p.id === explicitLeader);
       
@@ -208,34 +314,79 @@ const PoetDetailPage = () => {
         const opponent = topPoets.find(p => p.id !== changedPoetId);
         if (challenger && opponent) {
           setBattleConflict({
-            category,
+            category: isWorstCategory ? 'overall' : category,
             poet1: challenger,
-            poet2: opponent
+            poet2: opponent,
+            isWorstConflict: isWorstCategory
           });
+          return true; // Дуэль запущена
+        } else {
+          return false;
         }
       } else if (changedPoetId !== explicitLeader) {
         // Лидер все еще в топе, НО изменился НЕ он, а кто-то другой
         // Это значит кто-то догнал лидера - нужен баттл!
+        
+        if (category === 'overall') {
+        }
+        
         const leader = topPoets.find(p => p.id === explicitLeader);
         const challenger = topPoets.find(p => p.id === changedPoetId);
+        
+        if (category === 'overall') {
+        }
+        
         if (leader && challenger) {
+          if (category === 'overall') {
+          }
           setBattleConflict({
-            category,
+            category: isWorstCategory ? 'overall' : category,
             poet1: leader,
-            poet2: challenger
+            poet2: challenger,
+            isWorstConflict: isWorstCategory
           });
+          return true; // Дуэль запущена
+        } else {
+          if (category === 'overall') {
+          }
+          return false;
+        }
+      } else if (changedPoetId === explicitLeader) {
+        // Изменился САМ лидер, и есть другие поэты с таким же топовым рейтингом
+        // Нужен баттл между лидером и первым другим поэтом с топовым рейтингом!
+        const leader = topPoets.find(p => p.id === explicitLeader);
+        const opponent = topPoets.find(p => p.id !== explicitLeader);
+        if (leader && opponent) {
+          setBattleConflict({
+            category: isWorstCategory ? 'overall' : category,
+            poet1: leader,
+            poet2: opponent,
+            isWorstConflict: isWorstCategory
+          });
+          return true; // Дуэль запущена
+        } else {
+          return false;
         }
       }
+      if (category === 'overall') {
+      }
+      return false; // Не подошло ни под один кейс
     } else {
+      if (category === 'overall') {
+      }
       // Нет явного лидера, показываем баттл
       const challenger = topPoets.find(p => p.id === changedPoetId);
       const opponent = topPoets.find(p => p.id !== changedPoetId);
       if (challenger && opponent) {
         setBattleConflict({
-          category,
+          category: isWorstCategory ? 'overall' : category,
           poet1: challenger,
-          poet2: opponent
+          poet2: opponent,
+          isWorstConflict: isWorstCategory
         });
+        return true; // Дуэль запущена
+      } else {
+        return false;
       }
     }
   }, [poets, ratings, currentUser, categoryLeaders, setCategoryLeader, calculateScore]);
@@ -252,6 +403,7 @@ const PoetDetailPage = () => {
       lastRatingChange.current = {
         poetId: poet.id,
         category,
+        newValue, // ← Сохраняем новое значение!
         timestamp: Date.now()
       };
     }
@@ -268,31 +420,65 @@ const PoetDetailPage = () => {
   // useEffect для проверки конфликта после обновления ratings
   useEffect(() => {
     if (lastRatingChange.current) {
-      const { poetId, category } = lastRatingChange.current;
+      const { poetId, category, newValue } = lastRatingChange.current;
       
-      // Проверяем конфликт для измененной категории
-      checkForConflict(poetId, category);
       
-      // НЕ проверяем общий балл здесь - он будет проверен после завершения дуэли за категорию
+      // Проверяем конфликт для измененной категории (передаем новое значение!)
+      const categoryDuelLaunched = checkForConflict(poetId, category, category, newValue);
+      
+      // ВАЖНО: Если изменилась категория (не overall напрямую), нужно проверить overall и worst
+      // Проверка overall/worst произойдет ПОСЛЕ завершения категорийной дуэли (если она запустится)
+      // ИЛИ сразу (если дуэль за категорию не запустится)
+      if (category !== 'overall' && category !== 'overall_worst') {
+        if (!categoryDuelLaunched) {
+          const overallDuelLaunched = checkForConflict(poetId, 'overall', category, newValue);
+          
+          if (!overallDuelLaunched) {
+            checkForConflict(poetId, 'overall_worst', category, newValue);
+          } else {
+          }
+        } else {
+        }
+      }
+      
       lastRatingChange.current = null; // Сбрасываем после проверки
     }
-  }, [ratings, checkForConflict]);
+  }, [ratings, checkForConflict, battleConflict]);
   
   // Обработчик выбора победителя в баттле
   const handleBattleSelect = (winnerId) => {
     if (battleConflict && currentUser) {
-      const wasCategory = battleConflict.category !== 'overall';
       
-      setCategoryLeader(currentUser, battleConflict.category, winnerId);
+      const wasCategory = battleConflict.category !== 'overall';
+      const isWorstDuel = battleConflict.isWorstConflict;
+      
+      // Для худшего поэта сохраняем в 'overall_worst', для остальных - в category
+      const categoryToSave = isWorstDuel ? 'overall_worst' : battleConflict.category;
+      setCategoryLeader(currentUser, categoryToSave, winnerId);
       setBattleConflict(null);
       
-      // После завершения дуэли за категорию, проверяем нужна ли дуэль за overall
-      if (wasCategory && initialChangedPoetRef.current) {
+      // После завершения дуэли за категорию, проверяем нужна ли дуэль за overall и worst
+      if (wasCategory && !isWorstDuel && initialChangedPoetRef.current) {
         // Используем setTimeout чтобы состояние успело обновиться
         setTimeout(() => {
           // Передаем ИЗНАЧАЛЬНОГО поэта (того, для кого меняли оценку)
           checkForConflict(initialChangedPoetRef.current, 'overall');
+          
+          // После проверки overall, проверяем worst (если поэтов достаточно)
+          setTimeout(() => {
+            if (!battleConflict) {
+              checkForConflict(initialChangedPoetRef.current, 'overall_worst');
+            } else {
+            }
+          }, 50);
         }, 100);
+      } else if (!wasCategory && !isWorstDuel && initialChangedPoetRef.current) {
+        // Если завершилась дуэль за overall, проверяем worst
+        setTimeout(() => {
+          checkForConflict(initialChangedPoetRef.current, 'overall_worst');
+        }, 100);
+      } else if (isWorstDuel) {
+      } else {
       }
     }
   };
@@ -534,7 +720,7 @@ const PoetDetailPage = () => {
       
       // Проверяем, является ли строка подзаголовком 
       // Форматы: "YYYY — событие", "YYYY-YYYY — событие", "Осень YYYY — событие", "Январь YYYY — событие"
-      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
+      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|Начало|Конец)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
       
       if (isHeader) {
         // Если накопился параграф перед заголовком, добавляем его
@@ -608,6 +794,7 @@ const PoetDetailPage = () => {
     
     const lines = text.split('\n');
     const elements = [];
+    let isReviewsSection = false;
     
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
@@ -615,10 +802,32 @@ const PoetDetailPage = () => {
       // Пропускаем пустые строки
       if (!trimmedLine) return;
       
-      // Проверяем, содержит ли строка формат "Название: текст"
+      // Проверяем, начинается ли раздел "Отзывы:"
+      if (trimmedLine === 'Отзывы:') {
+        isReviewsSection = true;
+        elements.push(
+          <h3 key={`reviews-header-${index}`} className="creativity-reviews-header">
+            Отзывы:
+          </h3>
+        );
+        return;
+      }
+      
+      // Если мы в разделе отзывов и строка начинается с ОТЗЫВ
+      if (isReviewsSection && trimmedLine.toLowerCase().startsWith('отзыв')) {
+        const reviewText = trimmedLine.replace(/^отзыв\s*/i, '').trim();
+        elements.push(
+          <div key={`review-${index}`} className="creativity-review-item">
+            <span className="creativity-review-text">{reviewText}</span>
+          </div>
+        );
+        return;
+      }
+      
+      // Обычные поля формата "Название: текст"
       const match = trimmedLine.match(/^([^:]+):\s*(.+)$/);
       
-      if (match) {
+      if (match && !isReviewsSection) {
         const label = match[1].trim();
         const value = match[2].trim();
         
@@ -801,12 +1010,17 @@ const PoetDetailPage = () => {
           {/* Колонка 1 - фото */}
           {poet.imageUrl && (
             <div className="poet-portrait">
-              <img 
-                src={poet.imageUrl} 
-                alt={poet.name}
-                onClick={() => setEnlargedImage({ url: poet.imageUrl, name: poet.name })}
-                className="poet-portrait-img-clickable"
-              />
+              <div className="poet-portrait-image-wrapper">
+                <img 
+                  src={poet.imageUrl} 
+                  alt={poet.name}
+                  onClick={() => setEnlargedImage({ url: poet.imageUrl, name: poet.name })}
+                  className="poet-portrait-img-clickable"
+                  style={{ 
+                    objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                  }}
+                />
+              </div>
               
               {/* Статистика по стихам */}
               <div className="poem-stats">
@@ -878,10 +1092,10 @@ const PoetDetailPage = () => {
                             ? (currentTheme === 'classic' ? '/images/clike.png' : '/images/like.png')
                             : '/images/notlike.png'
                         }
-                        alt={isLiked() ? 'Убрать из избранного' : 'Добавить в избранное'}
+                        alt={isLiked() ? 'Убрать лайк' : 'Лайкнуть'}
                         className="like-icon"
                         onClick={handleLikeClick}
-                        title={isLiked() ? 'Убрать из избранного' : 'Добавить в избранное'}
+                        title={isLiked() ? 'Убрать лайк' : 'Лайкнуть'}
                       />
                     </div>
                     
@@ -971,7 +1185,7 @@ const PoetDetailPage = () => {
             className={`menu-tab ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
           >
-            Влияние
+            Мораль
           </button>
           <button 
             className={`menu-tab ${activeTab === 'drama' ? 'active' : ''}`}

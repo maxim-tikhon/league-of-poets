@@ -1063,7 +1063,14 @@ const OverallRankingPage = () => {
                         </div>
                         <div className="award-poet-section">
                           {poet.imageUrl && (
-                            <img src={poet.imageUrl} alt={poet.name} className="award-winner-avatar" />
+                            <img 
+                              src={poet.imageUrl} 
+                              alt={poet.name} 
+                              className="award-winner-avatar"
+                              style={{ 
+                                objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                              }}
+                            />
                           )}
                         </div>
                       </div>
@@ -1117,7 +1124,13 @@ const OverallRankingPage = () => {
                   
                   {poet.imageUrl && (
                     <div className="overall-avatar compact">
-                      <img src={poet.imageUrl} alt={poet.name} />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name}
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                     </div>
                   )}
                   
@@ -1219,7 +1232,13 @@ const OverallRankingPage = () => {
                   
                   {poet.imageUrl && (
                     <div className="overall-avatar compact">
-                      <img src={poet.imageUrl} alt={poet.name} />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name}
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                     </div>
                   )}
                   
@@ -1245,8 +1264,8 @@ const OverallRankingPage = () => {
                           <span className="ai-rating-label">Т:</span>
                           <span className="ai-rating-value">{aiRatings.creativity?.toFixed(1) || '—'}</span>
                         </div>
-                        <div className="ai-rating-mini" title="Влияние">
-                          <span className="ai-rating-label">В:</span>
+                        <div className="ai-rating-mini" title="Мораль">
+                          <span className="ai-rating-label">М:</span>
                           <span className="ai-rating-value">{aiRatings.influence?.toFixed(1) || '—'}</span>
                         </div>
                         <div className="ai-rating-mini" title="Драма">
@@ -1333,7 +1352,13 @@ const OverallRankingPage = () => {
                   )}
                   {poet.imageUrl && (
                     <div className="overall-avatar compact">
-                      <img src={poet.imageUrl} alt={poet.name} />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name}
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                     </div>
                   )}
                   <Link to={`/poet/${poet.id}`} className="overall-poet-name-link">
@@ -1387,7 +1412,9 @@ const OverallRankingPage = () => {
                 {/* Фотография на всю высоту */}
                 {poet.imageUrl && (
                   <div className="overall-avatar">
-                    <img src={poet.imageUrl} alt={poet.name} />
+                    <img src={poet.imageUrl} alt={poet.name} style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }} />
                   </div>
                 )}
                 
@@ -1521,7 +1548,9 @@ const OverallRankingPage = () => {
                 )}
                 {poet.imageUrl && (
                   <div className="overall-avatar compact">
-                    <img src={poet.imageUrl} alt={poet.name} />
+                    <img src={poet.imageUrl} alt={poet.name} style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }} />
                   </div>
                 )}
                 <Link to={`/poet/${poet.id}`} className="category-poet-name-link">

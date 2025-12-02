@@ -388,7 +388,7 @@ const AwardsPage = () => {
     },
     {
       id: 'influence',
-      title: 'Влияние',
+      title: 'Мораль',
       icon: '/images/badges/influence.png',
       overall: getCategoryWinnersOverall('influence'),
       maxim: getPersonalCategoryLeader('maxim', 'influence'),

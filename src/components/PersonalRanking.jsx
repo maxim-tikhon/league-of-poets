@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import StarRating from './StarRating';
 import Tooltip from './Tooltip';
-import BattleModal from './BattleModal';
 import './PersonalRanking.css';
 
 const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
@@ -12,9 +11,6 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   const [sortBy, setSortBy] = useState('overall'); // 'overall', category key or 'awards'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [expandedCards, setExpandedCards] = useState([]); // Развернутые карточки
-  const [battleConflict, setBattleConflict] = useState(null); // { category, poet1, poet2, isWorstConflict }
-  const changedPoetRef = useRef(null); // { poetId, category } - поэт, для которого изменилась оценка
-  const originalPoetIdRef = useRef(null); // ID изначального поэта (для цепочки дуэлей)
   const scrolledToPoetRef = useRef(null); // ID поэта, к которому уже был выполнен скролл
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
   const [currentTheme, setCurrentTheme] = useState('classic'); // Текущая тема
@@ -32,10 +28,10 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   }, []);
 
   // Функция форматирования общего балла (2 знака после запятой)
-  const formatScore = useCallback((score) => {
+  const formatScore = (score) => {
     // Математическое округление (2.965 → 2.97)
     return (Math.round(score * 100) / 100).toFixed(2);
-  }, []);
+  };
 
   const getSortedPoets = () => {
     const poetsWithScores = poets
@@ -141,35 +137,19 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
         // Находим всех поэтов с максимальным рейтингом (на случай ничьей)
         const topPoets = poetsWithRatings.filter(p => Math.abs(p.rating - topRating) < 0.01);
         
-        // Проверяем, есть ли явно выбранный лидер
+        // Проверяем, есть ли явно выбранный лидер через дуэль
         const explicitLeader = categoryLeaders[raterId]?.[category];
         
         if (explicitLeader) {
-          // Проверяем, что у явно выбранного лидера есть оценка в этой категории
-          const leaderHasRating = poetsWithRatings.some(p => p.id === explicitLeader);
-          const leaderStillOnTop = topPoets.some(p => p.id === explicitLeader);
-          
-          // Если у лидера нет оценки ИЛИ он больше не в топе - сбрасываем его статус и назначаем нового
-          if (!leaderHasRating || !leaderStillOnTop) {
-            setCategoryLeader(raterId, category, null);
-            
-            // Автоматически назначаем нового лидера, если есть только один с максимальным баллом
-            if (topPoets.length === 1) {
-              setCategoryLeader(raterId, category, topPoets[0].id);
-              winners[category] = [topPoets[0].id];
-            } else {
-              winners[category] = [];
-            }
-          } else {
-            // Если есть явный лидер И он все еще в топе - он победитель
-            winners[category] = [explicitLeader];
-          }
+          // Если лидер выбран через дуэль - он и есть победитель
+          // (дуэль уже решила, дополнительные проверки не нужны)
+          winners[category] = [explicitLeader];
         }
-        // Если только один поэт с максимальным рейтингом - он победитель
+        // Если НЕТ явного лидера и только один поэт с максимальным рейтингом - автоматический победитель
         else if (topPoets.length === 1) {
           winners[category] = [topPoets[0].id];
         }
-        // Если несколько поэтов с максимальным рейтингом и нет явного лидера - нет победителя
+        // Если несколько поэтов с максимальным рейтингом и нет явного лидера - нужна дуэль
         else {
           winners[category] = [];
         }
@@ -187,43 +167,26 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       const topScore = poetsWithScores[0].score;
       const topPoets = poetsWithScores.filter(p => Math.abs(p.score - topScore) < 0.01);
       
-      // Проверяем, есть ли явно выбранный лидер
+      // Проверяем, есть ли явно выбранный лидер через дуэль
       const overallExplicitLeader = categoryLeaders[raterId]?.['overall'];
       
       if (overallExplicitLeader) {
-        // Проверяем, что у явно выбранного лидера есть оценки
-        const leaderHasScores = poetsWithScores.some(p => p.id === overallExplicitLeader);
-        const leaderStillOnTop = topPoets.some(p => p.id === overallExplicitLeader);
-        
-        // Если у лидера нет оценок ИЛИ он больше не в топе - сбрасываем его статус и назначаем нового
-        if (!leaderHasScores || !leaderStillOnTop) {
-          setCategoryLeader(raterId, 'overall', null);
-          
-          // Автоматически назначаем нового лидера, если есть только один с максимальным баллом
-          if (topPoets.length === 1) {
-            setCategoryLeader(raterId, 'overall', topPoets[0].id);
-            winners.overall = [topPoets[0].id];
-          } else {
-            winners.overall = [];
-          }
-        } else {
-          // Если есть явный лидер И он все еще в топе - он победитель
-          winners.overall = [overallExplicitLeader];
-        }
+        // Если лидер выбран через дуэль - он и есть победитель
+        // (дуэль уже решила, дополнительные проверки не нужны)
+        winners.overall = [overallExplicitLeader];
       }
-      // Если только один поэт с максимальным баллом - он победитель
+      // Если НЕТ явного лидера и только один поэт с максимальным баллом - автоматический победитель
       else if (topPoets.length === 1) {
         winners.overall = [topPoets[0].id];
       }
-      // Если несколько поэтов с максимальным баллом и нет явного лидера - нет победителя
-      // (нужна дуэль для выбора)
+      // Если несколько поэтов с максимальным баллом и нет явного лидера - нужна дуэль
       else {
         winners.overall = [];
       }
     }
     
     return winners;
-  }, [poets, ratings, categoryLeaders, raterId, calculateScore, setCategoryLeader]);
+  }, [poets, ratings, categoryLeaders, raterId, calculateScore]);
 
   // Определяем худшего по общему баллу
   const categoryLosers = useMemo(() => {
@@ -247,353 +210,26 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       const explicitLoser = categoryLeaders[raterId]?.['overall_worst'];
       
       if (explicitLoser) {
-        // Проверяем, что у явно выбранного худшего есть оценки
-        const loserHasScores = poetsWithScores.some(p => p.id === explicitLoser);
-        const loserStillAtBottom = lowestPoets.some(p => p.id === explicitLoser);
-        
-        // Если у худшего нет оценок ИЛИ он больше не в низу - сбрасываем его статус и назначаем нового
-        if (!loserHasScores || !loserStillAtBottom) {
-          setCategoryLeader(raterId, 'overall_worst', null);
-          
-          // Автоматически назначаем нового худшего, если есть только один с минимальным баллом
-          if (lowestPoets.length === 1) {
-            setCategoryLeader(raterId, 'overall_worst', lowestPoets[0].id);
-            losers.overall = [lowestPoets[0].id];
-          }
-        } else {
-          // Если есть явно выбранный худший, у него есть оценки, и он все еще среди худших - он и есть худший
-          losers.overall = [explicitLoser];
-        }
-      } else if (lowestPoets.length === 1) {
-        // Если только один поэт с минимальным баллом - он худший
+        // Если худший выбран через дуэль - он и есть худший
+        // (дуэль уже решила, дополнительные проверки не нужны)
+        losers.overall = [explicitLoser];
+      }
+      // Если НЕТ явно выбранного худшего и только один поэт с минимальным баллом - автоматически худший
+      else if (lowestPoets.length === 1) {
         losers.overall = [lowestPoets[0].id];
+      }
+      // Если несколько поэтов с минимальным баллом и нет явно выбранного - нужна дуэль
+      else {
+        losers.overall = [];
       }
     }
     
     return losers;
-  }, [poets, raterId, calculateScore, categoryLeaders, setCategoryLeader]);
+  }, [poets, raterId, calculateScore, categoryLeaders]);
   
-  // Проверка дуэли для изменённого поэта
-  const checkDuel = useCallback((poetId, changedCategory) => {
-    const poet = poets.find(p => p.id === poetId);
-    if (!poet) return;
-    
-    // 1. ПРОВЕРКА КАТЕГОРИИ (если изменилась категория, а не overall напрямую)
-    if (changedCategory !== 'overall') {
-      const poetCategoryScore = ratings[raterId]?.[poetId]?.[changedCategory] || 0;
-      
-      // Находим МАКСИМАЛЬНЫЙ балл в этой категории среди ВСЕХ поэтов
-      const allScores = poets
-        .map(p => ratings[raterId]?.[p.id]?.[changedCategory] || 0)
-        .filter(score => score > 0);
-      
-      if (allScores.length === 0) return;
-      const maxScore = Math.max(...allScores);
-      
-      let currentLeader = categoryLeaders[raterId]?.[changedCategory];
-      
-      // ВАЖНО: Проверяем, не потерял ли текущий лидер свой статус
-      if (currentLeader) {
-        const leaderScore = ratings[raterId]?.[currentLeader]?.[changedCategory] || 0;
-        if (Math.abs(leaderScore - maxScore) >= 0.01) {
-          // Лидер больше не имеет максимального балла → сбрасываем
-          setCategoryLeader(raterId, changedCategory, null);
-          
-          // Автоматически назначаем нового лидера (если есть другой поэт с maxScore)
-          const newLeader = poets.find(p => {
-            const score = ratings[raterId]?.[p.id]?.[changedCategory] || 0;
-            return p.id !== currentLeader && Math.abs(score - maxScore) < 0.01;
-          });
-          if (newLeader) {
-            setCategoryLeader(raterId, changedCategory, newLeader.id);
-            currentLeader = newLeader.id; // Обновляем локально для текущей проверки
-          } else {
-            currentLeader = null; // Сбрасываем локально
-          }
-        }
-      }
-      
-      // Проверяем только если изменённый поэт претендует на лидерство (его балл == максимальному)
-      if (Math.abs(poetCategoryScore - maxScore) < 0.01) {
-        const updatedLeader = currentLeader; // Используем локальную переменную
-        
-        if (updatedLeader && updatedLeader !== poetId) {
-          // Есть лидер, баллы равны максимальным → ДУЭЛЬ!
-          const leaderPoet = poets.find(p => p.id === updatedLeader);
-          if (leaderPoet) {
-            setBattleConflict({
-              category: changedCategory,
-              poet1: leaderPoet,
-              poet2: poet,
-              isWorstConflict: false
-            });
-            return; // Дуэль запущена, overall проверится после её завершения
-          }
-        } else if (!updatedLeader) {
-          // Нет лидера, но балл максимальный → автоматически лидер
-          setCategoryLeader(raterId, changedCategory, poetId);
-        }
-        // Если updatedLeader === poetId → он уже лидер, ничего не делаем
-      }
-      // Если балл поэта < maxScore → он не претендует на лидерство, ничего не делаем
-    }
-    
-    // 2. ПРОВЕРКА OVERALL (лучший по общему баллу)
-    const poetOverallScore = calculateScore(raterId, poetId);
-    
-    // Находим МАКСИМАЛЬНЫЙ общий балл среди ВСЕХ поэтов
-    const allOverallScores = poets
-      .map(p => calculateScore(raterId, p.id))
-      .filter(score => score > 0);
-    
-    if (allOverallScores.length === 0) return;
-    const maxOverallScore = Math.max(...allOverallScores);
-    
-    let currentOverallLeader = categoryLeaders[raterId]?.['overall'];
-    
-    // ВАЖНО: Проверяем, не потерял ли текущий лидер overall свой статус
-    if (currentOverallLeader) {
-      const leaderScore = calculateScore(raterId, currentOverallLeader);
-      if (Math.abs(leaderScore - maxOverallScore) >= 0.01) {
-        // Лидер больше не имеет максимального балла → сбрасываем
-        setCategoryLeader(raterId, 'overall', null);
-        
-        // Автоматически назначаем нового лидера (если есть другой поэт с maxOverallScore)
-        const newLeader = poets.find(p => {
-          const score = calculateScore(raterId, p.id);
-          return p.id !== currentOverallLeader && Math.abs(score - maxOverallScore) < 0.01;
-        });
-        if (newLeader) {
-          setCategoryLeader(raterId, 'overall', newLeader.id);
-          currentOverallLeader = newLeader.id; // Обновляем локально
-        } else {
-          currentOverallLeader = null; // Сбрасываем локально
-        }
-      }
-    }
-    
-    // Проверяем только если изменённый поэт претендует на лидерство (его балл == максимальному)
-    if (Math.abs(poetOverallScore - maxOverallScore) < 0.01) {
-      const updatedOverallLeader = currentOverallLeader; // Используем локальную переменную
-      
-      if (updatedOverallLeader && updatedOverallLeader !== poetId) {
-        // Есть лидер, баллы равны максимальным → ДУЭЛЬ!
-        const leaderPoet = poets.find(p => p.id === updatedOverallLeader);
-        if (leaderPoet) {
-          setBattleConflict({
-            category: 'overall',
-            poet1: leaderPoet,
-            poet2: poet,
-            isWorstConflict: false
-          });
-          return; // Дуэль запущена, worst проверится после её завершения
-        }
-      } else if (!updatedOverallLeader) {
-        // Нет лидера, но балл максимальный → автоматически лидер
-        setCategoryLeader(raterId, 'overall', poetId);
-      }
-      // Если updatedOverallLeader === poetId → он уже лидер, ничего не делаем
-    }
-    // Если балл поэта < maxOverallScore → он не претендует на лидерство, ничего не делаем
-    
-    // 3. ПРОВЕРКА WORST (худший по общему баллу, если поэтов > 5)
-    const allPoetsWithScores = poets
-      .map(p => ({ id: p.id, score: calculateScore(raterId, p.id) }))
-      .filter(p => p.score > 0);
-    
-    if (allPoetsWithScores.length <= 5) return;
-    
-    // Находим МИНИМАЛЬНЫЙ общий балл среди ВСЕХ поэтов
-    const minOverallScore = Math.min(...allPoetsWithScores.map(p => p.score));
-    
-    let currentWorst = categoryLeaders[raterId]?.['overall_worst'];
-    
-    // ВАЖНО: Проверяем, не потерял ли текущий худший свой статус
-    if (currentWorst) {
-      const worstScore = calculateScore(raterId, currentWorst);
-      if (Math.abs(worstScore - minOverallScore) >= 0.01) {
-        // Худший больше не имеет минимального балла → сбрасываем
-        setCategoryLeader(raterId, 'overall_worst', null);
-        
-        // Автоматически назначаем нового худшего (если есть другой поэт с minOverallScore)
-        const newWorst = allPoetsWithScores.find(p => {
-          return p.id !== currentWorst && Math.abs(p.score - minOverallScore) < 0.01;
-        });
-        if (newWorst) {
-          setCategoryLeader(raterId, 'overall_worst', newWorst.id);
-          currentWorst = newWorst.id; // Обновляем локально
-        } else {
-          currentWorst = null; // Сбрасываем локально
-        }
-      }
-    }
-    
-    // Проверяем только если изменённый поэт претендует на "худшее" (его балл == минимальному)
-    if (Math.abs(poetOverallScore - minOverallScore) < 0.01) {
-      const updatedWorst = currentWorst; // Используем локальную переменную
-      
-      if (updatedWorst && updatedWorst !== poetId) {
-        // Есть худший, баллы равны минимальным → ДУЭЛЬ!
-        const worstPoet = poets.find(p => p.id === updatedWorst);
-        if (worstPoet) {
-          setBattleConflict({
-            category: 'overall',
-            poet1: worstPoet,
-            poet2: poet,
-            isWorstConflict: true
-          });
-        }
-      } else if (!updatedWorst) {
-        // Нет худшего, но балл минимальный → автоматически худший
-        setCategoryLeader(raterId, 'overall_worst', poetId);
-      }
-      // Если updatedWorst === poetId → он уже худший, ничего не делаем
-    }
-    // Если балл поэта > minOverallScore → он не претендует на "худшее", ничего не делаем
-  }, [poets, ratings, raterId, categoryLeaders, setCategoryLeader, calculateScore]);
+  // ===== ВСЯ ЛОГИКА ДУЭЛЕЙ И ПЕРЕСЧЕТА ПЕРЕНЕСЕНА НА PoetDetailPage =====
+  // PersonalRanking - ТОЛЬКО для отображения данных
   
-  // Функция пересчета лидера для категории/награды
-  const recalculateLeader = useCallback((awardKey) => {
-    if (awardKey === 'overall') {
-      // Пересчитываем лучшего поэта
-      const poetsWithScores = poets.map(poet => ({
-        id: poet.id,
-        score: calculateScore(raterId, poet.id)
-      })).filter(p => p.score > 0);
-      
-      if (poetsWithScores.length > 0) {
-        poetsWithScores.sort((a, b) => b.score - a.score);
-        const topScore = poetsWithScores[0].score;
-        const topPoets = poetsWithScores.filter(p => Math.abs(p.score - topScore) < 0.01);
-        
-        if (topPoets.length === 1) {
-          setCategoryLeader(raterId, 'overall', topPoets[0].id);
-        } else {
-          setCategoryLeader(raterId, 'overall', null);
-        }
-      } else {
-        setCategoryLeader(raterId, 'overall', null);
-      }
-    } else if (awardKey === 'overall_worst') {
-      // Пересчитываем худшего поэта
-      const poetsWithScores = poets.map(poet => ({
-        id: poet.id,
-        score: calculateScore(raterId, poet.id)
-      })).filter(p => p.score > 0);
-      
-      if (poetsWithScores.length > 5) {
-        poetsWithScores.sort((a, b) => a.score - b.score);
-        const lowestScore = poetsWithScores[0].score;
-        const lowestPoets = poetsWithScores.filter(p => Math.abs(p.score - lowestScore) < 0.01);
-        
-        if (lowestPoets.length === 1) {
-          setCategoryLeader(raterId, 'overall_worst', lowestPoets[0].id);
-        } else {
-          setCategoryLeader(raterId, 'overall_worst', null);
-        }
-      } else {
-        setCategoryLeader(raterId, 'overall_worst', null);
-      }
-    } else {
-      // Пересчитываем категорийную награду
-      const poetsWithRatings = poets.map(poet => ({
-        id: poet.id,
-        rating: ratings[raterId]?.[poet.id]?.[awardKey] || 0
-      })).filter(p => p.rating > 0);
-      
-      if (poetsWithRatings.length > 0) {
-        poetsWithRatings.sort((a, b) => b.rating - a.rating);
-        const topRating = poetsWithRatings[0].rating;
-        const topPoets = poetsWithRatings.filter(p => Math.abs(p.rating - topRating) < 0.01);
-        
-        if (topPoets.length === 1) {
-          setCategoryLeader(raterId, awardKey, topPoets[0].id);
-        } else {
-          setCategoryLeader(raterId, awardKey, null);
-        }
-      } else {
-        setCategoryLeader(raterId, awardKey, null);
-      }
-    }
-  }, [poets, ratings, raterId, calculateScore, setCategoryLeader]);
-
-  // Обработчик изменения рейтинга
-  const handleRatingChange = (poetId, category, newValue) => {
-    const oldValue = ratings[raterId]?.[poetId]?.[category] || 0;
-    
-    updateRating(raterId, poetId, category, newValue);
-    changedPoetRef.current = { poetId, category };
-    originalPoetIdRef.current = poetId; // Сохраняем изначального поэта
-    
-    // Если оценка уменьшилась или была сброшена, проверяем награды этого поэта
-    if (newValue < oldValue || newValue === 0) {
-      // Проверяем категорийную награду
-      const categoryLeader = categoryLeaders[raterId]?.[category];
-      if (categoryLeader === poetId) {
-        // Этот поэт был лидером категории - пересчитываем
-        setTimeout(() => {
-          recalculateLeader(category);
-        }, 100);
-      }
-      
-      // Проверяем общую награду (лучший поэт)
-      const overallLeader = categoryLeaders[raterId]?.['overall'];
-      if (overallLeader === poetId) {
-        // Этот поэт был лучшим - пересчитываем
-        setTimeout(() => {
-          recalculateLeader('overall');
-        }, 100);
-      }
-      
-      // Проверяем худшего поэта
-      const worstPoet = categoryLeaders[raterId]?.['overall_worst'];
-      if (worstPoet === poetId) {
-        // Этот поэт был худшим - пересчитываем
-        setTimeout(() => {
-          recalculateLeader('overall_worst');
-        }, 100);
-      }
-    }
-  };
-  
-  // Проверяем дуэли после обновления рейтингов
-  useEffect(() => {
-    if (changedPoetRef.current) {
-      const { poetId, category } = changedPoetRef.current;
-      changedPoetRef.current = null;
-      
-      // Небольшая задержка для обновления состояния
-      setTimeout(() => {
-        checkDuel(poetId, category);
-      }, 50);
-    }
-  }, [ratings, checkDuel]);
-  
-  // Обработчик завершения дуэли
-  const handleBattleSelect = useCallback((winnerId) => {
-    if (!battleConflict || !originalPoetIdRef.current) return;
-    
-    const { category, isWorstConflict } = battleConflict;
-    
-    // Сохраняем победителя
-    const categoryKey = isWorstConflict ? 'overall_worst' : category;
-    setCategoryLeader(raterId, categoryKey, winnerId);
-    
-    setBattleConflict(null);
-    
-    // Используем изначального поэта для дальнейших проверок
-    const originalPoetId = originalPoetIdRef.current;
-    
-    // Если была дуэль за категорию → проверяем overall
-    if (category !== 'overall' && !isWorstConflict) {
-      setTimeout(() => {
-        checkDuel(originalPoetId, 'overall');
-      }, 100);
-    }
-    // Если была дуэль за overall (за лучшего) → всё завершено (worst уже проверен в checkDuel)
-    // Если была дуэль за worst → всё завершено
-  }, [battleConflict, raterId, setCategoryLeader, checkDuel]);
-
   // Обработка перехода со страницы поэта (скролл к карточке и разворачивание)
   useEffect(() => {
     if (location.state?.poetId && poets.length > 0) {
@@ -698,13 +334,13 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     // Если не лайкнуто - показываем только на своем рейтинге и в развернутом виде
     if (!isLiked) {
       // В компактном режиме никогда не показываем пустое сердечко
-      if (isCompact) return null;
+      return null;
       // На чужом рейтинге не показываем пустое сердечко
-      if (currentUser !== raterId) return null;
+      
     }
     
     // Кликабельно только если это мой рейтинг (currentUser === raterId) и не компактный режим
-    const isClickable = !isCompact && currentUser === raterId;
+    const isClickable = false;
     
     return (
       <img 
@@ -821,7 +457,14 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                         </div>
                         <div className="award-poet-section">
                           {poet.imageUrl && (
-                            <img src={poet.imageUrl} alt={poet.name} className="award-winner-avatar" />
+                            <img 
+                              src={poet.imageUrl} 
+                              alt={poet.name} 
+                              className="award-winner-avatar"
+                              style={{ 
+                                objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                              }}
+                            />
                           )}
                         </div>
                       </div>
@@ -912,7 +555,13 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                   {rank && <span className="rank-number compact">#{rank}</span>}
                   {poet.imageUrl && (
                     <div className="poet-avatar compact">
-                      <img src={poet.imageUrl} alt={poet.name} />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name}
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                     </div>
                   )}
                   <div className="poet-name-with-like">
@@ -949,7 +598,13 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                 
                 {poet.imageUrl && (
                   <div className="poet-avatar">
-                    <img src={poet.imageUrl} alt={poet.name} />
+                    <img 
+                      src={poet.imageUrl} 
+                      alt={poet.name}
+                      style={{ 
+                        objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                      }}
+                    />
                   </div>
                 )}
                 
@@ -1011,18 +666,6 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           });
         })()}
       </div>
-      )}
-      
-      {/* Модалка дуэли */}
-      {battleConflict && (
-        <BattleModal
-          poet1={battleConflict.poet1}
-          poet2={battleConflict.poet2}
-          category={battleConflict.category}
-          onSelect={handleBattleSelect}
-          onClose={() => setBattleConflict(null)}
-          isWorstConflict={battleConflict.isWorstConflict}
-        />
       )}
     </div>
   );

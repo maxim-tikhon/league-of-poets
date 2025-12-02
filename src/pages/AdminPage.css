@@ -167,6 +167,7 @@
   border: 2px solid rgba(199, 163, 107, 0.15);
   border-radius: 8px;
   transition: all 0.2s ease;
+  padding-top: 2rem;
 }
 
 .poet-item-main {
@@ -211,8 +212,8 @@
 
 .poet-item-actions {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.2rem;
+  /* right: 0.5rem; */
   display: flex;
   /* gap: 0.25rem; */
 }
@@ -220,7 +221,7 @@
 .btn-edit-icon {
   background: transparent;
   border: none;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -505,6 +506,126 @@
 .btn-generate-bio:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-copy-prompts {
+  background: var(--burgundy);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.75rem;
+}
+
+.btn-copy-prompts:hover {
+  background: #731010;
+  transform: translateY(-1px);
+}
+
+.btn-copy-prompts:active {
+  transform: translateY(0);
+}
+
+/* Настройка фото */
+.photo-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.photo-preview-wrapper {
+  width: 280px;
+  height: 380px;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: var(--parchment);
+}
+
+.photo-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-preview-label {
+  font-size: 0.85rem;
+  color: var(--ink);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.slider-hint {
+  font-size: 0.8rem;
+  color: var(--ink);
+  opacity: 0.6;
+  margin: 0.5rem 0 0 0;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.position-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--cream);
+  border-radius: 6px;
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  margin-bottom: 1rem;
+}
+
+.slider-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: center;
+  margin: 0;
+}
+
+.position-slider {
+  width: 100%;
+  height: 6px;
+  background: var(--parchment);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.position-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--burgundy);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.position-slider::-webkit-slider-thumb:hover {
+  background: #731010;
+  transform: scale(1.2);
+}
+
+.position-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--burgundy);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.position-slider::-moz-range-thumb:hover {
+  background: #731010;
+  transform: scale(1.2);
 }
 
 .bio-textarea {
@@ -792,6 +913,15 @@ body[data-theme="letterboxd"] .btn-generate-bio:hover:not(:disabled) {
   background: #009d1a;
 }
 
+body[data-theme="letterboxd"] .btn-copy-prompts {
+  background: #ff8000;
+  color: #14181c;
+}
+
+body[data-theme="letterboxd"] .btn-copy-prompts:hover {
+  background: #ff9500;
+}
+
 body[data-theme="letterboxd"] .bio-textarea {
   background: #253544;
   color: #e5e5e5;
@@ -1015,4 +1145,249 @@ body[data-theme="letterboxd"] .ai-rating-item input:focus {
   .ai-ratings-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* === Назначение победителей вручную === */
+.assign-leader-section {
+  background: rgba(199, 163, 107, 0.05);
+  border: 2px solid rgba(199, 163, 107, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.section-description {
+  font-size: 0.9rem;
+  color: var(--ink-light);
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.assign-controls {
+  margin-top: 1.5rem;
+}
+
+.assign-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.assign-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  flex: 1;
+  min-width: 150px;
+}
+
+.assign-row select {
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid rgba(199, 163, 107, 0.25);
+  border-radius: 6px;
+  background: var(--cream);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn-show-contenders {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-show-contenders:hover {
+  background: var(--gold-dark);
+}
+
+/* Модалка назначения победителя */
+.assign-leader-modal {
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.assign-category-info {
+  padding: 1rem;
+  background: rgba(199, 163, 107, 0.1);
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.no-contenders,
+.single-contender {
+  text-align: center;
+  color: var(--ink-light);
+  margin: 2rem 0;
+}
+
+.contenders-count {
+  font-size: 0.95rem;
+  color: var(--ink-light);
+  margin-bottom: 1rem;
+}
+
+.contenders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contender-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(199, 163, 107, 0.05);
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.contender-card:hover {
+  background: rgba(199, 163, 107, 0.1);
+  border-color: rgba(199, 163, 107, 0.3);
+}
+
+.contender-card img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.contender-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.contender-card p {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-light);
+}
+
+.btn-assign-leader {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.btn-assign-leader:hover {
+  background: var(--gold-dark);
+}
+
+/* Letterboxd theme */
+body[data-theme="letterboxd"] .assign-leader-section {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="letterboxd"] .section-description {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .assign-row select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .btn-show-contenders {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-show-contenders:hover {
+  background: #009d1a;
+}
+
+body[data-theme="letterboxd"] .assign-category-info {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .contender-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="letterboxd"] .contender-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+body[data-theme="letterboxd"] .btn-assign-leader {
+  background: #00ac1c;
+  color: white;
+}
+
+body[data-theme="letterboxd"] .btn-assign-leader:hover {
+  background: #009d1a;
+}
+
+body[data-theme="letterboxd"] .photo-preview-wrapper {
+  background: #1b2939;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="letterboxd"] .photo-preview-label {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .slider-hint {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .position-slider-container {
+  background: #253544;
+  border-color: #456;
+}
+
+body[data-theme="letterboxd"] .slider-label {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .position-slider {
+  background: #1b2939;
+}
+
+body[data-theme="letterboxd"] .position-slider::-webkit-slider-thumb {
+  background: #ff8000;
+}
+
+body[data-theme="letterboxd"] .position-slider::-webkit-slider-thumb:hover {
+  background: #ff9500;
+}
+
+body[data-theme="letterboxd"] .position-slider::-moz-range-thumb {
+  background: #ff8000;
+}
+
+body[data-theme="letterboxd"] .position-slider::-moz-range-thumb:hover {
+  background: #ff9500;
 }

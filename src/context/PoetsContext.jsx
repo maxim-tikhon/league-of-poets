@@ -16,8 +16,8 @@ export const usePoets = () => {
 // Коэффициенты рассчитаны так, чтобы максимум был 5.0
 // 9:5:4:2 → 0.45:0.25:0.2:0.1 (сумма = 1.0, умноженная на 5)
 export const CATEGORIES = {
-  creativity: { name: 'Творчество', coefficient: 0.45, description: 'Образность, язык, ритм, глубина мыслей, стиль, эмоциональность и т.д.' },
-  influence: { name: 'Влияние', coefficient: 0.25, description: 'Влияние на культуру, общество, других авторов, личные поступки и дела' },
+  creativity: { name: 'Творчество', coefficient: 0.5, description: 'Образность, язык, ритм, глубина мыслей, стиль, эмоциональность и т.д.' },
+  influence: { name: 'Мораль', coefficient: 0.2, description: 'Нравственность, моральные качества, поступки, влияние на общество и культуру' },
   drama: { name: 'Драма', coefficient: 0.2, description: 'Степень трагичности жизни, страдания, утраты, судьба и т.д.' },
   beauty: { name: 'Красота', coefficient: 0.1, description: 'Внешность, харизма, обаяние' }   
 };
@@ -414,6 +414,7 @@ export const PoetsProvider = ({ children }) => {
     deletePoem,
     calculateScore,
     calculateAverageScore,
+    CATEGORIES,
     getCategoryRankings,
     getOverallRankings
   };

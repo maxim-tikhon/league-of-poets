@@ -184,7 +184,7 @@
   width: 50px;
   height: 50px;
   box-shadow: 0 2px 8px rgba(199, 163, 107, 0.3);
-  overflow: visible;
+  overflow: hidden; /* Предотвращает выход увеличенного изображения за границы */
   cursor: pointer;
   z-index: 50;
 }

@@ -201,7 +201,14 @@ const TimelinePage = () => {
                     onClick={() => navigate(`/poet/${poet.id}`)}
                   >
                     {poet.imageUrl && (
-                      <img src={poet.imageUrl} alt={poet.name} className="tl-avatar" />
+                      <img 
+                        src={poet.imageUrl} 
+                        alt={poet.name} 
+                        className="tl-avatar"
+                        style={{ 
+                          objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                        }}
+                      />
                     )}
                     <div className="tl-tooltip">
                       <div className="tl-tooltip-name">{poet.name}</div>
@@ -243,7 +250,14 @@ const TimelinePage = () => {
                       onClick={() => navigate(`/poet/${poet.id}`)}
                     >
                       {poet.imageUrl && (
-                        <img src={poet.imageUrl} alt={poet.name} className="tl-century-avatar" />
+                        <img 
+                          src={poet.imageUrl} 
+                          alt={poet.name} 
+                          className="tl-century-avatar"
+                          style={{ 
+                            objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                          }}
+                        />
                       )}
                       <div className="tl-century-info">
                         <span className="tl-century-name">{poet.name}</span>

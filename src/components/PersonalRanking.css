@@ -269,12 +269,12 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   background: white;
   border: 1px solid rgba(199, 163, 107, 0.15);
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 0.6rem 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .poet-ranking-card:nth-child(even) {
@@ -328,7 +328,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   border-width: 1px;
 }
@@ -374,7 +374,8 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .rank-number {
   color: var(--ink);
   font-weight: 400;
-  font-size: 1.6rem;
+  /* font-size: 1.6rem; */
+  font-size: 1.1rem;
   flex-shrink: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-width: 2rem;
@@ -394,7 +395,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .poet-ranking-header .poet-name {
   flex: 0 0 auto;
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 400;
 }
 
@@ -411,7 +412,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
   color: white;
   border-radius: 6px;
   gap: 0.25rem;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -459,7 +460,7 @@ body[data-theme="letterboxd"] .score-compact {
 }
 
 .score-value {
-  font-size: 1.3rem;
+  font-size: 1rem;
   line-height: 1;
   /* font-weight: 600; */
 }
@@ -618,8 +619,8 @@ body[data-theme="letterboxd"] .score-compact {
 
 /* Иконка лайка */
 .like-icon {
-  width: 24px;
-  height: 20px;
+  width: 16px;
+  height: 13px;
   cursor: pointer;
   flex-shrink: 0;
   /* transition: transform 0.2s ease; */
@@ -662,8 +663,8 @@ body[data-theme="letterboxd"] .score-compact {
 
 /* Больше размер для некомпактного режима */
 .poet-ranking-card:not(.compact) .winner-badge {
-  width: 60px;
-  height: 60px;
+  width: 55px;
+  height: 55px;
 }
 
 .winner-badge:hover {

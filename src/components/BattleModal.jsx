@@ -44,6 +44,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose, isWorstConflic
                   <img 
                     src={poet1.imageUrl} 
                     alt={poet1.name}
+                    style={{ 
+                      objectPosition: `center ${poet1.imagePositionY !== undefined ? poet1.imagePositionY : 25}%`
+                    }}
                   />
                   <div className="battle-poet-overlay">
                     <h3 className="battle-poet-name">
@@ -90,6 +93,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose, isWorstConflic
                   <img 
                     src={poet2.imageUrl} 
                     alt={poet2.name}
+                    style={{ 
+                      objectPosition: `center ${poet2.imagePositionY !== undefined ? poet2.imagePositionY : 25}%`
+                    }}
                   />
                   <div className="battle-poet-overlay">
                     <h3 className="battle-poet-name">
