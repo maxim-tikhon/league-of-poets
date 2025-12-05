@@ -3,19 +3,171 @@
   margin: 0 auto;
 }
 
+/* Секции */
+.h2h-section {
+  margin-bottom: 2.5rem;
+}
+
+.h2h-section.half-width {
+  margin-bottom: 0;
+}
+
+
 /* Карточки статистики */
 .h2h-stats-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.h2h-stats-cards.three-cols {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.h2h-stats-cards.category-cards {
+  margin-bottom: 1.5rem;
+}
+
+/* Объединённые блоки обзора */
+.h2h-overview-combined {
+  display: grid;
+  grid-template-columns: 3fr 4fr;
+  gap: 1rem;
+}
+
+.h2h-combined-card {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.h2h-combined-card .h2h-stat-label {
+  margin-bottom: 1rem;
+}
+
+.h2h-combined-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   gap: 1.5rem;
-  margin-bottom: 2rem;
+}
+
+.h2h-combined-content.no-dividers {
+  gap: 2rem;
+}
+
+.h2h-combined-section {
+  text-align: center;
+  flex: 1;
+}
+
+.h2h-combined-section > .h2h-stat-value {
+  font-size: 2.5rem;
+  color: #40BCF4;
+  margin-bottom: 0.25rem;
+}
+
+.h2h-combined-divider {
+  width: 1px;
+  height: 60px;
+  background: #456;
+}
+
+.h2h-combined-duo {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.h2h-duo-separator {
+  font-size: 1.5rem;
+  color: #678;
+  font-weight: 300;
+  opacity: 0.6;
+}
+
+.h2h-combined-duo .h2h-stat-duo-item {
+  text-align: center;
+}
+
+.h2h-combined-duo .h2h-stat-duo-item .h2h-stat-value {
+  font-size: 2.5rem;
+  margin-bottom: 0;
+}
+
+.h2h-legend {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 0.5rem;
+}
+
+.h2h-legend .legend-maxim {
+  color: #ff9010;
+}
+
+.h2h-legend .legend-oleg {
+  color: #00ac1c;
+}
+
+.h2h-stat-duo-item.maxim .h2h-stat-value {
+  color: #ff9010;
+}
+
+.h2h-stat-duo-item.oleg .h2h-stat-value {
+  color: #00ac1c;
+}
+
+.h2h-combined-section .h2h-stat-hint {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
+  margin-top: 0.5rem;
+}
+
+.h2h-combined-section .hint-legend {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+/* Duo блок (две цифры) */
+.h2h-stat-duo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.h2h-stat-duo-item {
+  text-align: center;
+}
+
+.h2h-stat-duo-item .h2h-stat-value {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.h2h-stat-duo-item.maxim .h2h-stat-value {
+  color: #ff9010;
+}
+
+.h2h-stat-duo-item.oleg .h2h-stat-value {
+  color: #00ac1c;
+}
+
+.h2h-stat-duo-item .h2h-stat-hint {
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  font-weight: 400;
 }
 
 .h2h-stat-card {
   /* background: white; */
-  padding: 2rem;
+  padding: 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(199, 163, 107, 0.15);
+  /* border: 1px solid rgba(199, 163, 107, 0.15); */
   /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); */
   text-align: center;
   transition: all 0.2s ease;
@@ -48,6 +200,89 @@
   font-weight: 400;
 }
 
+/* AI карточки */
+.h2h-stat-card.ai-card {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.h2h-stat-value.ai-value {
+  color: #3b82f6;
+}
+
+.h2h-stat-value.maxim-value {
+  color: #ff9010;
+}
+
+.h2h-stat-value.oleg-value {
+  color: #00ac1c;
+}
+
+/* Спорные поэты внутри карточки */
+.h2h-controversial-inline {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #14181c;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.h2h-controversial-title {
+  display: none;
+}
+
+.h2h-controversial-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.h2h-controversial-name {
+  font-weight: 400;
+  color: #9ab;
+  width: 90px;
+  text-align: right;
+}
+
+.h2h-controversial-scores {
+  color: #678;
+  font-size: 0.75rem;
+  width: 95px;
+  text-align: center;
+}
+
+.h2h-controversial-diff {
+  color: #ef4444;
+  font-weight: 500;
+  width: 50px;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.h2h-controversial-diff.low {
+  color: #00c030;
+}
+
+/* Карточка спора с AI */
+.h2h-stat-card.ai-disagreement-card {
+  border-color: rgba(239, 68, 68, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.h2h-stat-card.ai-disagreement-card:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.h2h-stat-value.ai-disagreement-name {
+  color: #ef4444;
+  font-size: 1.5rem;
+}
+
 /* Секции */
 .h2h-section-card {
   /* background: white; */
@@ -59,12 +294,12 @@
 }
 
 .h2h-section-title {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 500;
   color: var(--ink);
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(199, 163, 107, 0.15);
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Категориальное сравнение */
@@ -143,6 +378,134 @@
   font-weight: 500;
 }
 
+/* Текстовые выводы по строгости */
+.h2h-category-insights {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Мини-бары внутри карточек */
+.h2h-stat-card.with-bars {
+  padding-bottom: 1rem;
+}
+
+.h2h-mini-bars {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.h2h-mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.h2h-mini-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--ink-light);
+  width: 12px;
+  text-align: center;
+}
+
+.h2h-mini-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.h2h-mini-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.h2h-mini-bar.maxim .h2h-mini-fill {
+  background: #ff9010;
+}
+
+.h2h-mini-bar.oleg .h2h-mini-fill {
+  background: #00ac1c;
+}
+
+.h2h-mini-value {
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: 28px;
+  text-align: right;
+}
+
+.h2h-mini-bar.maxim .h2h-mini-value {
+  color: #ff9010;
+}
+
+.h2h-mini-bar.oleg .h2h-mini-value {
+  color: #00ac1c;
+}
+
+.h2h-mini-bar.ai .h2h-mini-fill {
+  background: #3b82f6;
+}
+
+.h2h-mini-bar.ai .h2h-mini-label {
+  color: #3b82f6;
+}
+
+.h2h-mini-bar.ai .h2h-mini-value {
+  color: #3b82f6;
+}
+
+/* Разделитель перед графиками */
+.h2h-bars-separator {
+  border-top: 1px solid #14181c;
+  margin-top: 0.5rem;
+}
+
+.h2h-insight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.h2h-insight.maxim-stricter {
+  background: rgba(255, 144, 16, 0.08);
+}
+
+.h2h-insight.oleg-stricter {
+  background: rgba(0, 172, 28, 0.08);
+}
+
+.h2h-insight-name {
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.h2h-insight.maxim-stricter .h2h-insight-name {
+  color: #ff9010;
+}
+
+.h2h-insight.oleg-stricter .h2h-insight-name {
+  color: #00ac1c;
+}
+
+.h2h-insight-text {
+  color: var(--ink-light);
+}
+
+.h2h-insight-text strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
 /* Секция согласия/несогласия */
 .h2h-agreement-section {
   display: grid;
@@ -206,19 +569,37 @@
   color: #E50914;
 }
 
+.h2h-count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.h2h-count.success {
+  color: #00ac1c;
+}
+
+.h2h-count.error {
+  color: #E50914;
+}
+
+.h2h-empty-hint {
+  color: var(--ink-light);
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .h2h-stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
   .h2h-stats-cards {
     grid-template-columns: 1fr;
-  }
-
-  .h2h-category-bar {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .h2h-category-diff {
-    text-align: left;
   }
 
   .h2h-agreement-section {
@@ -232,12 +613,24 @@
 
 /* Letterboxd Theme */
 body[data-theme="letterboxd"] .h2h-stat-card {
-  /* background: #445566; */
-  border-color: #456;
+  background: rgba(59, 130, 246, 0.1);
+  /* border-color: #456; */
 }
 
 body[data-theme="letterboxd"] .h2h-stat-value {
   color: var(--ink);
+}
+
+body[data-theme="letterboxd"] .h2h-combined-section > .h2h-stat-value {
+  /* color: #40BCF4; */
+}
+
+body[data-theme="letterboxd"] .h2h-stat-duo-item.maxim .h2h-stat-value {
+  color: #ff9010;
+}
+
+body[data-theme="letterboxd"] .h2h-stat-duo-item.oleg .h2h-stat-value {
+  color: #00ac1c;
 }
 
 body[data-theme="letterboxd"] .h2h-section-card {
@@ -246,13 +639,13 @@ body[data-theme="letterboxd"] .h2h-section-card {
 }
 
 body[data-theme="letterboxd"] .h2h-section-title {
-  color: #e5e5e5;
-  border-bottom-color: #456;
+  color: #9ab;
 }
 
 body[data-theme="letterboxd"] .h2h-bar {
   background: rgba(255, 255, 255, 0.05);
 }
+
 
 body[data-theme="letterboxd"] .h2h-agreement-item {
   /* background: rgba(255, 255, 255, 0.02); */
@@ -271,3 +664,62 @@ body[data-theme="letterboxd"] .h2h-poet-name {
 body[data-theme="letterboxd"] .h2h-scores {
   color: #9ab;
 }
+
+/* Letterboxd AI карточки */
+body[data-theme="letterboxd"] .h2h-stat-card.ai-card {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+body[data-theme="letterboxd"] .h2h-stat-card.ai-disagreement-card {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+body[data-theme="letterboxd"] .h2h-stat-card.ai-disagreement-card:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Letterboxd category insights */
+body[data-theme="letterboxd"] .h2h-category-insights {
+  border-top-color: #14181c;
+}
+
+body[data-theme="letterboxd"] .h2h-insight.maxim-stricter {
+  background: rgba(255, 144, 16, 0.12);
+}
+
+body[data-theme="letterboxd"] .h2h-insight.oleg-stricter {
+  background: rgba(0, 172, 28, 0.12);
+}
+
+body[data-theme="letterboxd"] .h2h-insight-text {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .h2h-insight-text strong {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .h2h-empty-hint {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .h2h-legend {
+  color: #678;
+}
+
+body[data-theme="letterboxd"] .h2h-controversial-inline {
+  border-top-color: #14181c;
+}
+
+body[data-theme="letterboxd"] .h2h-controversial-title {
+  color: #678;
+}
+
+body[data-theme="letterboxd"] .h2h-controversial-name {
+  color: #fff;
+}
+
+body[data-theme="letterboxd"] .h2h-controversial-scores {
+  color: #9ab;
+}
+

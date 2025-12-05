@@ -6,12 +6,12 @@ import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
 import PoetsPage from './pages/PoetsPage';
 import PoetDetailPage from './pages/PoetDetailPage';
-import MaximRankingPage from './pages/MaximRankingPage';
-import OlegRankingPage from './pages/OlegRankingPage';
+import PersonalRankingPage from './pages/PersonalRankingPage';
 import OverallRankingPage from './pages/OverallRankingPage';
 import HeadToHeadPage from './pages/HeadToHeadPage';
 import TimelinePage from './pages/TimelinePage';
 import AdminPage from './pages/AdminPage';
+import AwardsPage from './pages/AwardsPage';
 import UserSelector from './components/UserSelector';
 import './App.css';
 
@@ -56,12 +56,12 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<PoetsPage />} />
             <Route path="poet/:id" element={<PoetDetailPage />} />
-            <Route path="maxim-ranking" element={<MaximRankingPage />} />
-            <Route path="oleg-ranking" element={<OlegRankingPage />} />
+            <Route path="personal-ranking" element={<PersonalRankingPage />} />
             <Route path="overall-ranking" element={<OverallRankingPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="head-to-head" element={<HeadToHeadPage />} />
             <Route path="timeline" element={<TimelinePage />} />
+            <Route path="awards" element={<AwardsPage />} />
           </Route>
         </Routes>
       </Router>

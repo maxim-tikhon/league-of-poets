@@ -4,7 +4,7 @@ import { usePoets } from '../context/PoetsContext';
 import './TimelinePage.css';
 
 const TimelinePage = () => {
-  const { poets } = usePoets();
+  const { poets, isLoading } = usePoets();
   const navigate = useNavigate();
   const [selectedCentury, setSelectedCentury] = useState('all');
 
@@ -94,9 +94,14 @@ const TimelinePage = () => {
     return `${names[century] || century} век`;
   };
 
+  // Пока загружается - показываем пустой контейнер
+  if (isLoading) {
+    return <div className="timeline-page"></div>;
+  }
+
   if (poetsWithYears.length === 0) {
     return (
-      <div className="timeline-page fade-in">
+      <div className="timeline-page">
         <div className="empty-state">
           <img src="/images/poet2.png" alt="Нет данных" className="empty-icon" />
           <p>Нет поэтов с данными о годах жизни</p>
@@ -107,7 +112,7 @@ const TimelinePage = () => {
   }
 
   return (
-    <div className="tl-page fade-in">
+    <div className="tl-page">
       {/* Статистика */}
       <div className="tl-stats">
         <div className="tl-stat-item">

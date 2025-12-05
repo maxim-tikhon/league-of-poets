@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import StarRating from '../components/StarRating';
@@ -11,6 +11,7 @@ import './OverallRankingPage.css';
 
 const OverallRankingPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const poetsContext = usePoets();
   const { 
     poets, 
@@ -748,15 +749,14 @@ const OverallRankingPage = () => {
   }, [overallRankings, categoryWinners, activeTab]);
   
   // ======== УСЛОВНЫЙ RETURN ПОСЛЕ ВСЕХ HOOKS ========
+  // Пока загружается - показываем пустой контейнер (без мигания empty state)
+  if (isLoading) {
+    return <div className="overall-ranking"></div>;
+  }
+  
   if (poets.length === 0) {
     return (
-      <div className="overall-ranking fade-in">
-        {/* <div className="page-header-overall">
-          <h1 className="page-title-overall">
-            <span className="title-icon">🏆</span>
-            Общий Рейтинг
-          </h1>
-        </div> */}
+      <div className="overall-ranking">
         <div className="empty-state">
           <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           <p>Нет поэтов для отображения рейтинга</p>
@@ -779,8 +779,8 @@ const OverallRankingPage = () => {
     if (activeTab === 'overall') {
       // На вкладке "Общий балл" показываем ВСЕ награды
       categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
-    } else if (activeTab === 'awards' || activeTab === 'readers-choice' || activeTab === 'ai-choice') {
-      // На вкладках "Награды", "Выбор читателей" и "Выбор ИИ" не показываем награды в карточках
+    } else if (activeTab === 'readers-choice' || activeTab === 'ai-choice') {
+      // На вкладках "Выбор читателей" и "Выбор ИИ" не показываем награды в карточках
       // (там своя структура отображения)
       categoriesToShow = [];
     } else {
@@ -905,7 +905,7 @@ const OverallRankingPage = () => {
   const ranks = calculateRanks(finalRankings, activeTab === 'overall');
 
   return (
-    <div className="overall-ranking fade-in">
+    <div className="overall-ranking">
       {/* <div className="page-header-overall">
         <h1 className="page-title-overall">
         <span className="trophy-decoration">🏆</span>
@@ -984,108 +984,9 @@ const OverallRankingPage = () => {
         >
           Выбор ИИ
         </button>
-        
-        <button
-          className={`tab-btn tab-btn-awards ${activeTab === 'awards' ? 'active' : ''}`}
-          onClick={() => setActiveTab('awards')}
-        >
-          Награды
-        </button>
-        
       </div>
 
-      {activeTab === 'awards' ? (
-        // Вкладка "Награды" - показываем награды с победителями
-        <div className="awards-list-new">
-          <div className="award-winners">
-            {[
-              { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
-              { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-              { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
-              { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
-              { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
-              { key: 'readers-choice', name: 'Выбор читателей', badge: 'readers-choice.png' },
-              { key: 'ai-choice', name: 'Выбор ИИ', badge: 'ai-choice.png' },
-              { key: 'last', name: 'Худший поэт', badge: 'last.png' }
-            ].map(award => {
-              // Найти победителей для этой награды
-              let winners = [];
-              
-              if (award.key === 'last') {
-                winners = categoryLosers.overall || [];
-              } else if (award.key === 'readers-choice') {
-                // Для "Выбор читателей" - находим поэта с максимальным баллом
-                const readersRankings = poets
-                  .map(poet => ({
-                    id: poet.id,
-                    score: calculateReadersChoiceScore(poet.id)
-                  }))
-                  .filter(item => item.score > 0)
-                  .sort((a, b) => b.score - a.score);
-                
-                winners = readersRankings.length > 0 ? [readersRankings[0].id] : [];
-              } else if (award.key === 'ai-choice') {
-                // Для "Выбор ИИ" - используем результат тайбрейкера, если есть
-                if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
-                  winners = [aiChoiceTiebreaker.winner];
-                } else {
-                  // Иначе находим поэта с максимальным AI-баллом
-                  const aiRankings = poets
-                    .map(poet => ({
-                      id: poet.id,
-                      score: calculateAIScore(poet.id)
-                    }))
-                    .filter(item => item.score > 0)
-                    .sort((a, b) => b.score - a.score);
-                  
-                  winners = aiRankings.length > 0 ? [aiRankings[0].id] : [];
-                }
-              } else {
-                winners = categoryWinners[award.key] || [];
-              }
-              
-              if (winners.length === 0) return null;
-              
-              return winners.map(poetId => {
-                const poet = poets.find(p => p.id === poetId);
-                if (!poet) return null;
-                
-                return (
-                  <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
-                    <Link to={`/poet/${poetId}`} className="award-winner-card">
-                      <div className="award-winner-composition">
-                        <div className="award-badge-section">
-                          <img 
-                            src={`/images/badges/${award.badge}`} 
-                            alt={award.name}
-                            className="award-badge-large-img"
-                          />
-                        </div>
-                        <div className="award-poet-section">
-                          {poet.imageUrl && (
-                            <img 
-                              src={poet.imageUrl} 
-                              alt={poet.name} 
-                              className="award-winner-avatar"
-                              style={{ 
-                                objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
-                              }}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="award-winner-overlay">
-                        <div className="award-category-title">{award.name}</div>
-                        <div className="award-winner-name">{poet.name}</div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              });
-            }).flat().filter(Boolean)}
-          </div>
-        </div>
-      ) : activeTab === 'readers-choice' ? (
+      {activeTab === 'readers-choice' ? (
         // Вкладка "Выбор читателей" - показываем рейтинг по взаимодействию со стихами
         <div className="category-list">
           {(() => {
@@ -1167,7 +1068,7 @@ const OverallRankingPage = () => {
                       </div>
                       
                       {/* Голубой блок с баллами */}
-                      <div className="score-compact-item average">
+                      <div className="score-compact-item readers average">
                         <span className="score-compact-value">{score}</span>
                       </div>
                     </div>
@@ -1279,7 +1180,7 @@ const OverallRankingPage = () => {
                       </div>
                       
                       {/* Голубой блок со средним AI-баллом */}
-                      <div className="score-compact-item average">
+                      <div className="score-compact-item ai-choice average">
                         <span className="score-compact-value">{aiScore.toFixed(2)}</span>
                       </div>
                     </div>
@@ -1563,15 +1464,15 @@ const OverallRankingPage = () => {
                   
                   {(!isAnimating || showScore) ? (
                     <div className="scores-compact-row">
-                      <div className="score-compact-item maxim">
+                      <div className="score-compact-item category maxim">
                         <span className="score-compact-label">м</span>
                         <span className="score-compact-value">{maximRating.toFixed(1)}</span>
                       </div>
-                      <div className="score-compact-item oleg">
+                      <div className="score-compact-item category oleg">
                         <span className="score-compact-label">о</span>
                         <span className="score-compact-value">{olegRating.toFixed(1)}</span>
                       </div>
-                      <div className="score-compact-item average">
+                      <div className="score-compact-item category average">
                         <span className="score-compact-value">{averageRating.toFixed(1)}</span>
                       </div>
                     </div>

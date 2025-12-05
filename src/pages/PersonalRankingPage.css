@@ -1,0 +1,169 @@
+.personal-ranking-page {
+  width: 100%;
+}
+
+/* Общие вкладки сортировки */
+.page-sorting-controls {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 2rem;
+  min-height: 38px;
+}
+
+.page-sorting-controls .sort-btn {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.90rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.page-sorting-controls .sort-btn:hover {
+  color: var(--ink);
+}
+
+.page-sorting-controls .sort-btn.active {
+  color: var(--gold);
+  font-weight: 500;
+}
+
+/* Тоггл для режима сравнения */
+.page-sorting-controls .compare-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  margin-left: auto;
+  padding-left: 1.5rem;
+  /* border-left: 1px solid rgba(199, 163, 107, 0.2); */
+}
+
+.page-sorting-controls .compare-toggle input {
+  display: none;
+}
+
+.page-sorting-controls .compare-toggle .toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.page-sorting-controls .compare-toggle .toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.page-sorting-controls .compare-toggle input:checked + .toggle-slider {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.page-sorting-controls .compare-toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+.page-sorting-controls .compare-toggle .toggle-label {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--ink-light);
+}
+
+/* Контейнер рейтингов */
+.rankings-container {
+  display: flex;
+  gap: 1.25rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/* Одна колонка по умолчанию */
+.ranking-column {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Без режима сравнения - одна колонка занимает всю ширину */
+.personal-ranking-page:not(.compare-mode) .rankings-container {
+  display: block;
+}
+
+/* Режим сравнения */
+.personal-ranking-page.compare-mode .rankings-container {
+  display: flex;
+}
+
+.personal-ranking-page.compare-mode .ranking-column {
+  flex: 1;
+  max-width: 50%;
+}
+
+/* Letterboxd тема */
+body[data-theme="letterboxd"] .page-sorting-controls .sort-btn {
+  color: #b3b3b3;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .sort-btn:hover {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .sort-btn.active {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .compare-toggle {
+  /* border-left: 1px solid rgba(255, 255, 255, 0.1); */
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .compare-toggle .toggle-slider {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .compare-toggle .toggle-slider::before {
+  background: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .compare-toggle input:checked + .toggle-slider {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .page-sorting-controls .compare-toggle .toggle-label {
+  color: #b3b3b3;
+}
+
+/* Адаптив */
+@media (max-width: 1200px) {
+  .personal-ranking-page.compare-mode .rankings-container {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .personal-ranking-page.compare-mode .rankings-container {
+    flex-direction: column;
+  }
+  
+  .personal-ranking-page.compare-mode .ranking-column {
+    max-width: 100%;
+  }
+}

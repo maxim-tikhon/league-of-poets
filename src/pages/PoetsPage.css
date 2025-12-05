@@ -91,73 +91,57 @@
 }
 
 /* Toggle для показа оценок */
-.ratings-toggle-inline {
-  display: flex;
-  align-items: center;
-  padding-left: 1.5rem;
-  /* margin-left: 0.5rem; */
-  border-left: 1px solid rgba(199, 163, 107, 0.2);
-  /* animation: fadeIn 0.3s ease-out; */
-}
-
-.toggle-label {
+.ratings-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
   user-select: none;
+  padding-left: 1.5rem;
+  border-left: 1px solid rgba(199, 163, 107, 0.2);
 }
 
-.toggle-checkbox {
+.ratings-toggle input {
   display: none;
 }
 
-.toggle-switch {
+.ratings-toggle .toggle-slider {
   position: relative;
-  width: 40px;
+  width: 36px;
   height: 20px;
-  background: var(--sepia);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(199, 163, 107, 0.15);
 }
 
-.toggle-switch::after {
+.ratings-toggle .toggle-slider::before {
   content: '';
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background: white;
   border-radius: 50%;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-.toggle-checkbox:checked + .toggle-switch {
+.ratings-toggle input:checked + .toggle-slider {
   background: var(--gold);
+  border-color: var(--gold);
 }
 
-body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
-  background: rgba(229, 9, 20, 0.2);
-  border: none;
+.ratings-toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
 }
 
-.toggle-checkbox:checked + .toggle-switch::after {
-  left: 22px;
-}
-
-.toggle-text {
+.ratings-toggle .toggle-label {
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--ink);
-  transition: color 0.2s ease;
-}
-
-.toggle-label:hover .toggle-text {
-  color: var(--ink);
-  cursor: pointer;
+  font-weight: 400;
+  color: var(--ink-light);
 }
 
 .error-message {
@@ -268,7 +252,7 @@ body[data-theme="letterboxd"] .generating-message {
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden; /* Предотвращает выход увеличенного изображения за границы */
+  overflow: hidden;
 }
 
 .poet-card-image img {
@@ -846,16 +830,24 @@ body[data-theme="letterboxd"] .sorting-controls span {
   color: #b3b3b3;
 }
 
-body[data-theme="letterboxd"] .toggle-switch {
+body[data-theme="letterboxd"] .ratings-toggle {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="letterboxd"] .ratings-toggle .toggle-slider {
   background: rgba(255, 255, 255, 0.05);
   border: none;
 }
 
-body[data-theme="letterboxd"] .toggle-switch::after {
+body[data-theme="letterboxd"] .ratings-toggle .toggle-slider::before {
   background: #e5e5e5;
 }
 
-body[data-theme="letterboxd"] .toggle-text {
+body[data-theme="letterboxd"] .ratings-toggle input:checked + .toggle-slider {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .ratings-toggle .toggle-label {
   color: #b3b3b3;
 }
 
@@ -989,7 +981,7 @@ body[data-theme="letterboxd"] .poet-card {
 }
 
 body[data-theme="letterboxd"] .poet-card:hover {
-  transform: scale(1.08);
+  transform: scale(1.07);
   /* box-shadow: 0 8px 24px rgba(229, 9, 20, 0.3); */
 }
 

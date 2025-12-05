@@ -72,14 +72,14 @@ body[data-theme="letterboxd"] .header {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.5rem;
+  gap: 2rem;
   flex-wrap: wrap;
   margin-left: auto;
 }
 
 .nav-link {
   /* Плоские кнопки без градиента */
-  padding: 0.5rem 1.25rem;
+  /* padding: 0.5rem 0.75rem; */
   color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   border-radius: 6px;
@@ -104,6 +104,25 @@ body[data-theme="letterboxd"] .nav-link:hover {
 body[data-theme="letterboxd"] .nav-link.active {
   background: none;
   color: white;
+}
+
+/* Иконка в навигации */
+.nav-link-icon {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.nav-link-icon svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link-icon:hover svg,
+.nav-link-icon.active svg {
+  opacity: 1;
 }
 
 .nav-link::after {

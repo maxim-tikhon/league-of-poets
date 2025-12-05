@@ -1,0 +1,69 @@
+.awards-page {
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Вкладки - используем те же стили что и на странице рейтинга */
+.awards-page .tabs {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 38px;
+}
+
+.awards-page .tab-btn {
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.awards-page .tab-btn:hover {
+  color: var(--ink);
+}
+
+.awards-page .tab-btn.active {
+  color: var(--burgundy);
+  font-weight: 500;
+}
+
+/* Стили списка наград - используем глобальные из OverallRankingPage.css */
+.awards-page .awards-list-new {
+  margin-top: 0;
+}
+
+.no-awards-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: var(--sepia);
+  font-size: 1.1rem;
+}
+
+/* Letterboxd тема */
+body[data-theme="letterboxd"] .awards-page .tab-btn {
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+}
+
+body[data-theme="letterboxd"] .awards-page .tab-btn:hover {
+  color: white;
+}
+
+body[data-theme="letterboxd"] .awards-page .tab-btn.active {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .no-awards-message {
+  color: #9ab;
+}

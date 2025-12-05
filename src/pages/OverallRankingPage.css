@@ -251,6 +251,36 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
+/* Иконка статистики */
+.stats-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--ink-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.stats-icon-btn:hover {
+  background: rgba(199, 163, 107, 0.1);
+  color: var(--ink);
+}
+
+body[data-theme="letterboxd"] .stats-icon-btn {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .stats-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e5e5;
+}
+
 /* Вертикальная черта перед кнопкой "Награды" */
 .tab-btn-readers {
   position: relative;
@@ -366,7 +396,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-list {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 0.5rem;
   margin-top: 2rem;
 }
 
@@ -412,7 +442,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-card.compact {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.6rem 1rem;
   border-radius: 8px;
   border-width: 1px;
@@ -431,7 +461,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-card-right-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  /* gap: 0.75rem; */
   margin-left: auto;
 }
 
@@ -463,7 +493,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-card.expanded {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.75rem;
   background: white;
   border: 1px solid rgba(199, 163, 107, 0.2);
   border-radius: 8px;
@@ -548,7 +578,7 @@ body[data-theme="letterboxd"] .toggle-checkbox:checked + .toggle-switch {
 .overall-header-right-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  /* gap: 0.75rem; */
   flex-shrink: 0;
 }
 
@@ -644,6 +674,8 @@ body[data-theme="letterboxd"] .overall-category-name {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  min-width: 2.75rem;
+  justify-content: center;
 }
 
 /* Цвета для оценок - Классическая тема */
@@ -921,6 +953,23 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
   color: white;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  min-width: 4.5rem;
+  justify-content: center;
+}
+
+/* Для категорий - меньше ширина (1 знак после запятой) */
+.score-compact-item.category {
+  min-width: 4rem;
+}
+
+/* Для "Выбор читателей" - еще меньше (целое число) */
+.score-compact-item.readers {
+  min-width: 3.2rem;
+}
+
+/* Для "Выбор ИИ" - средняя ширина (2 знака после запятой, но один блок) */
+.score-compact-item.ai-choice {
+  min-width: 3.65rem;
 }
 
 .score-compact-item.maxim {
@@ -1160,7 +1209,7 @@ body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, bod
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  /* box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); */
   cursor: pointer;
   aspect-ratio: 16 / 9;
   text-decoration: none;
@@ -1638,7 +1687,7 @@ body[data-theme="letterboxd"] .tab-btn.active {
 
 body[data-theme="letterboxd"] .overall-card {
   background: #445566;
-  /* border: 1px solid rgba(255, 255, 255, 0.1); */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border: none;
 }
 

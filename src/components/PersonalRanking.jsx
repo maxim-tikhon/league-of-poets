@@ -5,10 +5,25 @@ import StarRating from './StarRating';
 import Tooltip from './Tooltip';
 import './PersonalRanking.css';
 
-const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
+const PersonalRanking = ({ 
+  raterName, 
+  raterId, 
+  title, 
+  icon, 
+  color, 
+  compareMode = false, 
+  isSecondary = false,
+  sortBy: externalSortBy,
+  hideControls = false
+}) => {
   const location = useLocation();
   const { poets, ratings, categoryLeaders, isLoading, updateRating, setCategoryLeader, calculateScore, likes, toggleLike } = usePoets();
-  const [sortBy, setSortBy] = useState('overall'); // 'overall', category key or 'awards'
+  
+  // Используем внешнее состояние сортировки если передано, иначе внутреннее
+  const [internalSortBy, setInternalSortBy] = useState('overall');
+  const sortBy = externalSortBy !== undefined ? externalSortBy : internalSortBy;
+  const setInternalSortByFn = setInternalSortBy;
+  
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [expandedCards, setExpandedCards] = useState([]); // Развернутые карточки
   const scrolledToPoetRef = useRef(null); // ID поэта, к которому уже был выполнен скролл
@@ -26,11 +41,27 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     const theme = localStorage.getItem('selectedTheme') || 'classic';
     setCurrentTheme(theme);
   }, []);
+  
+  // Сворачиваем все карточки при включении режима сравнения
+  useEffect(() => {
+    if (compareMode) {
+      setExpandedCards([]);
+    }
+  }, [compareMode]);
 
   // Функция форматирования общего балла (2 знака после запятой)
   const formatScore = (score) => {
     // Математическое округление (2.965 → 2.97)
     return (Math.round(score * 100) / 100).toFixed(2);
+  };
+
+  // Функция сокращения имени: "Александр Пушкин" → "А. Пушкин"
+  const shortenName = (fullName) => {
+    const parts = fullName.trim().split(' ');
+    if (parts.length < 2) return fullName;
+    const firstName = parts[0];
+    const lastName = parts.slice(1).join(' ');
+    return `${firstName[0]}. ${lastName}`;
   };
 
   const getSortedPoets = () => {
@@ -232,7 +263,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   
   // Обработка перехода со страницы поэта (скролл к карточке и разворачивание)
   useEffect(() => {
-    if (location.state?.poetId && poets.length > 0) {
+    if (location.state?.poetId && poets.length > 0 && !isSecondary) {
       const poetId = location.state.poetId;
       
       // Проверяем, не выполняли ли мы уже скролл для этого поэта
@@ -240,8 +271,8 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
         return;
       }
       
-      // Если сортировка по общему баллу - разворачиваем карточку
-      if (sortBy === 'overall') {
+      // Если сортировка по общему баллу и не режим сравнения - разворачиваем карточку
+      if (sortBy === 'overall' && !compareMode) {
         setExpandedCards([poetId]);
       }
       
@@ -259,7 +290,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
       // Очищаем state после обработки
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, poets, sortBy]);
+  }, [location.state, poets, sortBy, compareMode, isSecondary]);
 
   // Сворачиваем все карточки при переключении на сортировку по категориям
   useEffect(() => {
@@ -278,10 +309,6 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     if (sortBy === 'overall') {
       // На вкладке "Общий балл" показываем ВСЕ награды
       categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
-    } else if (sortBy === 'awards') {
-      // На вкладке "Награды" не показываем награды в карточках
-      // (там своя структура отображения)
-      categoriesToShow = [];
     } else {
       // На вкладке конкретной категории показываем ТОЛЬКО награду этой категории
       categoriesToShow = [sortBy];
@@ -357,15 +384,14 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
     );
   };
 
+  // Пока загружается - показываем пустой контейнер
+  if (isLoading) {
+    return <div className="personal-ranking"></div>;
+  }
+
   if (poets.length === 0) {
     return (
-      <div className="personal-ranking fade-in">
-        {/* <div className="page-header">
-          <h1 className="page-title" style={{ color }}>
-            <span className="title-icon">{icon}</span>
-            {title}
-          </h1>
-        </div> */}
+      <div className="personal-ranking">
         <div className="empty-state">
           <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           <p>Нет поэтов для оценки</p>
@@ -376,7 +402,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
   }
 
   return (
-    <div className="personal-ranking fade-in">
+    <div className={`personal-ranking ${compareMode ? 'compare-mode' : ''}`}>
       {/* <div className="page-header">
         <h1 className="page-title" style={{ color }}>
           <span className="title-icon">{icon}</span>
@@ -384,102 +410,27 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
         </h1>
       </div> */}
 
-      <div className="sorting-controls">
-        <button 
-          className={`sort-btn ${sortBy === 'overall' ? 'active' : ''}`}
-          onClick={() => handleSort('overall')}
-        >
-          {/* <img 
-            src="/images/badges/overall.png" 
-            alt="Общий балл"
-            className="sort-btn-icon"
-          /> */}
-          Общий балл
-        </button>
-        {Object.entries(CATEGORIES).map(([key, cat]) => (
-            <button 
-              key={key}
-              className={`sort-btn ${sortBy === key ? 'active' : ''}`}
-              onClick={() => handleSort(key)}
-            >
-              {/* <img 
-                src={`/images/badges/${key}.png`} 
-                alt={cat.name}
-                className="sort-btn-icon"
-              /> */}
-              {cat.name}
-            </button>
-        ))}
-        
-        {/* Вкладка "Награды" - отделена от других */}
-        <button 
-          className={`sort-btn sort-btn-awards ${sortBy === 'awards' ? 'active' : ''}`}
-          onClick={() => handleSort('awards')}
-        >
-          Награды
-        </button>
-        
-      </div>
-
-      {sortBy === 'awards' ? (
-        // Вкладка "Награды" - показываем награды с победителями
-        <div className="awards-list-new">
-          <div className="award-winners">
-            {[
-              { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
-              { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-              { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
-              { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
-              { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
-              { key: 'last', name: 'Худший поэт', badge: 'last.png' }
-            ].map(award => {
-              // Найти победителей для этой награды
-              const winners = award.key === 'last'
-                ? (categoryLosers.overall || [])
-                : (categoryWinners[award.key] || []);
-              
-              if (winners.length === 0) return null;
-              
-              return winners.map(poetId => {
-                const poet = poets.find(p => p.id === poetId);
-                if (!poet) return null;
-                
-                return (
-                  <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
-                    <Link to={`/poet/${poetId}`} className="award-winner-card">
-                      <div className="award-winner-composition">
-                        <div className="award-badge-section">
-                          <img 
-                            src={`/images/badges/${award.badge}`} 
-                            alt={award.name}
-                            className="award-badge-large-img"
-                          />
-                        </div>
-                        <div className="award-poet-section">
-                          {poet.imageUrl && (
-                            <img 
-                              src={poet.imageUrl} 
-                              alt={poet.name} 
-                              className="award-winner-avatar"
-                              style={{ 
-                                objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
-                              }}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="award-winner-overlay">
-                        <div className="award-category-title">{award.name}</div>
-                        <div className="award-winner-name">{poet.name}</div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              });
-            }).flat().filter(Boolean)}
-          </div>
+      {/* Показываем вкладки только если hideControls = false */}
+      {!hideControls && (
+        <div className="sorting-controls">
+          <button 
+            className={`sort-btn ${sortBy === 'overall' ? 'active' : ''}`}
+            onClick={() => handleSort('overall')}
+          >
+            Общий балл
+          </button>
+          {Object.entries(CATEGORIES).map(([key, cat]) => (
+              <button 
+                key={key}
+                className={`sort-btn ${sortBy === key ? 'active' : ''}`}
+                onClick={() => handleSort(key)}
+              >
+                {cat.name}
+              </button>
+          ))}
         </div>
-      ) : (
+      )}
+
       <div className="poets-ranking-list">
         {(() => {
           // Вычисляем ранги один раз для всех поэтов
@@ -517,7 +468,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
             const rank = showRank ? ranks[index] : null;
             const isOverallHighlighted = sortBy === 'overall';
             const isExpanded = expandedCards.includes(poet.id);
-            const canExpand = sortBy === 'overall'; // Можно разворачивать только для общего балла
+            const canExpand = sortBy === 'overall' && !compareMode; // Можно разворачивать только для общего балла и не в режиме сравнения
 
             // Обработчик клика для разворачивания/сворачивания карточки
             const toggleExpand = () => {
@@ -570,14 +521,14 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                       className="poet-name-link"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <h3 className="poet-name compact">{poet.name}</h3>
+                      <h3 className="poet-name compact">{compareMode ? shortenName(poet.name) : poet.name}</h3>
                     </Link>
                     {renderLike(poet.id, true)}
                   </div>
                   
                   <div className="poet-ranking-right-section">
                     {renderWinnerBadges(poet.id)}
-                    <div className="score-compact">
+                    <div className={`score-compact ${sortBy === 'overall' ? 'overall' : 'category'}`}>
                       <span className="score-value-compact">
                         {displayValue}
                       </span>
@@ -620,7 +571,7 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
                         className="poet-name-link"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <h3 className="poet-name">{poet.name}</h3>
+                        <h3 className="poet-name">{compareMode ? shortenName(poet.name) : poet.name}</h3>
                       </Link>
                       {renderLike(poet.id, false)}
                     </div>
@@ -666,7 +617,6 @@ const PersonalRanking = ({ raterName, raterId, title, icon, color }) => {
           });
         })()}
       </div>
-      )}
     </div>
   );
 };

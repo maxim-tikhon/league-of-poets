@@ -209,6 +209,7 @@ const PoetDetailPage = () => {
         id: poet.id,
         name: poet.name,
         imageUrl: poet.imageUrl,
+        imagePositionY: poet.imagePositionY,
         rating
       };
     }).filter(p => p.rating > 0);
@@ -485,7 +486,7 @@ const PoetDetailPage = () => {
   
   if (isLoading) {
     return (
-      <div className="poet-detail-page fade-in">
+      <div className="poet-detail-page">
         <div className="loading">Загрузка...</div>
       </div>
     );
@@ -950,7 +951,7 @@ const PoetDetailPage = () => {
   
   if (!poet) {
     return (
-      <div className="poet-detail-page fade-in">
+      <div className="poet-detail-page">
         <div className="not-found">
           <h2>Поэт не найден</h2>
           <button onClick={() => navigate('/')} className="btn">
@@ -1003,7 +1004,7 @@ const PoetDetailPage = () => {
   const bioData = parseBio(poet.bio);
   
   return (
-    <div className="poet-detail-page fade-in">
+    <div className="poet-detail-page">
       <div className="poet-detail-container">
         {/* 2 основные колонки: Фото слева + Контент справа */}
         <div className="poet-content">
@@ -1103,7 +1104,7 @@ const PoetDetailPage = () => {
                     <div className="rating-overall-container">
                       <div 
                         className="rating-overall-card rating-personal-card" 
-                        onClick={() => navigate(`/${currentUser}-ranking`, { state: { poetId: poet.id } })}
+                        onClick={() => navigate('/personal-ranking', { state: { poetId: poet.id } })}
                       >
                         <div className="rating-overall-value">
                           {getPersonalOverallRating() > 0 ? (Math.round(getPersonalOverallRating() * 100) / 100).toFixed(2) : '—'}
@@ -1115,10 +1116,20 @@ const PoetDetailPage = () => {
                     <div className="rating-overall-container">
                       <div 
                         className="rating-overall-card" 
-                        onClick={() => navigate('/overall-ranking', { state: { poetId: poet.id } })}
+                        onClick={() => {
+                          // Для нового поэта — просто переход (чтобы анимация прошла)
+                          // Для устоявшегося — переход с раскрытием карточки
+                          if (isNewPoet()) {
+                            navigate('/overall-ranking');
+                          } else {
+                            navigate('/overall-ranking', { state: { poetId: poet.id } });
+                          }
+                        }}
                       >
                         <div className="rating-overall-value">
-                          {hasRatings() && !isNewPoet() ? (Math.round(getOverallAverage() * 100) / 100).toFixed(2) : '—'}
+                          {hasRatings() ? (
+                            isNewPoet() ? '?' : (Math.round(getOverallAverage() * 100) / 100).toFixed(2)
+                          ) : '—'}
                         </div>
                       </div>
                     </div>
@@ -1299,7 +1310,22 @@ const PoetDetailPage = () => {
       {/* Модалка увеличенного изображения */}
       {enlargedImage && (
         <div className="image-lightbox-overlay" onClick={() => setEnlargedImage(null)}>
-          <button className="lightbox-close" onClick={() => setEnlargedImage(null)}>✕</button>
+          <div className="lightbox-controls">
+            <button 
+              className="lightbox-search" 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(enlargedImage.name)}`, '_blank');
+              }}
+              title="Найти другие фото"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </button>
+            <button className="lightbox-close" onClick={() => setEnlargedImage(null)}>✕</button>
+          </div>
           <div className="image-lightbox-content" onClick={(e) => e.stopPropagation()}>
             <img src={enlargedImage.url} alt={enlargedImage.name} />
           </div>

@@ -263,7 +263,7 @@ const PoetsPage = () => {
   const sortedPoets = getSortedPoets();
 
   return (
-    <div className="poets-page fade-in">
+    <div className="poets-page">
       {/* <div className="page-header">
         <h1 className="page-title">
           <span className="title-icon">📚</span>
@@ -298,18 +298,15 @@ const PoetsPage = () => {
           Рейтинг {sortBy === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         
-        <div className="ratings-toggle-inline">
-          <label className="toggle-label">
-            <input 
-              type="checkbox" 
-              checked={showRatings}
-              onChange={(e) => setShowRatings(e.target.checked)}
-              className="toggle-checkbox"
-            />
-            <span className="toggle-switch"></span>
-            <span className="toggle-text">Оценки</span>
-          </label>
-        </div>
+        <label className="ratings-toggle">
+          <input
+            type="checkbox"
+            checked={showRatings}
+            onChange={(e) => setShowRatings(e.target.checked)}
+          />
+          <span className="toggle-slider"></span>
+          <span className="toggle-label">Оценки</span>
+        </label>
 
         {/* <div className="ratings-toggle-inline">
           <label className="toggle-label">
@@ -418,7 +415,10 @@ const PoetsPage = () => {
         </div>
       )}
 
-      {sortedPoets.length === 0 ? (
+      {isLoading ? (
+        // Пока загружается - показываем пустой контейнер
+        <div className="poets-grid"></div>
+      ) : sortedPoets.length === 0 ? (
         <div className="empty-state">
           <img src="/images/poet2.png" alt="Нет поэтов" className="empty-icon" />
           {showFavorites ? (

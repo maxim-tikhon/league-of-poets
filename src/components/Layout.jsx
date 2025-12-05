@@ -20,14 +20,21 @@ const Layout = () => {
             <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Поэты
             </NavLink>
-            <NavLink to="/maxim-ranking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Рейтинг Максима
-            </NavLink>
-            <NavLink to="/oleg-ranking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Рейтинг Олега
+            <NavLink to="/personal-ranking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Мой рейтинг
             </NavLink>
             <NavLink to="/overall-ranking" className={({ isActive }) => isActive ? 'nav-link active overall-link' : 'nav-link overall-link'}>
               Общий Рейтинг
+            </NavLink>
+            <NavLink to="/awards" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Награды
+            </NavLink>
+            <NavLink to="/head-to-head" className={({ isActive }) => isActive ? 'nav-link nav-link-icon active' : 'nav-link nav-link-icon'} title="Статистика">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
             </NavLink>
             {/* <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Админка

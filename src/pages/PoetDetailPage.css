@@ -942,10 +942,18 @@ body[data-theme="letterboxd"] .rating-tooltip::before {
   }
 }
 
-.lightbox-close {
+.lightbox-controls {
   position: fixed;
   top: 2rem;
   right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10001;
+}
+
+.lightbox-close,
+.lightbox-search {
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -959,12 +967,17 @@ body[data-theme="letterboxd"] .rating-tooltip::before {
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 300;
-  z-index: 10001;
 }
 
-.lightbox-close:hover {
+.lightbox-close:hover,
+.lightbox-search:hover {
   background: rgba(199, 163, 107, 0.1);
   color: white;
+}
+
+.lightbox-search svg {
+  width: 18px;
+  height: 18px;
 }
 
 .image-lightbox-content {
@@ -1005,7 +1018,8 @@ body[data-theme="letterboxd"] .rating-tooltip::before {
 }
 
 /* Letterboxd theme для lightbox */
-body[data-theme="letterboxd"] .lightbox-close:hover {
+body[data-theme="letterboxd"] .lightbox-close:hover,
+body[data-theme="letterboxd"] .lightbox-search:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #e5e5e5;
 }
