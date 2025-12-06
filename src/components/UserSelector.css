@@ -170,11 +170,8 @@ body[data-theme="letterboxd"] .user-btn {
 } */
 
 body[data-theme="letterboxd"] .user-btn.selected {
-  /* background: #00ac1c; */
   color: white;
-  background: rgba(255, 144, 16, 0.15);
-  /* box-shadow: 0 4px 20px rgba(0, 172, 28, 0.4); */
-  /* transform: scale(1.02); */
+  background: #445566;
 }
 
 body[data-theme="letterboxd"] .user-btn.selected:hover {

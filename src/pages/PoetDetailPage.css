@@ -476,12 +476,15 @@
 }
 
 .poem-card {
-  background: rgba(199, 163, 107, 0.08);
+  /* Letterboxd color */
+  /* background: rgba(199, 163, 107, 0.08); */
+  /* background: rgba(59, 130, 246, 0.1); */
   border: none;
   border-radius: 3px;
   padding: 3px 6px;
   font-size: 0.85rem;
-  color: var(--ink-light);
+  /* color: var(--ink-light); */
+  color: #9ab;
   cursor: pointer;
   transition: color 0.2s ease;
   display: inline-block;
@@ -1335,7 +1338,7 @@ body[data-theme="letterboxd"] .beauty-item-text {
 body[data-theme="letterboxd"] .poem-card {
   background: #283038;
   border: none;
-  color: #9ab;
+  color: #9ab;  
   display: inline-block;
   padding: 3px 6px;
   white-space: nowrap;

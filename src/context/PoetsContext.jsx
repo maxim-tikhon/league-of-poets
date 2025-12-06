@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ref, set, update, remove, onValue, push } from 'firebase/database';
+import { ref, set, update, remove, onValue, push, get } from 'firebase/database';
 import { database } from '../firebase/config';
 
 const PoetsContext = createContext();
@@ -183,6 +183,94 @@ export const PoetsProvider = ({ children }) => {
     return { id, ...newPoet };
   };
 
+  // Очистка невалидных данных (ссылок на несуществующих поэтов)
+  const cleanupInvalidData = async () => {
+    const validPoetIds = poets.map(p => p.id);
+    const updates = {};
+    let cleanedCount = 0;
+    
+    // Проверяем categoryLeaders для обоих пользователей
+    ['maxim', 'oleg'].forEach(user => {
+      const userLeaders = categoryLeaders[user] || {};
+      Object.keys(userLeaders).forEach(category => {
+        const leaderId = userLeaders[category];
+        if (leaderId && !validPoetIds.includes(leaderId)) {
+          updates[`categoryLeaders/${user}/${category}`] = null;
+          cleanedCount++;
+          console.log(`[Cleanup] Removing invalid ${category} leader for ${user}: ${leaderId}`);
+        }
+      });
+    });
+    
+    // Проверяем overallDuelWinners
+    Object.keys(overallDuelWinners || {}).forEach(category => {
+      const duelData = overallDuelWinners[category];
+      if (duelData) {
+        const winnerId = duelData.winner || duelData;
+        const participants = duelData.participants || [];
+        const hasInvalidWinner = winnerId && !validPoetIds.includes(winnerId);
+        const hasInvalidParticipant = participants.some(p => !validPoetIds.includes(p));
+        
+        if (hasInvalidWinner || hasInvalidParticipant) {
+          updates[`overallDuelWinners/${category}`] = null;
+          cleanedCount++;
+          console.log(`[Cleanup] Removing invalid duel winner for ${category}`);
+        }
+      }
+    });
+    
+    // Проверяем aiChoiceTiebreaker
+    if (aiChoiceTiebreaker) {
+      const winnerId = aiChoiceTiebreaker.winner;
+      const participants = aiChoiceTiebreaker.participants || [];
+      const hasInvalidWinner = winnerId && !validPoetIds.includes(winnerId);
+      const hasInvalidParticipant = participants.some(p => !validPoetIds.includes(p));
+      
+      if (hasInvalidWinner || hasInvalidParticipant) {
+        updates['aiChoiceTiebreaker'] = null;
+        cleanedCount++;
+        console.log(`[Cleanup] Removing invalid AI choice tiebreaker`);
+      }
+    }
+    
+    // Проверяем ratings
+    const ratingsSnapshot = await get(ref(database, 'ratings'));
+    const ratingsData = ratingsSnapshot.val() || {};
+    ['maxim', 'oleg'].forEach(user => {
+      const userRatings = ratingsData[user] || {};
+      Object.keys(userRatings).forEach(poetId => {
+        if (!validPoetIds.includes(poetId)) {
+          updates[`ratings/${user}/${poetId}`] = null;
+          cleanedCount++;
+          console.log(`[Cleanup] Removing invalid rating for ${user}/${poetId}`);
+        }
+      });
+    });
+    
+    // Проверяем likes
+    const likesSnapshot = await get(ref(database, 'likes'));
+    const likesData = likesSnapshot.val() || {};
+    ['maxim', 'oleg'].forEach(user => {
+      const userLikes = likesData[user] || {};
+      Object.keys(userLikes).forEach(poetId => {
+        if (!validPoetIds.includes(poetId)) {
+          updates[`likes/${user}/${poetId}`] = null;
+          cleanedCount++;
+          console.log(`[Cleanup] Removing invalid like for ${user}/${poetId}`);
+        }
+      });
+    });
+    
+    if (Object.keys(updates).length > 0) {
+      await update(ref(database), updates);
+      console.log(`[Cleanup] Cleaned ${cleanedCount} invalid references`);
+    } else {
+      console.log(`[Cleanup] No invalid data found`);
+    }
+    
+    return cleanedCount;
+  };
+
   // Удалить поэта
   const deletePoet = async (poetId) => {
     // Удаляем поэта
@@ -196,13 +284,14 @@ export const PoetsProvider = ({ children }) => {
     await remove(ref(database, `likes/maxim/${poetId}`));
     await remove(ref(database, `likes/oleg/${poetId}`));
     
-    // Удаляем его из лидеров категорий, если он там есть
+    // Удаляем его из лидеров категорий, если он там есть (включая overall_worst)
     const updates = {};
-    Object.keys(CATEGORIES).forEach(category => {
-      if (categoryLeaders.maxim[category] === poetId) {
+    const allCategories = [...Object.keys(CATEGORIES), 'overall', 'overall_worst'];
+    allCategories.forEach(category => {
+      if (categoryLeaders.maxim?.[category] === poetId) {
         updates[`categoryLeaders/maxim/${category}`] = null;
       }
-      if (categoryLeaders.oleg[category] === poetId) {
+      if (categoryLeaders.oleg?.[category] === poetId) {
         updates[`categoryLeaders/oleg/${category}`] = null;
       }
       // Удаляем из победителей дуэлей
@@ -297,12 +386,26 @@ export const PoetsProvider = ({ children }) => {
     const poetRatings = ratings[rater]?.[poetId];
     if (!poetRatings) return 0;
 
-    return Object.keys(CATEGORIES).reduce((total, category) => {
+    const score = Object.keys(CATEGORIES).reduce((total, category) => {
       const rating = poetRatings[category] || 0;
       const coefficient = CATEGORIES[category].coefficient;
       return total + (rating * coefficient);
     }, 0);
-  }, [ratings]);
+    
+    // Логируем расчет для отладки
+    const poet = poets.find(p => p.id === poetId);
+    if (poet) {
+      console.log(`💰 calculateScore for ${poet.name} (${rater}):`, {
+        creativity: `${poetRatings.creativity || 0} × 0.5 = ${(poetRatings.creativity || 0) * 0.5}`,
+        influence: `${poetRatings.influence || 0} × 0.2 = ${(poetRatings.influence || 0) * 0.2}`,
+        drama: `${poetRatings.drama || 0} × 0.2 = ${(poetRatings.drama || 0) * 0.2}`,
+        beauty: `${poetRatings.beauty || 0} × 0.1 = ${(poetRatings.beauty || 0) * 0.1}`,
+        total: score
+      });
+    }
+    
+    return score;
+  }, [ratings, poets]);
 
   // Вычислить средний балл (общий рейтинг)
   const calculateAverageScore = useCallback((poetId) => {
@@ -416,7 +519,8 @@ export const PoetsProvider = ({ children }) => {
     calculateAverageScore,
     CATEGORIES,
     getCategoryRankings,
-    getOverallRankings
+    getOverallRankings,
+    cleanupInvalidData
   };
 
   return (

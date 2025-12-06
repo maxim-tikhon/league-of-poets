@@ -240,12 +240,11 @@ const PersonalRanking = ({
       // Проверяем есть ли явно выбранный худший через дуэль
       const explicitLoser = categoryLeaders[raterId]?.['overall_worst'];
       
-      if (explicitLoser) {
-        // Если худший выбран через дуэль - он и есть худший
-        // (дуэль уже решила, дополнительные проверки не нужны)
+      // ВАЖНО: Используем explicitLoser только если он в текущем списке поэтов
+      if (explicitLoser && poetsWithScores.some(p => p.id === explicitLoser)) {
         losers.overall = [explicitLoser];
       }
-      // Если НЕТ явно выбранного худшего и только один поэт с минимальным баллом - автоматически худший
+      // Если НЕТ валидного явно выбранного худшего и только один поэт с минимальным баллом - автоматически худший
       else if (lowestPoets.length === 1) {
         losers.overall = [lowestPoets[0].id];
       }

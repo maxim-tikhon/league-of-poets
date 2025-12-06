@@ -302,23 +302,20 @@ body[data-theme="letterboxd"] .generating-message {
 
 }
 
-/* Рейтинг поэта (показывается при наведении) */
+/* Рейтинг поэта - бейдж в верхнем правом углу */
 .poet-card-rating {
   position: absolute;
-  bottom: 1rem;
-  right: 1rem;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
   z-index: 15;
   pointer-events: none;
-}
-
-.poet-card:hover .poet-card-rating {
-  opacity: 1;
 }
 
 .poet-card-rating.always-visible {
@@ -985,9 +982,764 @@ body[data-theme="letterboxd"] .poet-card:hover {
   /* box-shadow: 0 8px 24px rgba(229, 9, 20, 0.3); */
 }
 
+body[data-theme="letterboxd"] .poet-card-rating {
+  background: rgba(20, 24, 28, 0.85);
+}
+
 body[data-theme="letterboxd"] .empty-state {
   /* background: #1a1a1a;e */
   background: transparent;
   /* border: 1px solid rgba(255, 255, 255, 0.1); */
   border: none;
+}
+
+/* ========================================
+   GANTT TIMELINE - Хронология жизни поэтов
+   ======================================== */
+
+.gantt-timeline {
+  margin-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+/* Легенда эпох */
+.epochs-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  justify-content: space-evenly;
+}
+
+.epoch-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  cursor: pointer;
+}
+
+.epoch-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: #1a1f25;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.epoch-item:hover .epoch-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.epoch-tooltip-years {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #9aabbf;
+  margin-bottom: 4px;
+}
+
+.epoch-tooltip-desc {
+  font-size: 0.75rem;
+  color: #9aabbf;
+  white-space: nowrap;
+}
+
+.epoch-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.epoch-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #e5e5e5;
+}
+
+.epoch-years {
+  font-size: 0.7rem;
+  color: #8899a6;
+}
+
+/* Фоновые полосы эпох */
+.epochs-background {
+  position: absolute;
+  left: 50px;
+  right: 25px;
+  top: 30px;
+  bottom: 30px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.epoch-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  opacity: 0.04;
+}
+
+.epoch-divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  opacity: 0.0;
+  z-index: -1;
+}
+
+/* Цветная линия эпох справа */
+.epochs-line {
+  position: absolute;
+  right: 25px;
+  top: 30px;
+  bottom: 30px;
+  width: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.epoch-line-segment {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  border-radius: 1px;
+}
+
+.epoch-tick {
+  position: absolute;
+  left: 10px;
+  transform: translateY(-50%);
+}
+
+.epoch-tick-year {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Названия эпох справа */
+.epochs-labels {
+  position: absolute;
+  right: 25px;
+  top: 30px;
+  bottom: 30px;
+  width: 20px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.epoch-label {
+  position: absolute;
+  left: 28px;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.gantt-container {
+  position: relative;
+  height: var(--total-height, 800px);
+  min-height: 500px;
+  padding-top: 30px; /* Отступ сверху чтобы первый год был виден */
+  padding-bottom: 30px;
+}
+
+/* Ось времени слева */
+.gantt-axis {
+  position: absolute;
+  left: 0;
+  top: 30px;
+  bottom: 30px;
+  width: 50px;
+  z-index: 10;
+}
+
+/* Правая ось */
+.gantt-axis.gantt-axis-right {
+  left: auto;
+  right: 0;
+}
+
+.gantt-axis-line {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink-light);
+  opacity: 0.3;
+}
+
+.gantt-axis-right .gantt-axis-line {
+  right: auto;
+  left: 0;
+}
+
+.gantt-axis-mark {
+  position: absolute;
+  right: 0;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+.gantt-axis-right .gantt-axis-mark {
+  right: auto;
+  left: 0;
+}
+
+/* 50-летние отметки — заметные */
+.gantt-axis-mark.major .gantt-axis-year {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* 10-летние отметки — менее заметные */
+.gantt-axis-mark.minor .gantt-axis-year {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  opacity: 0.6;
+}
+
+.gantt-axis-year {
+  padding-right: 6px;
+  font-family: 'Inter', sans-serif;
+}
+
+.gantt-axis-right .gantt-axis-year {
+  padding-right: 0;
+  padding-left: 6px;
+}
+
+.gantt-axis-tick {
+  width: 6px;
+  height: 1px;
+  background: var(--ink-light);
+  opacity: 0.3;
+  flex-shrink: 0;
+}
+
+.gantt-axis-mark.major .gantt-axis-tick {
+  width: 10px;
+  height: 1px;
+  opacity: 0.5;
+}
+
+/* Сетка */
+.gantt-grid {
+  position: absolute;
+  left: 50px;
+  right: 25px;
+  top: 30px;
+  bottom: 30px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gantt-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.02);
+  transform: translateY(-50%);
+}
+
+.gantt-grid-line.major {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Область с поэтами */
+.gantt-poets-area {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  bottom: 30px;
+  z-index: 5;
+}
+
+/* Поэт в Gantt-диаграмме */
+.gantt-poet {
+  position: absolute;
+  width: var(--column-width, 55px);
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+}
+
+@keyframes ganttFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gantt-poet:hover {
+  z-index: 100;
+}
+
+/* Аватар поэта (точка рождения) — центр на линии года */
+.gantt-avatar {
+  position: absolute;
+  top: -18px; /* Центр аватара на линии года рождения */
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #b3b3b3; /* Тот же цвет, что и линия */
+  opacity: 0.85;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  background: var(--cream);
+  transition: all 0.3s ease;
+  z-index: 15;
+}
+
+.gantt-poet:hover .gantt-avatar {
+  transform: scale(1.15);
+  border-color: var(--gold); /* Золотой бордер при наведении */
+  opacity: 1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.gantt-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gantt-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--parchment) 0%, var(--sepia) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+
+/* Линия жизни */
+.gantt-lifeline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px; /* Тоньше по умолчанию */
+  display: flex;
+  align-items: stretch;
+  z-index: 5;
+}
+
+.gantt-lifeline-inner {
+  width: 100%;
+  background: #3a3f47; /* Тёмный непрозрачный цвет */
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.gantt-poet:hover .gantt-lifeline-inner {
+  opacity: 1;
+  width: 3px;
+  background: linear-gradient(
+    to bottom,
+    var(--gold) 0%,
+    var(--gold) 40%,
+    var(--burgundy) 100%
+  ); /* Золотой → бордовый */
+}
+
+/* Точка смерти */
+.gantt-death-point {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--ink-light); /* Тёмная точка по умолчанию */
+  border-radius: 50%;
+  border: none;
+  opacity: 0.5;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.gantt-poet:hover .gantt-death-point {
+  transform: translateX(-50%) scale(1.5);
+  opacity: 1;
+  background: var(--burgundy); /* Бордовая при наведении */
+  box-shadow: 0 0 8px rgba(157, 68, 81, 0.5);
+}
+
+/* Tooltip — справа от аватара, по центру */
+.gantt-tooltip {
+  position: absolute;
+  top: -18px;
+  left: 56px; /* Правее от фото */
+  background: var(--ink);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  min-width: 100px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.gantt-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--ink);
+}
+
+.gantt-poet:hover .gantt-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.gantt-tooltip-name {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+  opacity: 0.85;
+}
+
+.gantt-tooltip-dates {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.gantt-tooltip-lifespan {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* Легенда */
+.gantt-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(199, 163, 107, 0.08);
+  border-radius: 8px;
+}
+
+.gantt-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-light);
+}
+
+.gantt-legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.gantt-legend-circle.birth {
+  background: var(--gold);
+}
+
+.gantt-legend-circle.death {
+  background: var(--burgundy);
+}
+
+.gantt-legend-circle.alive {
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(199, 163, 107, 0.3);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .gantt-container {
+    min-height: 400px;
+    padding-top: 25px;
+    padding-bottom: 25px;
+  }
+
+  .gantt-axis {
+    width: 40px;
+    top: 25px;
+    bottom: 25px;
+  }
+
+  .gantt-axis-year {
+    font-size: 0.7rem;
+    padding-right: 4px;
+  }
+
+  .gantt-axis-right .gantt-axis-year {
+    padding-left: 4px;
+  }
+
+  .gantt-grid {
+    left: 40px;
+    right: 40px;
+    top: 25px;
+    bottom: 25px;
+  }
+
+  .gantt-poets-area {
+    top: 25px;
+    bottom: 25px;
+  }
+
+  .gantt-avatar {
+    width: 28px;
+    height: 28px;
+    top: -14px;
+    border-width: 2px;
+  }
+
+  .gantt-lifeline {
+    width: 2px;
+  }
+
+  .gantt-axis-right {
+    display: none; /* Скрываем правую ось на мобильных */
+  }
+
+  .gantt-death-point {
+    width: 8px;
+    height: 8px;
+    bottom: -4px;
+  }
+
+  .gantt-tooltip {
+    display: none;
+  }
+
+  .gantt-legend {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .gantt-legend-item {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gantt-axis {
+    width: 32px;
+  }
+
+  .gantt-axis-year {
+    font-size: 0.55rem;
+    padding-right: 3px;
+  }
+
+  .gantt-axis-right .gantt-axis-year {
+    padding-left: 3px;
+  }
+
+  .gantt-grid {
+    left: 32px;
+    right: 32px;
+  }
+
+  .gantt-avatar {
+    width: 24px;
+    height: 24px;
+    top: -12px;
+  }
+
+  .gantt-death-point {
+    width: 6px;
+    height: 6px;
+    bottom: -3px;
+  }
+}
+
+/* === Letterboxd Theme для Gantt Timeline === */
+body[data-theme="letterboxd"] .gantt-container {
+  background: transparent;
+}
+
+body[data-theme="letterboxd"] .gantt-axis-line {
+  background: #556677;
+  opacity: 0.4;
+}
+
+body[data-theme="letterboxd"] .gantt-axis-mark.major .gantt-axis-year {
+  color: #8899a6;
+}
+
+body[data-theme="letterboxd"] .gantt-axis-mark.minor .gantt-axis-year {
+  color: #8899a6;
+  opacity: 0.5;
+}
+
+body[data-theme="letterboxd"] .gantt-axis-tick {
+  background: #556677;
+}
+
+body[data-theme="letterboxd"] .gantt-grid-line {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body[data-theme="letterboxd"] .gantt-grid-line.major {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="letterboxd"] .gantt-avatar {
+  /* border-color: #00ac1c; */
+  background: #1a1f25;
+}
+
+body[data-theme="letterboxd"] .gantt-avatar-placeholder {
+  background: linear-gradient(135deg, #1a1f25 0%, #2c3440 100%);
+  color: #8899a6;
+}
+
+body[data-theme="letterboxd"] .gantt-poet-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .gantt-poet:hover .gantt-poet-name {
+  color: #00e054;
+}
+
+body[data-theme="letterboxd"] .gantt-lifeline-inner {
+  background: #4a5568;
+  width: 2px;
+}
+
+body[data-theme="letterboxd"] .gantt-poet:hover .gantt-lifeline-inner {
+  background: linear-gradient(
+    to bottom,
+    /* #00ac1c 0%, */
+    #C7A36B 0%,
+    #9d4451 100%
+  ); /* Зелёный → золотой → бордовый */
+}
+
+body[data-theme="letterboxd"] .gantt-death-point {
+  background: #4a5568;
+  opacity: 1;
+}
+
+/* Долгожитель — зелёный бордер (как Современность) */
+body[data-theme="letterboxd"] .gantt-poet.longest-lived .gantt-avatar {
+  border-color: #4a9c5d;
+}
+
+/* Долгожитель — при наведении стандартные цвета */
+body[data-theme="letterboxd"] .gantt-poet.longest-lived:hover .gantt-avatar {
+  border-color: #C7A36B;
+}
+
+/* Короткожитель — бордовый бордер (как Советская эпоха) */
+body[data-theme="letterboxd"] .gantt-poet.shortest-lived .gantt-avatar {
+  border-color: #9d4451;
+}
+
+/* Короткожитель — при наведении стандартные цвета */
+body[data-theme="letterboxd"] .gantt-poet.shortest-lived:hover .gantt-avatar {
+  border-color: #C7A36B;
+}
+
+body[data-theme="letterboxd"] .gantt-poet:hover .gantt-death-point {
+  background: #9d4451; /* Бордовый */
+  box-shadow: 0 0 8px rgba(157, 68, 81, 0.5);
+}
+
+body[data-theme="letterboxd"] .gantt-avatar {
+  background: #14181c;
+  border-color: #4a5568; /* Тот же цвет, что и линия */
+}
+
+body[data-theme="letterboxd"] .gantt-poet:hover .gantt-avatar {
+  border-color: #C7A36B; /* Зелёный — начало жизни */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="letterboxd"] .gantt-death-year {
+  color: #8899a6;
+}
+
+body[data-theme="letterboxd"] .gantt-tooltip {
+  background: #1a1f25;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme="letterboxd"] .gantt-tooltip::before {
+  display: none;
+}
+
+body[data-theme="letterboxd"] .gantt-tooltip-name,
+body[data-theme="letterboxd"] .gantt-tooltip-dates,
+body[data-theme="letterboxd"] .gantt-tooltip-lifespan {
+  color: #9aabbf;
+  opacity: 1;
+}
+
+body[data-theme="letterboxd"] .gantt-legend {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body[data-theme="letterboxd"] .gantt-legend-item {
+  color: #8899a6;
+}
+
+body[data-theme="letterboxd"] .gantt-legend-circle.birth {
+  background: #00ac1c; /* Зелёный */
+}
+
+body[data-theme="letterboxd"] .gantt-legend-circle.death {
+  background: #9d4451; /* Бордовый */
+}
+
+body[data-theme="letterboxd"] .gantt-legend-circle.alive {
+  background: #C7A36B; /* Золотой */
+  box-shadow: 0 0 0 2px rgba(199, 163, 107, 0.3);
 }

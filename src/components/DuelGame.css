@@ -230,7 +230,7 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
   position: absolute;
   width: 28px;
   height: 2px;
-  background: #ef4444;
+  background: #ff6b6b;
   transform: rotate(-45deg);
   border-radius: 2px;
   z-index: 2;
@@ -455,7 +455,7 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
 .duel-cell {
   aspect-ratio: 1;
   background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
-  border: 2px solid rgba(199, 163, 107, 0.2);
+  border: 1px solid rgba(199, 163, 107, 0.2);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -484,7 +484,7 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
 .duel-cell.selected {
   background: linear-gradient(135deg, #fffaef 0%, #fff5e1 100%);
   border-color: var(--gold);
-  box-shadow: 0 2px 8px rgba(199, 163, 107, 0.2);
+  box-shadow: 0 1px 8px rgba(199, 163, 107, 0.2);
 }
 
 .duel-cell.opened {
@@ -494,13 +494,13 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
 .duel-cell.opened-by-maxim {
   background: rgba(45, 45, 45, 0.08) !important;
   border-color: var(--ink) !important;
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 .duel-cell.opened-by-oleg {
   background: rgba(123, 46, 46, 0.08) !important;
   border-color: var(--burgundy) !important;
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 /* Смертельное оружие (пистолет/сабля) - красноватый фон для обоих игроков */
@@ -568,7 +568,7 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
 .duel-result.winner {
   background: rgba(199, 163, 107, 0.1);
   border-left-color: var(--gold);
-  box-shadow: 0 0 0 1px rgba(199, 163, 107, 0.1);
+  /* box-shadow: 0 0 0 1px rgba(199, 163, 107, 0.1); */
 }
 
 .duel-result.loser {
@@ -729,7 +729,7 @@ body[data-theme="letterboxd"] .toggle-music-btn:hover .music-icon {
 
   .duel-cell {
     font-size: 1.2rem;
-    border-width: 2px;
+    border-width: 1px;
     min-height: 45px;
   }
 
@@ -759,7 +759,7 @@ body[data-theme="letterboxd"] .rules-btn:hover {
 }
 
 body[data-theme="letterboxd"] .rules-overlay {
-  background: #253544;
+  background: #202830;
   border: none;
   backdrop-filter: none;
 }
@@ -794,7 +794,7 @@ body[data-theme="letterboxd"] .rule-text strong {
 }
 
 body[data-theme="letterboxd"] .duel-instructions {
-  background: #253544;
+  background: #202830;
   border: none;
 }
 
@@ -811,7 +811,7 @@ body[data-theme="letterboxd"] .duel-instructions p {
 }
 
 body[data-theme="letterboxd"] .duel-result {
-  background: #253544;
+  background: #202830;
   border: none;
   /* border-left: 3px solid #456; */
 }
@@ -837,26 +837,26 @@ body[data-theme="letterboxd"] .duel-result.loser h3 {
 }
 
 body[data-theme="letterboxd"] .status-compact {
-  background: #253544;
+  background: #202830;
   border: none;
 }
 
-body[data-theme="letterboxd"] .status-compact:hover {
+/* body[data-theme="letterboxd"] .status-compact:hover {
   background: #2c3a4a;
   border: none;
-}
+} */
 
 body[data-theme="letterboxd"] .status-text-compact {
   color: #9ab;
 }
 
 body[data-theme="letterboxd"] .duel-cell {
-  background: #253544;
+  background: #202830;
   border-color: #456;
 }
 
 body[data-theme="letterboxd"] .duel-cell.clickable {
-  background: #2c3a4a;
+  background: #202830;
   border-color: #40BCF4;
 }
 
@@ -868,13 +868,13 @@ body[data-theme="letterboxd"] .duel-cell.clickable:hover {
 body[data-theme="letterboxd"] .duel-cell.opened-by-maxim {
   background: rgba(255, 144, 16, 0.05) !important;
   border-color: #FF9010 !important;
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 body[data-theme="letterboxd"] .duel-cell.opened-by-oleg {
   background: rgba(0, 172, 28, 0.05) !important;
   border-color: #00ac1c !important;
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 /* Смертельное оружие - красноватый фон */

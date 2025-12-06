@@ -917,13 +917,11 @@ const OverallRankingPage = () => {
       {/* Блок конфликтов */}
       {detectConflicts.length > 0 && (
         <div className="conflicts-block">
-          <h3 className="conflicts-title">Конфликт чувств зафиксирован. Срочно требуется дуэль!</h3>
-          <p className="conflicts-subtitle">
-          Критики не сошлись во мнении — пусть судьба решит.
-          </p>
+          <h3 className="conflicts-title">Критики не сошлись во мнении — пусть судьба решит.</h3>
+
           <div className="conflicts-list">
             {detectConflicts.map((conflict) => (
-              <div key={conflict.category} className="conflict-item">
+              <div key={conflict.category} className="conflict-item" data-category={conflict.category}>
                 <div className="conflict-info">
                   <span className="conflict-category">{conflict.categoryName}:</span>
                   <span className="conflict-poets">

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePoets } from '../context/PoetsContext';
-import { ref, set } from 'firebase/database';
+import { ref, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
 import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
+import { BookOpen, Scale, Sparkles, HeartCrack, Flower2, Bot, Camera } from 'lucide-react';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -19,8 +20,60 @@ const AdminPage = () => {
     deletePoem: deletePoemFunc, 
     deletePoet,
     calculateScore,
-    CATEGORIES
+    CATEGORIES,
+    cleanupInvalidData
   } = usePoets();
+  
+  // Состояние гирлянды (из Firebase)
+  const [garlandEnabled, setGarlandEnabled] = useState(true);
+  const [glowEnabled, setGlowEnabled] = useState(true);
+  const [breathingEnabled, setBreathingEnabled] = useState(false);
+  
+  // Загружаем настройки из Firebase
+  useEffect(() => {
+    const settingsRef = ref(database, 'settings/garland');
+    const unsubscribe = onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setGarlandEnabled(data.enabled !== false);
+        setGlowEnabled(data.glow !== false);
+        setBreathingEnabled(data.breathing === true);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+  
+  // Сохранить настройки в Firebase
+  const saveGarlandSettings = async (enabled, glow, breathing) => {
+    const settingsRef = ref(database, 'settings/garland');
+    await set(settingsRef, {
+      enabled,
+      glow,
+      breathing
+    });
+  };
+  
+  // Переключить гирлянду
+  const toggleGarland = () => {
+    const newState = !garlandEnabled;
+    setGarlandEnabled(newState);
+    saveGarlandSettings(newState, glowEnabled, breathingEnabled);
+  };
+  
+  // Переключить свечение
+  const toggleGlow = () => {
+    const newState = !glowEnabled;
+    setGlowEnabled(newState);
+    saveGarlandSettings(garlandEnabled, newState, breathingEnabled);
+  };
+  
+  // Переключить дыхание
+  const toggleBreathing = () => {
+    const newState = !breathingEnabled;
+    setBreathingEnabled(newState);
+    saveGarlandSettings(garlandEnabled, glowEnabled, newState);
+  };
   
   const [selectedPoet, setSelectedPoet] = useState(null);
   const [selectedPoem, setSelectedPoem] = useState(null);
@@ -678,46 +731,175 @@ Note: В конкурсе будут участвовать все выдающ�
   
   return (
     <div className="admin-page">
-      <div className="admin-header">
-        <div className="admin-header-content">
-          <h1>Админка</h1>
-          <div className="admin-header-actions">
-            <button 
-              className="btn-backup btn-export"
-              onClick={handleExportData}
-              disabled={poets.length === 0}
-              title="Скачать бэкап всех данных"
-            >
+      {/* Секция Данные */}
+      <div className="admin-section data-section">
+        <h2 className="section-title">Данные</h2>
+        <div className="data-actions">
+          <button 
+            className="btn-header-action"
+            onClick={handleExportData}
+            disabled={poets.length === 0}
+            title="Скачать бэкап всех данных"
+          >
             Скачать бэкап
-            </button>
-            
-            <label className="btn-backup btn-import" title="Загрузить бэкап из файла">
-              Загрузить бэкап
-              <input 
-                type="file" 
-                accept=".json"
-                onChange={handleImportData}
-                style={{ display: 'none' }}
-              />
-            </label>
-            
-            <button 
-              className="btn-delete-all"
-              onClick={() => setShowDeleteAllConfirm(true)}
-              disabled={poets.length === 0}
-            >
-              Удалить всё
-            </button>
-          </div>
+          </button>
+          
+          <label className="btn-header-action btn-small" title="Загрузить бэкап из файла">
+            Загрузить
+            <input 
+              type="file" 
+              accept=".json"
+              onChange={handleImportData}
+              style={{ display: 'none' }}
+            />
+          </label>
+          
+          <button 
+            className="btn-header-action btn-danger"
+            onClick={() => setShowDeleteAllConfirm(true)}
+            disabled={poets.length === 0}
+          >
+            Удалить всё
+          </button>
         </div>
-        {/* <p className="admin-subtitle">Управление стихотворениями</p> */}
       </div>
       
       <div className="admin-content">
+        {/* Список поэтов */}
+        <div className="admin-section">
+          <h2 className="section-title">Поэты</h2>
+          <div className="poets-list">
+            {[...poets].sort((a, b) => {
+              const lastNameA = a.name.split(' ').slice(-1)[0];
+              const lastNameB = b.name.split(' ').slice(-1)[0];
+              return lastNameA.localeCompare(lastNameB, 'ru');
+            }).map(poet => (
+              <div
+                key={poet.id}
+                className={`poet-item ${selectedPoet?.id === poet.id ? 'active' : ''}`}
+              >
+                <div className="poet-item-main" onClick={() => setSelectedPoet(poet)}>
+                  <img 
+                    src={poet.imageUrl} 
+                    alt={poet.name}
+                    className="poet-item-avatar"
+                    style={{ 
+                      objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                    }}
+                  />
+                  <span className="poet-item-name">
+                    {poet.name.split(' ').length > 1 
+                      ? `${poet.name.split(' ')[0][0]}. ${poet.name.split(' ').slice(1).join(' ')}`
+                      : poet.name}
+                  </span>
+                </div>
+                <div className="poet-item-actions">
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditBio(poet);
+                    }}
+                    title="Биография"
+                  >
+                    <BookOpen size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditInfluence(poet);
+                    }}
+                    title="Мораль"
+                  >
+                    <Scale size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditCreativity(poet);
+                    }}
+                    title="Творчество"
+                  >
+                    <Sparkles size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditDrama(poet);
+                    }}
+                    title="Драма"
+                  >
+                    <HeartCrack size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditBeauty(poet);
+                    }}
+                    title="Красота"
+                  >
+                    <Flower2 size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditAIRating(poet);
+                    }}
+                    title="AI-рейтинг"
+                  >
+                    <Bot size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditPhoto(poet);
+                    }}
+                    title="Фото"
+                  >
+                    <Camera size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Список стихотворений выбранного поэта */}
+        {selectedPoet && (
+          <div className="admin-section">
+<h2 className="section-title">
+              Стихи: {selectedPoet.name}
+              <span className="poems-count">({poems.length})</span>
+            </h2>
+            
+            {poems.length === 0 ? (
+              <p className="empty-message">У этого поэта пока нет стихотворений</p>
+            ) : (
+              <div className="poems-list">
+                {poems.map(poem => (
+                  <div
+                    key={poem.id}
+                    className="poem-item"
+                    onClick={() => handleEditPoem(poem)}
+                  >
+                    <span className="poem-item-title">{poem.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Назначение победителей вручную */}
         <div className="admin-section assign-leader-section">
-          <h2 className="section-title">Назначить победителя вручную</h2>
-          <p className="section-description">Используйте, если дуэль не запустилась или есть более 2 претендентов</p>
+<h2 className="section-title">Награды</h2>
+          <p className="section-hint">Если дуэль не запустилась или более 2 претендентов</p>
           
           <div className="assign-controls">
             <div className="assign-row">
@@ -750,132 +932,56 @@ Note: В конкурсе будут участвовать все выдающ�
             </div>
           </div>
         </div>
-
-        {/* Список поэтов */}
-        <div className="admin-section">
-          <h2 className="section-title">Выберите поэта</h2>
-          <div className="poets-list">
-            {poets.map(poet => (
-              <div
-                key={poet.id}
-                className={`poet-item ${selectedPoet?.id === poet.id ? 'active' : ''}`}
-              >
-                <div className="poet-item-main" onClick={() => setSelectedPoet(poet)}>
-                  <img 
-                    src={poet.imageUrl} 
-                    alt={poet.name}
-                    className="poet-item-avatar"
-                    style={{ 
-                      objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
-                    }}
-                  />
-                  <span className="poet-item-name">{poet.name}</span>
-                </div>
-                <div className="poet-item-actions">
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditBio(poet);
-                    }}
-                    title="Редактировать биографию"
-                  >
-                    📖
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditInfluence(poet);
-                    }}
-                    title="Редактировать влияние"
-                  >
-                    ⭐
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditCreativity(poet);
-                    }}
-                    title="Редактировать творчество"
-                  >
-                    ✨
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditDrama(poet);
-                    }}
-                    title="Редактировать драму"
-                  >
-                    🎭
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditBeauty(poet);
-                    }}
-                    title="Редактировать красоту"
-                  >
-                    💎
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditAIRating(poet);
-                    }}
-                    title="AI-рейтинг"
-                  >
-                    🤖
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditPhoto(poet);
-                    }}
-                    title="Настроить фото"
-                  >
-                    📸
-                  </button>
-                </div>
-              </div>
-            ))}
+        
+        {/* Новогодние настройки */}
+        <div className="admin-section settings-section">
+          <h2 className="section-title">Гирлянда</h2>
+          <div className="settings-inline">
+            <button 
+              className={`toggle-btn ${garlandEnabled ? 'active' : ''}`}
+              onClick={toggleGarland}
+              title="Показать гирлянду"
+            >
+              {garlandEnabled ? 'Вкл' : 'Выкл'}
+            </button>
+            <button 
+              className={`toggle-btn ${glowEnabled ? 'active' : ''}`}
+              onClick={toggleGlow}
+              disabled={!garlandEnabled}
+              title="Свечение лампочек"
+            >
+              Свечение
+            </button>
+            <button 
+              className={`toggle-btn ${breathingEnabled ? 'active' : ''}`}
+              onClick={toggleBreathing}
+              disabled={!garlandEnabled}
+              title="Дыхание лампочек"
+            >
+              Затухание
+            </button>
           </div>
         </div>
         
-        {/* Список стихотворений выбранного поэта */}
-        {selectedPoet && (
-          <div className="admin-section">
-            <h2 className="section-title">
-              Стихотворения: {selectedPoet.name}
-              <span className="poems-count">({poems.length})</span>
-            </h2>
-            
-            {poems.length === 0 ? (
-              <p className="empty-message">У этого поэта пока нет стихотворений</p>
-            ) : (
-              <div className="poems-list">
-                {poems.map(poem => (
-                  <div
-                    key={poem.id}
-                    className="poem-item"
-                    onClick={() => handleEditPoem(poem)}
-                  >
-                    <span className="poem-item-title">{poem.title}</span>
-                    <span className="poem-item-date">
-                      {new Date(poem.addedAt).toLocaleDateString('ru-RU')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Обслуживание данных - скрыто, раскомментировать при необходимости */}
+        {/* <div className="admin-section settings-section">
+          <h2 className="section-title">Обслуживание</h2>
+          <div className="settings-inline">
+            <button 
+              className="cleanup-btn"
+              onClick={async () => {
+                const count = await cleanupInvalidData();
+                alert(count > 0 
+                  ? `Очищено ${count} невалидных записей. Проверьте консоль для деталей.`
+                  : 'Невалидных данных не найдено!'
+                );
+              }}
+              title="Удалить ссылки на несуществующих поэтов"
+            >
+              Очистить невалидные данные
+            </button>
           </div>
-        )}
+        </div> */}
       </div>
       
       {/* Модалка редактирования/удаления стихотворения */}
@@ -971,7 +1077,7 @@ Note: В конкурсе будут участвовать все выдающ�
               ✕
             </button>
             
-            <h2 className="modal-title">⚠️ Удалить всё?</h2>
+            <h2 className="modal-title">Удалить всё?</h2>
             
             <div className="delete-all-content">
               <p className="delete-all-warning">
@@ -984,9 +1090,9 @@ Note: В конкурсе будут участвовать все выдающ�
                 <li>Всю историю дуэлей</li>
                 <li>Все награды</li>
               </ul>
-              <p className="delete-all-warning-final">
+              {/* <p className="delete-all-warning-final">
                 <strong>Это действие необратимо!</strong>
-              </p>
+              </p> */}
               
               <div className="delete-all-actions">
                 <button 
@@ -1030,7 +1136,7 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateBio}
                   disabled={isGeneratingBio}
                 >
-                  {isGeneratingBio ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingBio ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
               </div>
               
@@ -1085,7 +1191,7 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateInfluence}
                   disabled={isGeneratingInfluence}
                 >
-                  {isGeneratingInfluence ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingInfluence ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
               </div>
               
@@ -1140,7 +1246,7 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateCreativity}
                   disabled={isGeneratingCreativity}
                 >
-                  {isGeneratingCreativity ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingCreativity ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
               </div>
               
@@ -1195,7 +1301,7 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateDrama}
                   disabled={isGeneratingDrama}
                 >
-                  {isGeneratingDrama ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingDrama ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
               </div>
               
@@ -1250,7 +1356,7 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateBeauty}
                   disabled={isGeneratingBeauty}
                 >
-                  {isGeneratingBeauty ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingBeauty ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
               </div>
               
@@ -1295,7 +1401,7 @@ Note: В конкурсе будут участвовать все выдающ�
             </button>
             
             <h2 className="modal-title">
-              🤖 AI-Рейтинг: {selectedPoet?.name}
+              AI-Рейтинг: {selectedPoet?.name}
             </h2>
             
             <div className="bio-modal-content">
@@ -1305,14 +1411,14 @@ Note: В конкурсе будут участвовать все выдающ�
                   onClick={handleGenerateAIRating}
                   disabled={isGeneratingAIRating}
                 >
-                  {isGeneratingAIRating ? '⏳ Генерирую...' : '✨ Сгенерировать AI'}
+                  {isGeneratingAIRating ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
                 <button 
                   className="btn-copy-prompts"
                   onClick={handleCopyPrompts}
                   title="Скопировать промпты в буфер обмена"
                 >
-                  📋 Промпты
+                  Промпты
                 </button>
               </div>
               
@@ -1403,7 +1509,7 @@ Note: В конкурсе будут участвовать все выдающ�
             </button>
             
             <h2 className="modal-title">
-              📸 Настройка фото: {selectedPoet?.name}
+            Настройка фото: {selectedPoet?.name}
             </h2>
             
             <div className="bio-modal-content">
@@ -1497,7 +1603,13 @@ Note: В конкурсе будут участвовать все выдающ�
                   <div>
                     <p className="single-contender">Только один претендент:</p>
                     <div className="contender-card">
-                      <img src={contenders[0].imageUrl} alt={contenders[0].name} />
+                      <img 
+                        src={contenders[0].imageUrl} 
+                        alt={contenders[0].name}
+                        style={{ 
+                          objectPosition: `center ${contenders[0].imagePositionY !== undefined ? contenders[0].imagePositionY : 25}%`
+                        }}
+                      />
                       <div>
                         <h3>{contenders[0].name}</h3>
                         <p>Балл: {(contenders[0].score || contenders[0].rating).toFixed(2)}</p>
@@ -1519,7 +1631,13 @@ Note: В конкурсе будут участвовать все выдающ�
                   <div className="contenders-list">
                     {contenders.map(poet => (
                       <div key={poet.id} className="contender-card">
-                        <img src={poet.imageUrl} alt={poet.name} />
+                        <img 
+                          src={poet.imageUrl} 
+                          alt={poet.name}
+                          style={{ 
+                            objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
+                          }}
+                        />
                         <div>
                           <h3>{poet.name}</h3>
                           <p>Балл: {(poet.score || poet.rating).toFixed(2)}</p>

@@ -80,20 +80,20 @@
 
 /* Блок конфликтов */
 .conflicts-block {
-  background: white;
+  /* background: white; */
   border: none;
   border-radius: 6px;
-  padding: 1.5rem;
+  /* padding: 1.5rem; */
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); */
 }
 
 .conflicts-title {
-  font-size: 1.1rem;
-  color: var(--ink);
+  font-size: 1rem;
+  color: #b3b3b3;
   margin: 0 0 1.25rem 0;
   text-align: center;
-  font-weight: 500;
+  font-weight: 400;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
@@ -1211,6 +1211,10 @@ body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, bod
   transition: all 0.3s ease;
   /* box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); */
   cursor: pointer;
+  /* Fallback for Safari < 15 */
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 */
+  /* Modern browsers */
   aspect-ratio: 16 / 9;
   text-decoration: none;
   display: block;
@@ -1218,13 +1222,25 @@ body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, bod
   min-width: 0;
 }
 
+/* Reset padding for browsers that support aspect-ratio */
+@supports (aspect-ratio: 16 / 9) {
+  .award-winner-card {
+    height: auto;
+    padding-bottom: 0;
+  }
+}
+
 
 .award-winner-composition {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
-  position: relative;
   overflow: hidden;
 }
 
@@ -1340,7 +1356,32 @@ body[data-theme="letterboxd"] .award-name {
 }
 
 body[data-theme="letterboxd"] .award-winner-card {
-  background: #1a1a1a;
+  background: #202830;
+}
+
+body[data-theme="letterboxd"] .award-badge-section {
+  background: #202830;
+}
+
+body[data-theme="letterboxd"] .award-poet-section::before {
+  background: linear-gradient(to right, 
+    #202830 0%,
+    #202830 4%,
+    rgba(32, 40, 48, 0.95) 8%,
+    rgba(32, 40, 48, 0.88) 12%,
+    rgba(32, 40, 48, 0.78) 16%,
+    rgba(32, 40, 48, 0.68) 20%,
+    rgba(32, 40, 48, 0.56) 25%,
+    rgba(32, 40, 48, 0.44) 30%,
+    rgba(32, 40, 48, 0.34) 36%,
+    rgba(32, 40, 48, 0.25) 43%,
+    rgba(32, 40, 48, 0.18) 51%,
+    rgba(32, 40, 48, 0.12) 60%,
+    rgba(32, 40, 48, 0.07) 70%,
+    rgba(32, 40, 48, 0.04) 80%,
+    rgba(32, 40, 48, 0.015) 90%,
+    transparent 100%
+  );
 }
 
 
@@ -1351,6 +1392,27 @@ body[data-theme="letterboxd"] .award-category-title {
 
 body[data-theme="letterboxd"] .award-winner-name {
   color: #e5e5e5;
+}
+
+@media (max-width: 768px) {
+  body[data-theme="letterboxd"] .award-poet-section::before {
+    width: 220px;
+    background: linear-gradient(to right, 
+      #202830 0%,
+      #202830 5%,
+      rgba(32, 40, 48, 0.92) 10%,
+      rgba(32, 40, 48, 0.80) 15%,
+      rgba(32, 40, 48, 0.66) 20%,
+      rgba(32, 40, 48, 0.52) 26%,
+      rgba(32, 40, 48, 0.38) 33%,
+      rgba(32, 40, 48, 0.26) 42%,
+      rgba(32, 40, 48, 0.16) 53%,
+      rgba(32, 40, 48, 0.09) 66%,
+      rgba(32, 40, 48, 0.04) 80%,
+      rgba(32, 40, 48, 0.01) 92%,
+      transparent 100%
+    );
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1368,7 +1430,15 @@ body[data-theme="letterboxd"] .award-winner-name {
   }
 
   .award-winner-card {
+    padding-bottom: 62.5%; /* 16:10 fallback */
     aspect-ratio: 16 / 10;
+  }
+  
+  @supports (aspect-ratio: 16 / 10) {
+    .award-winner-card {
+      height: auto;
+      padding-bottom: 0;
+    }
   }
 
   .award-badge-section {
@@ -1695,12 +1765,9 @@ body[data-theme="letterboxd"] .overall-card:nth-child(even) {
   background: #3d4d5c;
 }
 
-body[data-theme="letterboxd"] .overall-card.compact:hover {
-  background: #3a4856;
-}
-
+body[data-theme="letterboxd"] .overall-card.compact:hover,
 body[data-theme="letterboxd"] .overall-card.compact:nth-child(even):hover {
-  background: #343f4d;
+  background: #3a4856;
 }
 
 body[data-theme="letterboxd"] .category-rank-card {
@@ -1712,12 +1779,9 @@ body[data-theme="letterboxd"] .category-rank-card:nth-child(even) {
   background: #3d4d5c;
 }
 
-body[data-theme="letterboxd"] .category-rank-card.compact:hover {
-  background: #3a4856;
-}
-
+body[data-theme="letterboxd"] .category-rank-card.compact:hover,
 body[data-theme="letterboxd"] .category-rank-card.compact:nth-child(even):hover {
-  background: #343f4d;
+  background: #3a4856;
 }
 
 /* body[data-theme="letterboxd"] .overall-card:hover {
@@ -1741,7 +1805,8 @@ body[data-theme="letterboxd"] .overall-category-coefficient {
 }
 
 body[data-theme="letterboxd"] .conflicts-block {
-  background: #2c3440;
+  /* background: #2c3440; */
+  /* background: #202830; */
   border: none;
 }
 
@@ -1750,22 +1815,19 @@ body[data-theme="letterboxd"] .conflicts-title {
 }
 
 body[data-theme="letterboxd"] .conflict-item {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-body[data-theme="letterboxd"] .conflict-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: #202830;
+  border: none;
+  border-left: 3px solid #d64040;
+  border-radius: 0 6px 6px 0;
 }
 
 body[data-theme="letterboxd"] .start-game-btn {
-  background: #E50914;
+  background: #00c030;
   color: white;
 }
 
 body[data-theme="letterboxd"] .start-game-btn:hover {
-  background: #B81D24;
+  background: #00a028;
   opacity: 1;
 }
 

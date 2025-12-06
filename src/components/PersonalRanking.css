@@ -724,12 +724,9 @@ body[data-theme="letterboxd"] .poet-ranking-card:nth-child(even) {
   background: #3d4d5c;
 }
 
-body[data-theme="letterboxd"] .poet-ranking-card.compact:hover {
-  background: #3a4856;
-}
-
+body[data-theme="letterboxd"] .poet-ranking-card.compact:hover,
 body[data-theme="letterboxd"] .poet-ranking-card.compact:nth-child(even):hover {
-  background: #343f4d;
+  background: #3a4856;
 }
 
 /* body[data-theme="letterboxd"] .poet-ranking-card:hover {

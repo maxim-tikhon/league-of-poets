@@ -36,7 +36,8 @@
 }
 
 .h2h-combined-card {
-  background: rgba(59, 130, 246, 0.1);
+  /* background: rgba(59, 130, 246, 0.1); */
+  background: #253544; 
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
@@ -255,7 +256,7 @@
 }
 
 .h2h-controversial-diff {
-  color: #ef4444;
+  color: #ff6b6b;
   font-weight: 500;
   width: 50px;
   font-size: 0.75rem;
@@ -263,7 +264,7 @@
 }
 
 .h2h-controversial-diff.low {
-  color: #00c030;
+  color: #9aad5f;
 }
 
 /* Карточка спора с AI */
@@ -279,7 +280,7 @@
 }
 
 .h2h-stat-value.ai-disagreement-name {
-  color: #ef4444;
+  color: #ff6b6b;
   font-size: 1.5rem;
 }
 
@@ -613,8 +614,16 @@
 
 /* Letterboxd Theme */
 body[data-theme="letterboxd"] .h2h-stat-card {
-  background: rgba(59, 130, 246, 0.1);
+  /* background: rgba(59, 130, 246, 0.1); */
   /* border-color: #456; */
+  /* background: #253544;  */
+  background: #202830;
+}
+
+body[data-theme="letterboxd"] .h2h-combined-card {
+  /* background: rgba(59, 130, 246, 0.1); */
+  /* background: #253544;  */
+  background: #202830;
 }
 
 body[data-theme="letterboxd"] .h2h-stat-value {

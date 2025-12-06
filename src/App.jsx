@@ -9,7 +9,6 @@ import PoetDetailPage from './pages/PoetDetailPage';
 import PersonalRankingPage from './pages/PersonalRankingPage';
 import OverallRankingPage from './pages/OverallRankingPage';
 import HeadToHeadPage from './pages/HeadToHeadPage';
-import TimelinePage from './pages/TimelinePage';
 import AdminPage from './pages/AdminPage';
 import AwardsPage from './pages/AwardsPage';
 import UserSelector from './components/UserSelector';
@@ -60,7 +59,6 @@ function App() {
             <Route path="overall-ranking" element={<OverallRankingPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="head-to-head" element={<HeadToHeadPage />} />
-            <Route path="timeline" element={<TimelinePage />} />
             <Route path="awards" element={<AwardsPage />} />
           </Route>
         </Routes>
