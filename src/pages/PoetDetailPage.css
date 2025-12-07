@@ -653,7 +653,7 @@
   gap: 1rem;
   align-items: center;
   justify-content: center;
-  margin-top: 0.5rem;
+  margin-top: 0.7rem;
   /* padding: 0.25rem; */
 }
 
@@ -668,6 +668,96 @@
   height: 14px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+/* Секция ссылок под фото - стиль сайта */
+.poet-links-section {
+  margin-top: 1.2rem;
+  border: 1px solid rgba(199, 163, 107, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(199, 163, 107, 0.03);
+  width: 280px;
+  max-width: 280px;
+}
+
+.links-header {
+  padding: 0.3rem 0.6rem;
+  background: rgba(0, 0, 0, 0.05);
+  /* border-bottom: 1px solid rgba(199, 163, 107, 0.15); */
+}
+
+.links-title {
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+.links-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.1);
+  overflow: hidden;
+}
+
+.link-row:last-child {
+  border-bottom: none;
+}
+
+.link-row:hover .link-name {
+  color: var(--ink);
+}
+
+.link-row:hover .link-icon {
+  opacity: 0.7;
+}
+
+.link-icon {
+  display: flex;
+  align-items: center;
+  /* justify-content: center;  */
+  width: 28px;
+  height: 28px;
+  /* background: rgba(199, 163, 107, 0.12); */
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: var(--ink);
+  opacity: 0.5;
+}
+
+.link-name {
+  font-size: 0.8rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Кнопка "Показать ещё" - наследует стили от link-row */
+.show-more-btn {
+  background: none;
+  border: none;
+  border-bottom: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.show-more-btn .link-icon {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
 }
 
 .stat-count {
@@ -1161,6 +1251,43 @@ body[data-theme="letterboxd"] .stat-count {
   color: #9ab;
   font-weight: 400;
 }
+
+/* Letterboxd Theme для секции ссылок */
+body[data-theme="letterboxd"] .poet-links-section {
+  border-color: #303840;
+  background: #14181c;
+}
+
+body[data-theme="letterboxd"] .links-header {
+  background: #242c34;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme="letterboxd"] .links-title {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .link-row {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+body[data-theme="letterboxd"] .link-row:hover .link-name {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .link-row:hover .link-icon {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .link-icon {
+  /* background: rgba(255, 255, 255, 0.1); */
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .link-name {
+  color: #9ab;
+}
+
 
 /* Letterboxd Theme для оценок */
 body[data-theme="letterboxd"] .poet-ratings-section {

@@ -147,9 +147,76 @@ export const PoetsProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Поиск ссылки на Википедию для поэта
+  const searchWikipediaLink = async (poetName) => {
+    try {
+      const searchUrl = `https://ru.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(poetName)}&limit=1&namespace=0&format=json&origin=*`;
+      
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      
+      if (data[3] && data[3].length > 0) {
+        return data[3][0];
+      }
+      return '';
+    } catch (error) {
+      return '';
+    }
+  };
+
+  // Поиск ссылки на Wikiquote для цитат поэта
+  const searchWikiquoteLink = async (poetName) => {
+    try {
+      const searchUrl = `https://ru.wikiquote.org/w/api.php?action=opensearch&search=${encodeURIComponent(poetName)}&limit=1&namespace=0&format=json&origin=*`;
+      
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      
+      if (data[3] && data[3].length > 0) {
+        return data[3][0];
+      }
+      return '';
+    } catch (error) {
+      return '';
+    }
+  };
+
+  // Поиск ссылки на стихи поэта (rustih.ru)
+  const searchPoemsLink = async (poetName) => {
+    try {
+      const query = `${poetName} стихи site:rustih.ru`;
+      const url = `https://google-search74.p.rapidapi.com/?query=${encodeURIComponent(query)}&limit=1&related_keywords=false`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': '58cedd75c1msha8a949d550cd81dp15949fjsn3430eac905e0',
+          'X-RapidAPI-Host': 'google-search74.p.rapidapi.com'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        return data.results[0].url || '';
+      }
+      return '';
+    } catch (error) {
+      return '';
+    }
+  };
+
   // Добавить поэта
   const addPoet = async (name, imageUrl = '', bio = '', lifeStory = '', influence = '', creativity = '', drama = '', beauty = '') => {
     const id = Date.now().toString();
+    
+    // Ищем ссылки параллельно
+    const [wikiLink, wikiquoteLink, poemsLink] = await Promise.all([
+      searchWikipediaLink(name.trim()),
+      searchWikiquoteLink(name.trim()),
+      searchPoemsLink(name.trim())
+    ]);
+    
     const newPoet = {
       name: name.trim(),
       imageUrl: imageUrl.trim(),
@@ -159,7 +226,14 @@ export const PoetsProvider = ({ children }) => {
       creativity: creativity.trim(),
       drama: drama.trim(),
       beauty: beauty.trim(),
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      links: {
+        wikipedia: wikiLink || null,
+        wikiquote: wikiquoteLink || null,
+        poems: poemsLink || null,
+        youtube: null,
+        other: null
+      }
     };
     
     // Добавляем поэта в Firebase
@@ -336,6 +410,27 @@ export const PoetsProvider = ({ children }) => {
     await update(ref(database, `poets/${poetId}`), updatedData);
   };
 
+  // Обновить ссылки поэта
+  const updatePoetLinks = async (poetId, links) => {
+    await update(ref(database, `poets/${poetId}/links`), links);
+  };
+
+  // Добавить YouTube ссылку
+  const addYoutubeLink = async (poetId, title, url) => {
+    const poet = poets.find(p => p.id === poetId);
+    const currentLinks = poet?.links?.youtube || [];
+    const newLinks = [...currentLinks, { title, url, addedAt: new Date().toISOString() }];
+    await set(ref(database, `poets/${poetId}/links/youtube`), newLinks);
+  };
+
+  // Удалить YouTube ссылку
+  const removeYoutubeLink = async (poetId, index) => {
+    const poet = poets.find(p => p.id === poetId);
+    const currentLinks = poet?.links?.youtube || [];
+    const newLinks = currentLinks.filter((_, i) => i !== index);
+    await set(ref(database, `poets/${poetId}/links/youtube`), newLinks);
+  };
+
   // Обновить рейтинг
   const updateRating = async (rater, poetId, category, value) => {
     // Проверяем, была ли у поэта хотя бы одна оценка до этого
@@ -391,18 +486,6 @@ export const PoetsProvider = ({ children }) => {
       const coefficient = CATEGORIES[category].coefficient;
       return total + (rating * coefficient);
     }, 0);
-    
-    // Логируем расчет для отладки
-    const poet = poets.find(p => p.id === poetId);
-    if (poet) {
-      console.log(`💰 calculateScore for ${poet.name} (${rater}):`, {
-        creativity: `${poetRatings.creativity || 0} × 0.5 = ${(poetRatings.creativity || 0) * 0.5}`,
-        influence: `${poetRatings.influence || 0} × 0.2 = ${(poetRatings.influence || 0) * 0.2}`,
-        drama: `${poetRatings.drama || 0} × 0.2 = ${(poetRatings.drama || 0) * 0.2}`,
-        beauty: `${poetRatings.beauty || 0} × 0.1 = ${(poetRatings.beauty || 0) * 0.1}`,
-        total: score
-      });
-    }
     
     return score;
   }, [ratings, poets]);
@@ -520,7 +603,11 @@ export const PoetsProvider = ({ children }) => {
     CATEGORIES,
     getCategoryRankings,
     getOverallRankings,
-    cleanupInvalidData
+    cleanupInvalidData,
+    searchWikipediaLink,
+    updatePoetLinks,
+    addYoutubeLink,
+    removeYoutubeLink
   };
 
   return (

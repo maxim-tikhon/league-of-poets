@@ -11,6 +11,7 @@ import {
   generateThemedPoemPrompt,
   POEM_GENERATION_OPTIONS
 } from '../ai/prompts';
+import { Globe, BookOpen, Image, Youtube, ExternalLink, Quote, Link } from 'lucide-react';
 import './PoetDetailPage.css';
 
 const PoetDetailPage = () => {
@@ -68,6 +69,8 @@ const PoetDetailPage = () => {
   const [showPoemModal, setShowPoemModal] = useState(false);
   const [selectedPoem, setSelectedPoem] = useState(null);
   
+  // Показать все ссылки
+  const [showAllLinks, setShowAllLinks] = useState(false);
   
   // Получение текущего пользователя из localStorage
   useEffect(() => {
@@ -1050,6 +1053,92 @@ const PoetDetailPage = () => {
                   <span className="stat-count">{poemStats.memorized}</span>
                 </div>
               </div>
+              
+              {/* Секция ссылок в стиле Letterboxd */}
+              {(() => {
+                const allLinks = [];
+                
+                // Собираем все ссылки
+                if (poet.links?.wikipedia) {
+                  allLinks.push({ type: 'wiki', name: 'Википедия', url: poet.links.wikipedia });
+                }
+                allLinks.push({ type: 'photo', name: 'Фотографии и портреты', url: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(poet.name)}` });
+                if (poet.links?.poems) {
+                  allLinks.push({ type: 'poems', name: 'Стихи на Rustih.ru', url: poet.links.poems });
+                }
+                if (poet.links?.wikiquote) {
+                  allLinks.push({ type: 'quotes', name: 'Цитаты', url: poet.links.wikiquote });
+                }
+                
+                const ytLinks = poet.links?.youtube;
+                if (ytLinks) {
+                  (Array.isArray(ytLinks) ? ytLinks : Object.values(ytLinks)).forEach(yt => {
+                    allLinks.push({ type: 'youtube', name: yt.title || 'YouTube', url: yt.url });
+                  });
+                }
+                
+                const otherLinks = poet.links?.other;
+                if (otherLinks) {
+                  (Array.isArray(otherLinks) ? otherLinks : Object.values(otherLinks)).forEach(link => {
+                    allLinks.push({ type: 'other', name: link.title, url: link.url });
+                  });
+                }
+                
+                const MAX_VISIBLE = 4;
+                // Если скрыта только 1 ссылка — показываем её тоже (не прячем за кнопку)
+                const hiddenCount = allLinks.length - MAX_VISIBLE;
+                const effectiveMax = hiddenCount === 1 ? MAX_VISIBLE + 1 : MAX_VISIBLE;
+                const visibleLinks = showAllLinks ? allLinks : allLinks.slice(0, effectiveMax);
+                const actualHiddenCount = allLinks.length - effectiveMax;
+                
+                const getIcon = (type) => {
+                  switch(type) {
+                    case 'wiki': return <Globe size={16} />;
+                    case 'photo': return <Image size={16} />;
+                    case 'poems': return <BookOpen size={16} />;
+                    case 'quotes': return <Quote size={16} />;
+                    case 'youtube': return <Youtube size={16} />;
+                    default: return <Link size={16} />;
+                  }
+                };
+                
+                return (
+                  <div className="poet-links-section">
+                    <div className="links-header">
+                      <span className="links-title">узнать больше</span>
+                    </div>
+                    
+                    <div className="links-body">
+                      <div className="links-list">
+                        {visibleLinks.map((link, index) => (
+                          <a 
+                            key={index}
+                            href={link.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="link-row"
+                            title={link.name}
+                          >
+                            <span className="link-icon">{getIcon(link.type)}</span>
+                            <span className="link-name">{link.name}</span>
+                          </a>
+                        ))}
+                      </div>
+                      
+                      {actualHiddenCount > 0 && !showAllLinks && (
+                        <button 
+                          className="link-row show-more-btn"
+                          onClick={() => setShowAllLinks(true)}
+                          title={`Показать ещё ${actualHiddenCount}`}
+                        >
+                          <span className="link-icon">•••</span>
+                          <span className="link-name">Показать ещё {actualHiddenCount}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           
@@ -1311,19 +1400,6 @@ const PoetDetailPage = () => {
       {enlargedImage && (
         <div className="image-lightbox-overlay" onClick={() => setEnlargedImage(null)}>
           <div className="lightbox-controls">
-            <button 
-              className="lightbox-search" 
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(enlargedImage.name)}`, '_blank');
-              }}
-              title="Найти другие фото"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-              </svg>
-            </button>
             <button className="lightbox-close" onClick={() => setEnlargedImage(null)}>✕</button>
           </div>
           <div className="image-lightbox-content" onClick={(e) => e.stopPropagation()}>

@@ -4,7 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
 import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
-import { BookOpen, Scale, Sparkles, HeartCrack, Flower2, Bot, Camera } from 'lucide-react';
+import { BookOpen, Scale, Sparkles, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2 } from 'lucide-react';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -116,6 +116,18 @@ const AdminPage = () => {
   // Состояния для настройки позиции фото
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [editImagePositionY, setEditImagePositionY] = useState(25);
+  
+  // Состояния для редактирования ссылок
+  const [showLinksModal, setShowLinksModal] = useState(false);
+  const [editWikiUrl, setEditWikiUrl] = useState('');
+  const [editWikiquoteUrl, setEditWikiquoteUrl] = useState('');
+  const [editPoemsUrl, setEditPoemsUrl] = useState('');
+  const [editYoutubeLinks, setEditYoutubeLinks] = useState([]);
+  const [editOtherLinks, setEditOtherLinks] = useState([]);
+  const [newYoutubeTitle, setNewYoutubeTitle] = useState('');
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState('');
+  const [newOtherTitle, setNewOtherTitle] = useState('');
+  const [newOtherUrl, setNewOtherUrl] = useState('');
   
   // Состояния для ручного назначения победителей
   const [showAssignLeaderModal, setShowAssignLeaderModal] = useState(false);
@@ -401,6 +413,13 @@ const AdminPage = () => {
     }
   };
   
+  // Скопировать промпт для биографии
+  const handleCopyBioPrompt = () => {
+    if (!selectedPoet) return;
+    const prompt = generatePoetLifeStoryPrompt(selectedPoet.name);
+    navigator.clipboard.writeText(prompt).catch(() => {});
+  };
+  
   // Открыть модалку редактирования влияния
   const handleEditInfluence = (poet) => {
     setSelectedPoet(poet);
@@ -442,6 +461,13 @@ const AdminPage = () => {
       console.error('Ошибка сохранения влияния:', err);
       alert('Ошибка при сохранении');
     }
+  };
+
+  // Скопировать промпт для влияния
+  const handleCopyInfluencePrompt = () => {
+    if (!selectedPoet) return;
+    const prompt = generatePoetInfluencePrompt(selectedPoet.name);
+    navigator.clipboard.writeText(prompt).catch(() => {});
   };
 
   // Редактировать творчество
@@ -487,6 +513,13 @@ const AdminPage = () => {
     }
   };
 
+  // Скопировать промпт для творчества
+  const handleCopyCreativityPrompt = () => {
+    if (!selectedPoet) return;
+    const prompt = generatePoetCreativityPrompt(selectedPoet.name);
+    navigator.clipboard.writeText(prompt).catch(() => {});
+  };
+
   // Редактировать драму
   const handleEditDrama = (poet) => {
     setSelectedPoet(poet);
@@ -528,6 +561,13 @@ const AdminPage = () => {
       console.error('Ошибка сохранения драмы:', err);
       alert('Ошибка при сохранении');
     }
+  };
+
+  // Скопировать промпт для драмы
+  const handleCopyDramaPrompt = () => {
+    if (!selectedPoet) return;
+    const prompt = generatePoetDramaPrompt(selectedPoet.name);
+    navigator.clipboard.writeText(prompt).catch(() => {});
   };
 
   // Редактировать красоту
@@ -573,6 +613,13 @@ const AdminPage = () => {
     }
   };
 
+  // Скопировать промпт для красоты
+  const handleCopyBeautyPrompt = () => {
+    if (!selectedPoet) return;
+    const prompt = generatePoetBeautyPrompt(selectedPoet.name);
+    navigator.clipboard.writeText(prompt).catch(() => {});
+  };
+
   // ============================================
   // AI-РЕЙТИНГ
   // ============================================
@@ -602,6 +649,96 @@ const AdminPage = () => {
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setEditImagePositionY(25);
+  };
+  
+  // Открыть модалку редактирования ссылок
+  const handleEditLinks = (poet) => {
+    setSelectedPoet(poet);
+    setEditWikiUrl(poet.links?.wikipedia || '');
+    setEditWikiquoteUrl(poet.links?.wikiquote || '');
+    setEditPoemsUrl(poet.links?.poems || '');
+    // Преобразуем объект в массив если нужно (Firebase может вернуть объект)
+    const ytLinks = poet.links?.youtube;
+    setEditYoutubeLinks(Array.isArray(ytLinks) ? ytLinks : (ytLinks ? Object.values(ytLinks) : []));
+    const otherLinks = poet.links?.other;
+    setEditOtherLinks(Array.isArray(otherLinks) ? otherLinks : (otherLinks ? Object.values(otherLinks) : []));
+    setNewYoutubeTitle('');
+    setNewYoutubeUrl('');
+    setNewOtherTitle('');
+    setNewOtherUrl('');
+    setShowLinksModal(true);
+  };
+  
+  // Закрыть модалку ссылок
+  const closeLinksModal = () => {
+    setShowLinksModal(false);
+    setEditWikiUrl('');
+    setEditWikiquoteUrl('');
+    setEditPoemsUrl('');
+    setEditYoutubeLinks([]);
+    setEditOtherLinks([]);
+    setNewYoutubeTitle('');
+    setNewYoutubeUrl('');
+    setNewOtherTitle('');
+    setNewOtherUrl('');
+  };
+  
+  // Сохранить ссылки
+  const handleSaveLinks = async () => {
+    if (!selectedPoet) return;
+    
+    try {
+      const linksData = {
+        wikipedia: editWikiUrl.trim() || null,
+        wikiquote: editWikiquoteUrl.trim() || null,
+        poems: editPoemsUrl.trim() || null,
+        youtube: editYoutubeLinks.length > 0 ? editYoutubeLinks : null,
+        other: editOtherLinks.length > 0 ? editOtherLinks : null
+      };
+      
+      await updatePoet(selectedPoet.id, { links: linksData });
+      closeLinksModal();
+    } catch (error) {
+      console.error('Ошибка сохранения ссылок:', error);
+    }
+  };
+  
+  // Добавить YouTube ссылку
+  const handleAddYoutubeLink = () => {
+    if (!newYoutubeUrl.trim()) return;
+    
+    const newLink = {
+      title: newYoutubeTitle.trim() || 'YouTube',
+      url: newYoutubeUrl.trim()
+    };
+    
+    setEditYoutubeLinks(prev => [...prev, newLink]);
+    setNewYoutubeTitle('');
+    setNewYoutubeUrl('');
+  };
+  
+  // Удалить YouTube ссылку
+  const handleRemoveYoutubeLink = (index) => {
+    setEditYoutubeLinks(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // Добавить другую ссылку
+  const handleAddOtherLink = () => {
+    if (!newOtherUrl.trim()) return;
+    
+    const newLink = {
+      title: newOtherTitle.trim() || 'Ссылка',
+      url: newOtherUrl.trim()
+    };
+    
+    setEditOtherLinks(prev => [...prev, newLink]);
+    setNewOtherTitle('');
+    setNewOtherUrl('');
+  };
+  
+  // Удалить другую ссылку
+  const handleRemoveOtherLink = (index) => {
+    setEditOtherLinks(prev => prev.filter((_, i) => i !== index));
   };
   
   // Сохранить позицию фото
@@ -788,9 +925,11 @@ Note: В конкурсе будут участвовать все выдающ�
                     }}
                   />
                   <span className="poet-item-name">
-                    {poet.name.split(' ').length > 1 
-                      ? `${poet.name.split(' ')[0][0]}. ${poet.name.split(' ').slice(1).join(' ')}`
-                      : poet.name}
+                    {(() => {
+                      const parts = poet.name.split(' ');
+                      if (parts.length === 1) return parts[0]; // Только псевдоним/фамилия
+                      return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+                    })()}
                   </span>
                 </div>
                 <div className="poet-item-actions">
@@ -863,6 +1002,16 @@ Note: В конкурсе будут участвовать все выдающ�
                     title="Фото"
                   >
                     <Camera size={16} />
+                  </button>
+                  <button
+                    className="btn-edit-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditLinks(poet);
+                    }}
+                    title="Ссылки"
+                  >
+                    <Link2 size={16} />
                   </button>
                 </div>
               </div>
@@ -1138,6 +1287,13 @@ Note: В конкурсе будут участвовать все выдающ�
                 >
                   {isGeneratingBio ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyBioPrompt}
+                  title="Скопировать промпт в буфер обмена"
+                >
+                  Промпт
+                </button>
               </div>
               
               <textarea
@@ -1192,6 +1348,13 @@ Note: В конкурсе будут участвовать все выдающ�
                   disabled={isGeneratingInfluence}
                 >
                   {isGeneratingInfluence ? 'Генерирую...' : 'Сгенерировать AI'}
+                </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyInfluencePrompt}
+                  title="Скопировать промпт в буфер обмена"
+                >
+                  Промпт
                 </button>
               </div>
               
@@ -1248,6 +1411,13 @@ Note: В конкурсе будут участвовать все выдающ�
                 >
                   {isGeneratingCreativity ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyCreativityPrompt}
+                  title="Скопировать промпт в буфер обмена"
+                >
+                  Промпт
+                </button>
               </div>
               
               <textarea
@@ -1303,6 +1473,13 @@ Note: В конкурсе будут участвовать все выдающ�
                 >
                   {isGeneratingDrama ? 'Генерирую...' : 'Сгенерировать AI'}
                 </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyDramaPrompt}
+                  title="Скопировать промпт в буфер обмена"
+                >
+                  Промпт
+                </button>
               </div>
               
               <textarea
@@ -1357,6 +1534,13 @@ Note: В конкурсе будут участвовать все выдающ�
                   disabled={isGeneratingBeauty}
                 >
                   {isGeneratingBeauty ? 'Генерирую...' : 'Сгенерировать AI'}
+                </button>
+                <button 
+                  className="btn-copy-prompts"
+                  onClick={handleCopyBeautyPrompt}
+                  title="Скопировать промпт в буфер обмена"
+                >
+                  Промпт
                 </button>
               </div>
               
@@ -1562,6 +1746,178 @@ Note: В конкурсе будут участвовать все выдающ�
                   Сохранить
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Модалка редактирования ссылок */}
+      {showLinksModal && (
+        <div className="modal-overlay" onClick={closeLinksModal}>
+          <div className="modal-content bio-modal links-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="modal-close" 
+              onClick={closeLinksModal}
+              title="Закрыть"
+            >
+              ✕
+            </button>
+            
+            <h2 className="modal-title">
+              Ссылки: {selectedPoet?.name}
+            </h2>
+            
+            <div className="bio-modal-content">
+              {/* Ссылка на Википедию */}
+              <div className="links-section">
+                <label className="links-label">Википедия</label>
+                <input 
+                  type="url"
+                  value={editWikiUrl}
+                  onChange={(e) => setEditWikiUrl(e.target.value)}
+                  placeholder="https://ru.wikipedia.org/wiki/..."
+                  className="links-input"
+                />
+              </div>
+              
+              {/* Ссылка на стихи */}
+              <div className="links-section">
+                <label className="links-label">Стихи (Rustih.ru)</label>
+                <input 
+                  type="url"
+                  value={editPoemsUrl}
+                  onChange={(e) => setEditPoemsUrl(e.target.value)}
+                  placeholder="https://rustih.ru/..."
+                  className="links-input"
+                />
+              </div>
+              
+              {/* Ссылка на цитаты */}
+              <div className="links-section">
+                <label className="links-label">Цитаты (Wikiquote)</label>
+                <input 
+                  type="url"
+                  value={editWikiquoteUrl}
+                  onChange={(e) => setEditWikiquoteUrl(e.target.value)}
+                  placeholder="https://ru.wikiquote.org/wiki/..."
+                  className="links-input"
+                />
+              </div>
+              
+              {/* YouTube ссылки */}
+              <div className="links-section">
+                <label className="links-label">YouTube</label>
+                
+                {editYoutubeLinks.length > 0 && (
+                  <div className="links-list">
+                    {editYoutubeLinks.map((yt, index) => (
+                      <div key={index} className="link-item">
+                        <span className="link-item-title">{yt.title}</span>
+                        <a href={yt.url} target="_blank" rel="noopener noreferrer" className="link-item-url">
+                          {yt.url.length > 35 ? yt.url.substring(0, 35) + '...' : yt.url}
+                        </a>
+                        <button 
+                          className="btn-remove-link"
+                          onClick={() => handleRemoveYoutubeLink(index)}
+                          title="Удалить"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="add-link-form">
+                  <input 
+                    type="text"
+                    value={newYoutubeTitle}
+                    onChange={(e) => setNewYoutubeTitle(e.target.value)}
+                    placeholder="Название"
+                    className="links-input small"
+                  />
+                  <input 
+                    type="url"
+                    value={newYoutubeUrl}
+                    onChange={(e) => setNewYoutubeUrl(e.target.value)}
+                    placeholder="https://youtube.com/..."
+                    className="links-input flex-1"
+                  />
+                  <button 
+                    className="btn-add-link"
+                    onClick={handleAddYoutubeLink}
+                    disabled={!newYoutubeUrl.trim()}
+                    title="Добавить"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Другие ссылки */}
+              <div className="links-section">
+                <label className="links-label">Другие ссылки</label>
+                
+                {editOtherLinks.length > 0 && (
+                  <div className="links-list">
+                    {editOtherLinks.map((link, index) => (
+                      <div key={index} className="link-item">
+                        <span className="link-item-title">{link.title}</span>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-item-url">
+                          {link.url.length > 35 ? link.url.substring(0, 35) + '...' : link.url}
+                        </a>
+                        <button 
+                          className="btn-remove-link"
+                          onClick={() => handleRemoveOtherLink(index)}
+                          title="Удалить"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="add-link-form">
+                  <input 
+                    type="text"
+                    value={newOtherTitle}
+                    onChange={(e) => setNewOtherTitle(e.target.value)}
+                    placeholder="Название"
+                    className="links-input small"
+                  />
+                  <input 
+                    type="url"
+                    value={newOtherUrl}
+                    onChange={(e) => setNewOtherUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="links-input flex-1"
+                  />
+                  <button 
+                    className="btn-add-link"
+                    onClick={handleAddOtherLink}
+                    disabled={!newOtherUrl.trim()}
+                    title="Добавить"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bio-modal-actions">
+              <button 
+                className="btn-cancel-bio" 
+                onClick={closeLinksModal}
+              >
+                Отмена
+              </button>
+              <button 
+                className="btn-save-bio" 
+                onClick={handleSaveLinks}
+              >
+                Сохранить
+              </button>
             </div>
           </div>
         </div>

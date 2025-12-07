@@ -7,6 +7,24 @@ import { GoogleGenAI } from '@google/genai';
 // Название модели можно изменить здесь
 const MODEL_NAME = 'gemini-flash-latest';
 
+// Задержка между запросами (в мс) для избежания rate limit
+const REQUEST_DELAY_MS = 12000; // 12 секунд = 5 RPM
+
+// Максимальное количество повторных попыток при ошибках
+const MAX_RETRIES = 2;
+
+// Утилита для задержки
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Парсинг времени ожидания из ответа Gemini (например "45.401998411s" -> 45401)
+const parseRetryDelay = (errorMessage) => {
+  const match = errorMessage.match(/retry in ([\d.]+)s/i);
+  if (match) {
+    return Math.ceil(parseFloat(match[1]) * 1000) + 1000; // +1 секунда запаса
+  }
+  return REQUEST_DELAY_MS; // По умолчанию
+};
+
 // ============================================
 // НАСТРОЙКИ ГЕНЕРАЦИИ
 // ============================================
@@ -55,7 +73,7 @@ const initializeAI = () => {
  * @returns {Promise<string>} - Сгенерированный текст
  * @throws {Error} - Ошибки API с подробным описанием
  */
-export const generateContent = async (prompt, temperature = GENERATION_TEMPERATURE) => {
+export const generateContent = async (prompt, temperature = GENERATION_TEMPERATURE, retryCount = 0) => {
   try {
     const ai = initializeAI();
     
@@ -71,6 +89,11 @@ export const generateContent = async (prompt, temperature = GENERATION_TEMPERATU
     // Получаем текст из ответа
     const generatedText = response.text;
     
+    // Проверяем, что ответ не пустой
+    if (!generatedText) {
+      throw new Error('Gemini вернул пустой ответ (возможно rate limit или safety filter)');
+    }
+    
     // Очищаем от markdown форматирования
     const cleanText = generatedText
       .replace(/\*\*/g, '')  // Убираем **
@@ -81,14 +104,24 @@ export const generateContent = async (prompt, temperature = GENERATION_TEMPERATU
     return cleanText;
     
   } catch (err) {
-    console.error('Ошибка генерации Gemini AI:', err);
+    const errorStr = typeof err.message === 'string' ? err.message : JSON.stringify(err);
+    
+    // Проверяем, можно ли сделать retry
+    const isRateLimitError = errorStr.includes('429') || errorStr.includes('RESOURCE_EXHAUSTED') || errorStr.includes('quota');
+    const isOverloadError = errorStr.includes('503') || errorStr.includes('overloaded') || errorStr.includes('UNAVAILABLE');
+    
+    if ((isRateLimitError || isOverloadError) && retryCount < MAX_RETRIES) {
+      const retryDelay = parseRetryDelay(errorStr);
+      await delay(retryDelay);
+      return generateContent(prompt, temperature, retryCount + 1);
+    }
     
     // Обрабатываем различные типы ошибок
     if (err.message?.includes('API_KEY_INVALID')) {
       throw new Error('Неверный API ключ. Проверьте ключ в файле .env');
     } else if (err.message?.includes('PERMISSION_DENIED') || err.message?.includes('403')) {
       throw new Error('API не активирован. Включите Generative Language API в Google Cloud Console');
-    } else if (err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('429')) {
+    } else if (isRateLimitError) {
       throw new Error('Превышен лимит запросов. Попробуйте позже');
     } else if (err.message?.includes('404')) {
       throw new Error(`Модель ${MODEL_NAME} не найдена. Проверьте название модели`);
@@ -123,8 +156,15 @@ export const generateAIRatingByCat = async (poetName, promptFunctions, existingR
     { key: 'beauty', promptFunc: promptFunctions.beauty }
   ];
   
-  // Делаем 4 отдельных запроса (по одному на категорию)
-  for (const { key, promptFunc } of categories) {
+  // Делаем 4 отдельных запроса (по одному на категорию) с задержкой между ними
+  for (let i = 0; i < categories.length; i++) {
+    const { key, promptFunc } = categories[i];
+    
+    // Добавляем задержку перед каждым запросом (кроме первого)
+    if (i > 0) {
+      await delay(REQUEST_DELAY_MS);
+    }
+    
     try {
       const prompt = promptFunc(poetName, existingRatings);
       const response = await generateContent(prompt, 0); // temperature = 0 для детерминизма
@@ -137,15 +177,10 @@ export const generateAIRatingByCat = async (poetName, promptFunctions, existingR
         // Проверка валидности (от 0.5 до 5, с шагом 0.5)
         if (rating >= 0.5 && rating <= 5 && (rating * 2) % 1 === 0) {
           ratings[key] = rating;
-        } else {
-          console.warn(`Некорректная оценка для ${key}: ${rating}`);
         }
-      } else {
-        console.warn(`Не удалось распарсить оценку для ${key} из ответа:`, response);
       }
     } catch (err) {
-      console.error(`Ошибка при генерации ${key}:`, err);
-      // Оставляем 0 для этой категории
+      // Оставляем 0 для этой категории при ошибке
     }
   }
   

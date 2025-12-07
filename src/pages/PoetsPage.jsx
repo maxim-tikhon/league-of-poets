@@ -226,6 +226,9 @@ const PoetsPage = () => {
     
     // Генерируем информацию асинхронно в фоне
     (async () => {
+      const DELAY_MS = 12000; // 12 секунд между запросами (5 RPM limit)
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      
       try {
         // Генерируем досье
         const bioPrompt = generatePoetBioPrompt(trimmedName);
@@ -237,20 +240,28 @@ const PoetsPage = () => {
         const generatedLifeStory = await generateContent(lifeStoryPrompt);
         await updatePoet(newPoet.id, { lifeStory: generatedLifeStory });
         
+        await delay(DELAY_MS);
+        
         // Генерируем влияние
         const influencePrompt = generatePoetInfluencePrompt(trimmedName);
         const generatedInfluence = await generateContent(influencePrompt);
         await updatePoet(newPoet.id, { influence: generatedInfluence });
+        
+        await delay(DELAY_MS);
         
         // Генерируем творчество
         const creativityPrompt = generatePoetCreativityPrompt(trimmedName);
         const generatedCreativity = await generateContent(creativityPrompt);
         await updatePoet(newPoet.id, { creativity: generatedCreativity });
         
+        await delay(DELAY_MS);
+        
         // Генерируем драму
         const dramaPrompt = generatePoetDramaPrompt(trimmedName);
         const generatedDrama = await generateContent(dramaPrompt);
         await updatePoet(newPoet.id, { drama: generatedDrama });
+        
+        await delay(DELAY_MS);
         
         // Генерируем красоту
         const beautyPrompt = generatePoetBeautyPrompt(trimmedName);
@@ -259,25 +270,25 @@ const PoetsPage = () => {
 
         // Генерируем AI-рейтинг (3 запроса с усреднением для справедливости)
         // Собираем существующие AI-рейтинги других поэтов для контекста
-        const existingAIRatings = poets
-          .filter(p => p.aiRatings && Object.keys(p.aiRatings).length > 0)
-          .map(p => ({
-            name: p.name,
-            ratings: p.aiRatings
-          }));
+        // const existingAIRatings = poets
+        //   .filter(p => p.aiRatings && Object.keys(p.aiRatings).length > 0)
+        //   .map(p => ({
+        //     name: p.name,
+        //     ratings: p.aiRatings
+        //   }));
         
         // Генерируем AI рейтинги (4 отдельных запроса, по одному на категорию)
-        const aiRatings = await generateAIRatingByCat(
-          trimmedName,
-          {
-            creativity: generateAIRatingCreativityPrompt,
-            influence: generateAIRatingMoralPrompt,
-            drama: generateAIRatingDramaPrompt,
-            beauty: generateAIRatingBeautyPrompt
-          },
-          existingAIRatings
-        );
-        await updatePoet(newPoet.id, { aiRatings });
+        // const aiRatings = await generateAIRatingByCat(
+        //   trimmedName,
+        //   {
+        //     creativity: generateAIRatingCreativityPrompt,
+        //     influence: generateAIRatingMoralPrompt,
+        //     drama: generateAIRatingDramaPrompt,
+        //     beauty: generateAIRatingBeautyPrompt
+        //   },
+        //   existingAIRatings
+        // );
+        // await updatePoet(newPoet.id, { aiRatings });
 
       } catch (err) {
         console.error('Ошибка фоновой генерации:', err);
@@ -311,13 +322,7 @@ const PoetsPage = () => {
     window.open(googleImagesUrl, '_blank');
   };
 
-  // Функция для получения имени (первое слово)
-  const getFirstName = (fullName) => {
-    const parts = fullName.split(' ');
-    return parts[0] || fullName;
-  };
-
-  // Функция для получения фамилии (второе слово)
+  // Функция для получения фамилии
   const getLastName = (fullName) => {
     const parts = fullName.split(' ');
     return parts.length > 1 ? parts[parts.length - 1] : fullName;
@@ -353,14 +358,16 @@ const PoetsPage = () => {
         const dateA = new Date(a.addedAt || 0);
         const dateB = new Date(b.addedAt || 0);
         comparison = dateB - dateA; // По умолчанию новые первые
-      } else if (sortBy === 'firstName') {
-        const firstNameA = getFirstName(a.name).toLowerCase();
-        const firstNameB = getFirstName(b.name).toLowerCase();
-        comparison = firstNameA.localeCompare(firstNameB, 'ru');
       } else if (sortBy === 'lastName') {
         const lastNameA = getLastName(a.name).toLowerCase();
         const lastNameB = getLastName(b.name).toLowerCase();
         comparison = lastNameA.localeCompare(lastNameB, 'ru');
+      } else if (sortBy === 'birthYear') {
+        const yearsA = extractYears(a.bio);
+        const yearsB = extractYears(b.bio);
+        const birthA = yearsA?.birthYear || 0;
+        const birthB = yearsB?.birthYear || 0;
+        comparison = birthB - birthA; // По умолчанию младшие первые (как и с датой добавления)
       } else if (sortBy === 'rating') {
         const ratingA = getAverageRating(a.id);
         const ratingB = getAverageRating(b.id);
@@ -390,19 +397,19 @@ const PoetsPage = () => {
           className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
           onClick={() => handleSort('date')}
         >
-          Дата {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-        </button>
-        <button 
-          className={`sort-btn ${sortBy === 'firstName' ? 'active' : ''}`}
-          onClick={() => handleSort('firstName')}
-        >
-          Имя {sortBy === 'firstName' && (sortOrder === 'asc' ? '↑' : '↓')}
+          Дата добавления {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'lastName' ? 'active' : ''}`}
           onClick={() => handleSort('lastName')}
         >
           Фамилия {sortBy === 'lastName' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
+        <button 
+          className={`sort-btn ${sortBy === 'birthYear' ? 'active' : ''}`}
+          onClick={() => handleSort('birthYear')}
+        >
+          Дата рождения {sortBy === 'birthYear' && (sortOrder === 'asc' ? '↑' : '↓')}
         </button>
         <button 
           className={`sort-btn ${sortBy === 'rating' ? 'active' : ''}`}
@@ -550,7 +557,7 @@ const PoetsPage = () => {
           }
 
           // Ширина колонки поэта
-          const columnWidth = 55; // пикселей
+          const columnWidth = 50; // пикселей
           
           // Рассчитываем сколько колонок влезает
           // Ширина контейнера примерно 1200px, ось 60px слева + 50px справа
@@ -605,7 +612,7 @@ const PoetsPage = () => {
             { name: 'Межвековье', start: 1840, end: 1890, color: '#8B7BA0', desc: 'Поэзия в тени прозы, раскол между гражданской лирикой и чистым искусством.' },
             { name: 'Серебряный век', start: 1890, end: 1920, color: '#A0AEC0', desc: 'Взрыв форм, богема и мистика на краю исторической катастрофы.' },
             { name: 'Советская эпоха', start: 1920, end: 1955, color: '#9d4451', desc: 'Эпоха соцреализма: идеология, война и жёсткий цензурный контроль.' },
-            { name: 'Бронзовый век', start: 1955, end: 1991, color: '#8B7355', desc: 'Эпоха «Оттепели», стадионной и подпольной поэзии.' },
+            { name: 'Бронзовый век', start: 1955, end: 1991, color: '#8B7355', desc: 'Эпоха «Оттепели», стадионной и подпольной поэзии (самиздат).' },
             { name: 'Современность', start: 1991, end: 2030, color: '#4a9c5d', desc: 'Полная свобода, тексты в смартфонах и поиск новой искренности.' },
           ];
 
@@ -792,7 +799,9 @@ const PoetsPage = () => {
                         {/* Tooltip при наведении — формат "А. Фамилия" */}
                         <div className="gantt-tooltip">
                           <div className="gantt-tooltip-name">
-                            {poet.name.split(' ')[0].charAt(0)}. {poet.name.split(' ').slice(1).join(' ') || poet.name}
+                            {poet.name.split(' ').length === 1 
+                              ? poet.name 
+                              : `${poet.name.split(' ')[0].charAt(0)}. ${poet.name.split(' ').slice(1).join(' ')}`}
                           </div>
                           <div className="gantt-tooltip-dates">
                             {poet.birthYear} — {poet.deathYear || 'н.в.'}
@@ -860,6 +869,9 @@ const PoetsPage = () => {
                         <h3 className="poet-card-name">
                           {(() => {
                             const nameParts = poet.name.split(' ');
+                            if (nameParts.length === 1) {
+                              return <span className="last-name">{nameParts[0]}</span>;
+                            }
                             if (nameParts.length >= 2) {
                               return (
                                 <>

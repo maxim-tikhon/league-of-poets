@@ -15,7 +15,11 @@ const AwardsPage = () => {
     aiChoiceTiebreaker
   } = usePoets();
   
-  const [activeTab, setActiveTab] = useState('overall'); // 'overall', 'maxim', 'oleg'
+  // Получаем текущего пользователя
+  const currentUser = localStorage.getItem('currentUser') || 'maxim';
+  const otherUser = currentUser === 'maxim' ? 'oleg' : 'maxim';
+  
+  const [activeTab, setActiveTab] = useState('overall'); // 'overall', 'my', 'other'
 
   // ============ ОБЩИЕ НАГРАДЫ (логика из OverallRankingPage) ============
   
@@ -357,16 +361,25 @@ const AwardsPage = () => {
       if (awardKey === 'readers-choice') return readersChoiceWinner;
       if (awardKey === 'ai-choice') return aiChoiceWinner;
       return overallCategoryWinners[awardKey] || [];
-    } else if (activeTab === 'maxim') {
-      if (awardKey === 'last') return maximLoser;
-      return maximWinners[awardKey] || [];
+    } else if (activeTab === 'my') {
+      // Награды текущего пользователя
+      const winners = currentUser === 'maxim' ? maximWinners : olegWinners;
+      const loser = currentUser === 'maxim' ? maximLoser : olegLoser;
+      if (awardKey === 'last') return loser;
+      return winners[awardKey] || [];
     } else {
-      if (awardKey === 'last') return olegLoser;
-      return olegWinners[awardKey] || [];
+      // Награды другого пользователя
+      const winners = otherUser === 'maxim' ? maximWinners : olegWinners;
+      const loser = otherUser === 'maxim' ? maximLoser : olegLoser;
+      if (awardKey === 'last') return loser;
+      return winners[awardKey] || [];
     }
   };
 
   const currentAwards = activeTab === 'overall' ? overallAwards : personalAwards;
+  
+  // Имя другого пользователя для вкладки (родительный падеж)
+  const otherUserNameGenitive = otherUser === 'maxim' ? 'Максима' : 'Олега';
 
   return (
     <div className="awards-page">
@@ -380,16 +393,16 @@ const AwardsPage = () => {
           Общие
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'maxim' ? 'active' : ''}`}
-          onClick={() => setActiveTab('maxim')}
+          className={`tab-btn ${activeTab === 'my' ? 'active' : ''}`}
+          onClick={() => setActiveTab('my')}
         >
-          Награды Максима
+          Мои
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'oleg' ? 'active' : ''}`}
-          onClick={() => setActiveTab('oleg')}
+          className={`tab-btn ${activeTab === 'other' ? 'active' : ''}`}
+          onClick={() => setActiveTab('other')}
         >
-          Награды Олега
+          {otherUserNameGenitive}
         </button>
       </div>
 

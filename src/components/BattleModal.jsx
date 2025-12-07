@@ -52,6 +52,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose, isWorstConflic
                     <h3 className="battle-poet-name">
                       {(() => {
                         const nameParts = poet1.name.split(' ');
+                        if (nameParts.length === 1) {
+                          return <span className="last-name">{nameParts[0]}</span>;
+                        }
                         if (nameParts.length >= 2) {
                           return (
                             <>
@@ -101,6 +104,9 @@ const BattleModal = ({ poet1, poet2, category, onSelect, onClose, isWorstConflic
                     <h3 className="battle-poet-name">
                       {(() => {
                         const nameParts = poet2.name.split(' ');
+                        if (nameParts.length === 1) {
+                          return <span className="last-name">{nameParts[0]}</span>;
+                        }
                         if (nameParts.length >= 2) {
                           return (
                             <>

@@ -58,7 +58,7 @@ const PersonalRanking = ({
   // Функция сокращения имени: "Александр Пушкин" → "А. Пушкин"
   const shortenName = (fullName) => {
     const parts = fullName.trim().split(' ');
-    if (parts.length < 2) return fullName;
+    if (parts.length === 1) return parts[0]; // Только псевдоним/фамилия
     const firstName = parts[0];
     const lastName = parts.slice(1).join(' ');
     return `${firstName[0]}. ${lastName}`;

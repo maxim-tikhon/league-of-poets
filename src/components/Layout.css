@@ -209,62 +209,62 @@ body[data-theme="letterboxd"] .nav-link.active {
 
 /* Дыхание — без мерцания, но с плавным дыханием */
 .bulb-light.no-twinkle.breathing {
-  animation: breathing 20s ease-in-out infinite !important;
+  animation: breathing 12s ease-in-out infinite !important;
 }
 
-/* Разные задержки для дыхания — синхронизация лампочки и свечения */
+/* Разные задержки для дыхания — волновой эффект */
 .bulb-group:nth-child(1) .breathing { animation-delay: 0s; }
-.bulb-group:nth-child(2) .breathing { animation-delay: 4s; }
-.bulb-group:nth-child(3) .breathing { animation-delay: 8s; }
-.bulb-group:nth-child(4) .breathing { animation-delay: 2s; }
-.bulb-group:nth-child(5) .breathing { animation-delay: 12s; }
-.bulb-group:nth-child(6) .breathing { animation-delay: 6s; }
-.bulb-group:nth-child(7) .breathing { animation-delay: 10s; }
-.bulb-group:nth-child(8) .breathing { animation-delay: 3s; }
-.bulb-group:nth-child(9) .breathing { animation-delay: 7s; }
-.bulb-group:nth-child(10) .breathing { animation-delay: 14s; }
+.bulb-group:nth-child(2) .breathing { animation-delay: 2.4s; }
+.bulb-group:nth-child(3) .breathing { animation-delay: 4.8s; }
+.bulb-group:nth-child(4) .breathing { animation-delay: 1.2s; }
+.bulb-group:nth-child(5) .breathing { animation-delay: 7.2s; }
+.bulb-group:nth-child(6) .breathing { animation-delay: 3.6s; }
+.bulb-group:nth-child(7) .breathing { animation-delay: 6s; }
+.bulb-group:nth-child(8) .breathing { animation-delay: 1.8s; }
+.bulb-group:nth-child(9) .breathing { animation-delay: 4.2s; }
+.bulb-group:nth-child(10) .breathing { animation-delay: 8.4s; }
 
-/* Анимация дыхания — плавная с паузами */
+/* Анимация дыхания — плавная, больше времени на угасание */
 @keyframes breathing {
   0% {
-    opacity: 0.4;  /* отдыхает */
+    opacity: 0.2;  /* пауза */
   }
-  15% {
-    opacity: 0.4;  /* конец отдыха (3 сек) */
+  10% {
+    opacity: 0.2;  /* конец паузы */
   }
-  35% {
-    opacity: 1;    /* разгорелась (4 сек) */
+  40% {
+    opacity: 1;    /* разгорелась */
   }
-  70% {
-    opacity: 1;    /* горит стабильно (7 сек) */
+  60% {
+    opacity: 1;    /* горит */
   }
-  90% {
-    opacity: 0.4;  /* погасла (4 сек) */
+  95% {
+    opacity: 0.2;  /* плавно погасла */
   }
   100% {
-    opacity: 0.4;  /* переход к отдыху (2 сек) */
+    opacity: 0.2;  /* возврат */
   }
 }
 
 /* Анимация дыхания для свечения */
 @keyframes breathing-glow {
   0% {
-    opacity: 0.1;  /* отдыхает */
+    opacity: 0.0;  /* пауза */
   }
-  15% {
-    opacity: 0.1;  /* конец отдыха (3 сек) */
+  10% {
+    opacity: 0.0;  /* конец паузы */
   }
-  35% {
-    opacity: 0.6;  /* разгорелась (4 сек) */
+  40% {
+    opacity: 0.6;   /* разгорелась */
   }
-  70% {
-    opacity: 0.6;  /* горит стабильно (7 сек) */
+  60% {
+    opacity: 0.6;   /* горит */
   }
-  90% {
-    opacity: 0.1;  /* погасла (4 сек) */
+  95% {
+    opacity: 0.0;  /* плавно погасла */
   }
   100% {
-    opacity: 0.1;  /* переход к отдыху (2 сек) */
+    opacity: 0.0;  /* возврат */
   }
 }
 
@@ -274,7 +274,7 @@ body[data-theme="letterboxd"] .nav-link.active {
 }
 
 .bulb-glow.no-twinkle.breathing {
-  animation: breathing-glow 20s ease-in-out infinite !important;
+  animation: breathing-glow 12s ease-in-out infinite !important;
 }
 
 .bulb-halo {
@@ -288,7 +288,7 @@ body[data-theme="letterboxd"] .nav-link.active {
 }
 
 .bulb-halo.no-twinkle.breathing {
-  animation: breathing-glow 20s ease-in-out infinite !important;
+  animation: breathing-glow 12s ease-in-out infinite !important;
 }
 
 /* Разные задержки для ореолов */

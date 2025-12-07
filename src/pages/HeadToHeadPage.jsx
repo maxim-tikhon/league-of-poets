@@ -430,7 +430,9 @@ const HeadToHeadPage = () => {
                 {statistics.topControversialMO.map((item, idx) => (
                   <div key={idx} className="h2h-controversial-row">
                     <span className="h2h-controversial-name">
-                      {item.poet.name.split(' ')[0][0]}. {item.poet.name.split(' ').slice(1).join(' ')}
+                      {item.poet.name.split(' ').length === 1 
+                        ? item.poet.name 
+                        : `${item.poet.name.split(' ')[0][0]}. ${item.poet.name.split(' ').slice(1).join(' ')}`}
                     </span>
                     <span className="h2h-controversial-scores">
                       {item.maximScore.toFixed(2)} vs {item.olegScore.toFixed(2)}
@@ -455,7 +457,9 @@ const HeadToHeadPage = () => {
                   {statistics.topControversialMaximAI.map((item, idx) => (
                     <div key={idx} className="h2h-controversial-row">
                       <span className="h2h-controversial-name">
-                        {item.poet.name.split(' ')[0][0]}. {item.poet.name.split(' ').slice(1).join(' ')}
+                        {item.poet.name.split(' ').length === 1 
+                          ? item.poet.name 
+                          : `${item.poet.name.split(' ')[0][0]}. ${item.poet.name.split(' ').slice(1).join(' ')}`}
                       </span>
                       <span className="h2h-controversial-scores">
                         {item.maximScore.toFixed(2)} vs {item.aiScore.toFixed(2)}
@@ -481,7 +485,9 @@ const HeadToHeadPage = () => {
                   {statistics.topControversialOlegAI.map((item, idx) => (
                     <div key={idx} className="h2h-controversial-row">
                       <span className="h2h-controversial-name">
-                        {item.poet.name.split(' ')[0][0]}. {item.poet.name.split(' ').slice(1).join(' ')}
+                        {item.poet.name.split(' ').length === 1 
+                          ? item.poet.name 
+                          : `${item.poet.name.split(' ')[0][0]}. ${item.poet.name.split(' ').slice(1).join(' ')}`}
                       </span>
                       <span className="h2h-controversial-scores">
                         {item.olegScore.toFixed(2)} vs {item.aiScore.toFixed(2)}
