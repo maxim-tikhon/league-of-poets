@@ -108,14 +108,15 @@ const PoetDetailPage = () => {
   // Проверка, является ли поэт "новым" (не показывали ли уже анимацию этому пользователю)
   const isNewPoet = () => {
     if (!poet || !poet.firstRatedAt) return false;
-    
+
     // Проверяем, показывали ли анимацию текущему пользователю
-    const animationKey = `animation_shown_${currentUser}_${poet.id}`;
+    // Ключ включает firstRatedAt, чтобы при переоценке анимация показывалась заново
+    const animationKey = `animation_shown_${currentUser}_${poet.id}_${poet.firstRatedAt}`;
     const animationShown = localStorage.getItem(animationKey);
-    
+
     // Если анимация уже была показана - поэт НЕ новый (можно показывать рейтинг)
     if (animationShown) return false;
-    
+
     // Если анимация НЕ была показана И есть firstRatedAt - поэт новый (скрываем рейтинг)
     // Также проверяем, что с момента первой оценки прошло не более 24 часов
     const now = new Date();

@@ -45,7 +45,11 @@ const PoetsPage = () => {
     const birthYear = parseInt(years[0]);
     const deathYear = years.length > 1 ? parseInt(years[1]) : null;
     
-    return { birthYear, deathYear };
+    // Извлекаем возраст смерти из био (если есть)
+    const deathAgeMatch = bio.match(/Возраст смерти:\s*(\d+)/i);
+    const deathAge = deathAgeMatch ? parseInt(deathAgeMatch[1]) : null;
+    
+    return { birthYear, deathYear, deathAge };
   };
 
   // Подготовка данных поэтов с годами жизни для таймлайна
@@ -55,11 +59,16 @@ const PoetsPage = () => {
         const years = extractYears(poet.bio);
         if (!years) return null;
         
+        // Используем возраст смерти из био, если есть; иначе вычисляем
+        const calculatedLifespan = years.deathYear 
+          ? years.deathYear - years.birthYear 
+          : new Date().getFullYear() - years.birthYear;
+        
         return {
           ...poet,
           birthYear: years.birthYear,
           deathYear: years.deathYear,
-          lifespan: years.deathYear ? years.deathYear - years.birthYear : new Date().getFullYear() - years.birthYear,
+          lifespan: years.deathAge || calculatedLifespan,
           century: Math.floor(years.birthYear / 100) + 1,
           isAlive: !years.deathYear
         };

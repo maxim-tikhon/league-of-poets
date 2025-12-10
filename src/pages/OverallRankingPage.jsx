@@ -23,7 +23,8 @@ const OverallRankingPage = () => {
     getOverallRankings, 
     getCategoryRankings, 
     setOverallDuelWinner,
-    setAIChoiceWinner 
+    setAIChoiceWinner,
+    calculateAverageScore
   } = poetsContext;
   
   const [activeTab, setActiveTab] = useState('overall'); // 'overall' or category key
@@ -59,25 +60,26 @@ const OverallRankingPage = () => {
   // Найти самого последнего оцененного поэта за последние 24 часа
   const getNewestPoet = () => {
     if (poets.length === 0) return null;
-    
+
     const now = new Date();
+    
     const poetsLast24h = poets.filter(poet => {
       // Проверяем наличие firstRatedAt (момент получения первой оценки)
       if (!poet.firstRatedAt) return false;
-      
+
       const ratedDate = new Date(poet.firstRatedAt);
       const hoursDiff = (now - ratedDate) / (1000 * 60 * 60);
       return hoursDiff <= 1;
     });
-    
+
     if (poetsLast24h.length === 0) return null;
-    
+
     // Найти поэта с самым свежим firstRatedAt
     return poetsLast24h.reduce((latest, current) => {
       return new Date(current.firstRatedAt) > new Date(latest.firstRatedAt) ? current : latest;
     });
   };
-  
+
   const newestPoet = getNewestPoet();
   
   // Проверка, является ли поэт самым новым
@@ -164,13 +166,14 @@ const OverallRankingPage = () => {
   
   // Функция проверки и разрешения ничьей для "Выбор ИИ"
   const checkAIChoiceTiebreaker = useCallback(async () => {
-    // Подсчитываем AI-баллы для всех поэтов с оценками
+    // Подсчитываем AI-баллы для всех поэтов с оценками (и AI, и общими)
     const aiRankings = poets
       .map(poet => ({
         poet,
-        score: calculateAIScore(poet.id)
+        score: calculateAIScore(poet.id),
+        overallScore: calculateAverageScore(poet.id)
       }))
-      .filter(item => item.score > 0)
+      .filter(item => item.score > 0 && item.overallScore > 0) // Только с AI-оценками И общим баллом
       .sort((a, b) => b.score - a.score);
     
     if (aiRankings.length === 0) return;
@@ -220,7 +223,7 @@ const OverallRankingPage = () => {
       // Используем первого в списке как fallback
       await setAIChoiceWinner(topPoetIds[0], topPoetIds, topScore);
     }
-  }, [poets, aiChoiceTiebreaker, calculateAIScore, setAIChoiceWinner]);
+  }, [poets, aiChoiceTiebreaker, calculateAIScore, calculateAverageScore, setAIChoiceWinner]);
   
   // Запускаем тайбрейкер только при открытии вкладки "Выбор ИИ"
   useEffect(() => {
@@ -381,10 +384,11 @@ const OverallRankingPage = () => {
     if (isLoading || !newestPoet) {
       return;
     }
-    
-    const animationKey = `animation_shown_${currentUser}_${newestPoet.id}`;
+
+    // Включаем firstRatedAt в ключ, чтобы анимация показывалась заново при переоценке
+    const animationKey = `animation_shown_${currentUser}_${newestPoet.id}_${newestPoet.firstRatedAt}`;
     const animationShown = localStorage.getItem(animationKey);
-    
+
     if (!animationShown) {
       // Сразу устанавливаем анимирующего поэта (плашка будет видна на первом месте)
       setAnimatingPoet(newestPoet.id);
@@ -828,20 +832,21 @@ const OverallRankingPage = () => {
     // Награда "Выбор ИИ" - показываем только на вкладке "Общий балл"
     if (activeTab === 'overall') {
       let aiWinnerId = null;
-      
+
       // Если есть результат тайбрейкера - используем его
       if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
         aiWinnerId = aiChoiceTiebreaker.winner;
       } else {
-        // Иначе определяем победителя по максимальному баллу
+        // Иначе определяем победителя по максимальному баллу (только среди оцененных поэтов)
         const aiRankings = poets
           .map(poet => ({
             id: poet.id,
-            score: calculateAIScore(poet.id)
+            score: calculateAIScore(poet.id),
+            overallScore: calculateAverageScore(poet.id)
           }))
-          .filter(item => item.score > 0)
+          .filter(item => item.score > 0 && item.overallScore > 0) // Только с AI И общим баллом
           .sort((a, b) => b.score - a.score);
-        
+
         if (aiRankings.length > 0) {
           aiWinnerId = aiRankings[0].id;
         }
@@ -876,9 +881,12 @@ const OverallRankingPage = () => {
 
   // Вычисляем ранги с учетом одинаковых значений
   const calculateRanks = (rankings, isOverall = true) => {
+    // Защита от null/undefined rankings
+    if (!rankings || !Array.isArray(rankings)) return [];
+    
     const ranks = [];
     let currentRank = 1;
-    
+
     for (let i = 0; i < rankings.length; i++) {
       const currentValue = isOverall 
         ? rankings[i].averageScore 
@@ -1007,7 +1015,7 @@ const OverallRankingPage = () => {
             }
             
             // Определяем победителя (первый в списке)
-            const winnerId = readersRankings[0].poet.id;
+            const winnerId = readersRankings[0]?.poet?.id || null;
             
             return readersRankings.map((item, index) => {
               const { poet, score, stats } = item;
@@ -1084,13 +1092,15 @@ const OverallRankingPage = () => {
             let aiRankings = poets
               .map(poet => {
                 const aiScore = calculateAIScore(poet.id);
+                const overallScore = calculateAverageScore(poet.id);
                 return {
                   poet,
                   aiScore,
+                  overallScore,
                   aiRatings: poet.aiRatings || {}
                 };
               })
-              .filter(item => item.aiScore > 0) // Только поэты с AI-оценками
+              .filter(item => item.aiScore > 0 && item.overallScore > 0) // Только поэты с AI-оценками И общим баллом
               .sort((a, b) => b.aiScore - a.aiScore); // Сортируем по убыванию
             
             if (aiRankings.length === 0) {
@@ -1114,7 +1124,7 @@ const OverallRankingPage = () => {
                 aiRankings.unshift(winner);
               }
             } else {
-              winnerId = aiRankings[0].poet.id;
+              winnerId = aiRankings[0]?.poet?.id || null;
             }
             
             return aiRankings.map((item, index) => {
@@ -1213,7 +1223,7 @@ const OverallRankingPage = () => {
             
             return displayRankings.map((item, index) => {
             const { poet, maximScore, olegScore, averageScore } = item;
-            const rank = ranks[index];
+            const rank = ranks[index] || index + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
             const isExpanded = expandedCards.has(poet.id);
@@ -1414,7 +1424,8 @@ const OverallRankingPage = () => {
             
             return displayRankings.map((item, index) => {
             const { poet, maximRating, olegRating, averageRating } = item;
-            const rank = ranks[originalIndex >= 0 && index === Math.round(animationStep) ? originalIndex : index];
+            const rankIndex = originalIndex >= 0 && index === Math.round(animationStep) ? originalIndex : index;
+            const rank = ranks[rankIndex] || rankIndex + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
 

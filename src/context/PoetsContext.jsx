@@ -433,22 +433,46 @@ export const PoetsProvider = ({ children }) => {
 
   // Обновить рейтинг
   const updateRating = async (rater, poetId, category, value) => {
-    // Проверяем, была ли у поэта хотя бы одна оценка до этого
     const poet = poets.find(p => p.id === poetId);
+    
+    // Сначала устанавливаем новое значение рейтинга
+    await set(ref(database, `ratings/${rater}/${poetId}/${category}`), value);
+    
     if (poet) {
-      const maximScore = calculateScore('maxim', poetId);
-      const olegScore = calculateScore('oleg', poetId);
-      const hadRatings = maximScore > 0 || olegScore > 0;
+      // Вычисляем, какой будет новый score ПОСЛЕ установки значения
+      // Для текущего rater: берём текущие оценки и заменяем category на новое value
+      const currentRaterRatings = ratings[rater]?.[poetId] || {};
+      const newRaterRatings = { ...currentRaterRatings, [category]: value };
+      const newRaterScore = Object.keys(CATEGORIES).reduce((total, cat) => {
+        const rating = newRaterRatings[cat] || 0;
+        return total + (rating * CATEGORIES[cat].coefficient);
+      }, 0);
       
-      // Если это первая оценка (до этого рейтинг был 0), сохраняем время первой оценки
-      if (!hadRatings && !poet.firstRatedAt) {
+      // Для другого rater: score остаётся как есть
+      const otherRater = rater === 'maxim' ? 'oleg' : 'maxim';
+      const otherScore = calculateScore(otherRater, poetId);
+      
+      // Старые scores (до изменения)
+      const oldRaterScore = calculateScore(rater, poetId);
+      const hadRatings = oldRaterScore > 0 || otherScore > 0;
+      
+      // Новый общий score
+      const willHaveRatings = newRaterScore > 0 || otherScore > 0;
+      
+      // Если раньше не было оценок, а теперь есть → устанавливаем firstRatedAt
+      if (!hadRatings && willHaveRatings) {
         await update(ref(database, `poets/${poetId}`), {
           firstRatedAt: new Date().toISOString()
         });
       }
+      
+      // Если раньше были оценки, а теперь нет → удаляем firstRatedAt
+      if (hadRatings && !willHaveRatings && poet.firstRatedAt) {
+        await update(ref(database, `poets/${poetId}`), {
+          firstRatedAt: null
+        });
+      }
     }
-    
-    await set(ref(database, `ratings/${rater}/${poetId}/${category}`), value);
   };
 
   // Установить явного лидера категории
