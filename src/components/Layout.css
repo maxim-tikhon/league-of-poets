@@ -227,10 +227,10 @@ body[data-theme="letterboxd"] .nav-link.active {
 /* Анимация дыхания — плавная, больше времени на угасание */
 @keyframes breathing {
   0% {
-    opacity: 0.2;  /* пауза */
+    opacity: 0.4;  /* пауза */
   }
   10% {
-    opacity: 0.2;  /* конец паузы */
+    opacity: 0.4;  /* конец паузы */
   }
   40% {
     opacity: 1;    /* разгорелась */
@@ -239,10 +239,10 @@ body[data-theme="letterboxd"] .nav-link.active {
     opacity: 1;    /* горит */
   }
   95% {
-    opacity: 0.2;  /* плавно погасла */
+    opacity: 0.4;  /* плавно погасла */
   }
   100% {
-    opacity: 0.2;  /* возврат */
+    opacity: 0.4;  /* возврат */
   }
 }
 
@@ -255,10 +255,10 @@ body[data-theme="letterboxd"] .nav-link.active {
     opacity: 0.0;  /* конец паузы */
   }
   40% {
-    opacity: 0.6;   /* разгорелась */
+    opacity: 0.7;   /* разгорелась */
   }
   60% {
-    opacity: 0.6;   /* горит */
+    opacity: 0.7;   /* горит */
   }
   95% {
     opacity: 0.0;  /* плавно погасла */

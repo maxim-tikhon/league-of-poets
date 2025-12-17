@@ -2,7 +2,116 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
-import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt, generateRandomPoetPrompt } from '../ai/prompts';
+import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
+
+// Пул 1: Самые известные поэты (наивысший шанс выпадения) — 22 поэта
+const SUPER_POETS = [
+  'Александр Пушкин', 'Михаил Лермонтов', 'Сергей Есенин', 'Иван Крылов',
+  'Николай Некрасов', 'Владимир Маяковский', 'Фёдор Тютчев', 'Афанасий Фет',
+  'Анна Ахматова', 'Владимир Высоцкий', 'Иосиф Бродский', 'Марина Цветаева',
+  'Александр Блок', 'Борис Пастернак', 'Евгений Евтушенко',
+  'Иван Бунин', 'Валерий Брюсов', 'Белла Ахмадулина', 'Николай Гумилев',
+  'Александр Твардовский', 'Роберт Рождественский', 'Осип Мандельштам'
+];
+
+// Пул 2: Поэты (подняты из Пула 3) — 29 поэтов
+const PRIMARY_POETS = [
+  'Михаил Ломоносов', 'Гавриил Державин', 'Константин Батюшков', 'Евгений Баратынский',
+  'Александр Грибоедов', 'Денис Давыдов', 'Кондратий Рылеев', 'Зинаида Гиппиус',
+  'Дмитрий Мережковский', 'Максимилиан Волошин', 'Иннокентий Анненский', 'Игорь Северянин',
+  'Андрей Белый', 'Велимир Хлебников', 'Даниил Хармс',
+  'Николай Заболоцкий', 'Александр Галич', 'Александр Башлачёв', 'Егор Летов',
+  'Булат Окуджава', 'Янка Дягилева', 'Виктор Цой', 'Арсений Тарковский', 'Борис Рыжий', 'Александр Введенский', 'Агния Барто',
+  'Самуил Маршак', 'Корней Чуковский', 'Владислав Ходасевич'
+];
+
+// Пул 3: Известные поэты (высокий шанс выпадения) — 57 поэтов
+const SECONDARY_POETS = [
+  'Василий Жуковский', 'Муса Джалиль', 'Иван Тургенев',
+   'Николай Рубцов', 'Расул Гамзатов', 'Константин Бальмонт',
+  'Елена Благинина', 'Борис Заходер', 'Николай Добронравов', 'Юнна Мориц',
+  'Юлия Друнина', 'Алексей Толстой', 'Зинаида Александрова', 'Саша Черный',
+  'Иван Дмитриев', 'Александр Кушнер', 'Давид Самойлов', 'Ольга Берггольц',
+  'Вероника Тушнова',
+  'Юрий Воронов', 'Римма Казакова',
+  'Юрий Левитанский', 'Яков Аким', 
+  'Новелла Матвеева', 'Олег Григорьев', 'Ирина Пивоварова', 'Игорь Тальков',
+  'Вера Инбер',
+  'Александр Вертинский', 
+  'Антон Дельвиг', 'Леонид Аронзон',
+  'Дмитрий Быков', 'Игорь Губерман', 'Вера Полозкова', 'Валентин Гафт', 'Андрей Вознесенский',
+  'Иван Барков', 'Фёдор Сологуб', 'Александр Радищев', 'Варлам Шаламов',
+  'Земфира', 'Дельфин', 'Оксимирон', 'Монеточка', 'Илья Кормильцев', 'Ника Турбина',
+  'Борис Поплавский', 'Эдуард Лимонов', 'Леонид Губанов', 'Константин Симонов', 
+   'Черубина де Габриак', 'Майк Науменко', 'Юрий Шевчук', 'Борис Гребенщиков',
+   'Татьяна Снежина', 'Noize MC', 'Эдуард Асадов'
+];
+
+// Пул 4: 42 поэта
+const TERTIARY_POETS = [
+  'Сергей Михалков', 'Аполлон Григорьев', 'Владимир Соловьев', 'Вячеслав Иванов', 'Алексей Крученых',
+  'Николай Клюев', 'Владимир Нарбут', 'Эдуард Багрицкий', 'Геннадий Айги',
+  'Дмитрий Пригов', 'Елена Шварц', 'Ольга Седакова', 'Михаил Кузмин',
+  'Георгий Иванов', 'Геннадий Шпаликов', 'Юрий Визбор',
+  'Юлий Ким', 'Эдуард Успенский', 'Дмитрий Кедрин',
+  'Семен Гудзенко', 'Хаски', 'Алина Витухновская', 'Фёдор Достоевский', 'Лев Толстой',
+  'Максим Горький', 'Антон Чехов', 'Владимир Набоков', 'Тэффи', 'Даниил Андреев', 'Леонид Филатов',
+  'Дмитрий Веневитинов', 'Вильгельм Кюхельбекер', 'Игорь Холин', 'Каролина Павлова',
+  'Георгий Адамович','Елена Гуро',
+  // 
+   'Генрих Сапгир', 'Лев Рубинштейн', 'Николай Олейников', 'София Парнок',
+   'Борис Слуцкий', 'Мирра Лохвицкая'
+];
+
+// Пул 5: Дополнительные поэты (обычный шанс) — 17 поэтов
+const QUATERNARY_POETS = [
+   'Николай Огарёв', 'Семен Надсон','Николай Агнивцев', 'Аделаида Герцык',
+  'Илья Сельвинский', 'Илья Эренбург', 'Ирина Одоевцева', 'Константин Фофанов',
+   'Сергей Клычков','Леонид Мартынов',
+  'Аполлон Майков', 'Николай Карамзин', 'Петр Вяземский',
+  'Мария Степанова', 'Николай Асеев', 'Сергей Гандлевский', 'Михаил Исаковский'
+  
+  // 'Александр Бестужев', 'Александр Одоевский',  'Яков Полонский', 'Алексей Апухтин',
+  // 'Демьян Бедный', 'Ярослав Смеляков','Александр Межиров','Вера Павлова', 'Марина Бородицкая',
+  // 'Аля Кудряшова', 'Ах Астахова',
+  // 'Владимир Орлов','Роман Сеф','Михаил Яснов',
+  // 'Валентин Берестов'
+  
+  // ?????? 'Козьма Прутков', - not real
+
+  //ценность техническая
+  //'Александр Сумароков','Василий Тредиаковский'
+
+];
+
+// Пул 6: Поэты с минимальным шансом — 0 поэтов
+const QUINARY_POETS = [
+  // 'Михаил Пляцковский', 'Ирина Токмакова', 'Юрий Энтин', 'Михаил Матусовский', 'Георгий Ладонщиков',
+  // 'Пётр Синявский', 'Эмма Мошковская', 'Ольга Высотская',
+  // 'Алексей Сурков', 'Андрей Дементьев', 'Константин Ваншенкин',
+  // 'Сергей Орлов', 'Михаил Дудин', 'Александр Яшин', 'Виктор Боков',
+  // 'Алексей Плещеев', 'Иван Никитин', 'Иван Суриков', 'Алексей Кольцов', 'Фёдор Глинка', 'Николай Языков',
+  // 'Лариса Рубальская'
+];
+
+// Пул 7: Запасная скамейка (не участвуют в случайном выборе) — 0 поэтов
+const RESERVE_POETS = [
+  // 'Алексей Жемчужников', 'Вадим Шершеневич', 'Владимир Луговской',
+  // 'Всеволод Багрицкий', 'Галина Галина', 'Николай Тихонов',
+  // 'Сергей Городецкий', 'Рюрик Ивнев', 'Семен Кирсанов', 'Николай Рерих',
+  // 'Юргис Балтрушайтис', 'Сергей Обрадович',
+  // more inportant below
+  // 'Николай Оцуп',
+  // 'Андрей Усачев', 'Владимир Степанов',
+  // 'Михаил Зенкевич'
+];
+
+// Полный список всех поэтов (SUPER ×3, PRIMARY ×3, SECONDARY ×2, TERTIARY ×2, QUATERNARY ×1, QUINARY ×1)
+// RESERVE_POETS не включены — они на запасной скамейке
+const ALL_POETS = [...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS, ...QUATERNARY_POETS,
+  ...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS,
+  ...SUPER_POETS, ...PRIMARY_POETS, ...SECONDARY_POETS, 
+  ...SUPER_POETS, ...PRIMARY_POETS, ...SUPER_POETS];
 import './PoetsPage.css';
 
 const PoetsPage = () => {
@@ -20,7 +129,6 @@ const PoetsPage = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(true); // Флаг первой загрузки для анимации
   const [showNotification, setShowNotification] = useState(false); // Нотификация о копировании
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
-  const [isGeneratingPoet, setIsGeneratingPoet] = useState(false); // Генерация случайного поэта
 
   // Получаем текущего пользователя из localStorage
   useEffect(() => {
@@ -169,39 +277,31 @@ const PoetsPage = () => {
     }
   };
 
-  // Генерация случайного поэта через AI
-  const handleGenerateRandomPoet = async () => {
-    setIsGeneratingPoet(true);
+  // Выбор случайного поэта из трёх пулов
+  // SUPER_POETS (41) — наивысший шанс (3x в ALL_POETS)
+  // PRIMARY_POETS (83) — высокий шанс (2x в ALL_POETS)
+  // SECONDARY_POETS (78) — обычный шанс (1x в ALL_POETS)
+  const handleGenerateRandomPoet = () => {
     setError('');
     
-    try {
-      // Список уже добавленных поэтов
-      const existingPoets = poets.map(p => p.name);
-      
-      // Запрашиваем у AI случайного поэта
-      const prompt = generateRandomPoetPrompt(existingPoets);
-      const response = await generateContent(prompt, 0.9); // Высокая temperature для случайности
-      
-      // Очищаем ответ от лишних символов
-      const poetName = response.trim().replace(/["""«»]/g, '');
-      
-      // Проверяем, что имя не пустое
-      if (poetName && poetName.length > 2) {
-        // Проверяем на дубликат
-        if (poets.some(p => p.name.toLowerCase() === poetName.toLowerCase())) {
-          setError('Этот поэт уже добавлен. Попробуйте ещё раз.');
-        } else {
-          setNewPoetName(poetName);
-        }
-      } else {
-        setError('AI не смог сгенерировать поэта. Попробуйте ещё раз.');
-      }
-    } catch (err) {
-      console.error('Ошибка генерации поэта:', err);
-      setError('Ошибка при генерации поэта');
-    } finally {
-      setIsGeneratingPoet(false);
+    // Список уже добавленных поэтов (приводим к нижнему регистру для сравнения)
+    const existingPoetsLower = poets.map(p => p.name.toLowerCase());
+    
+    // Фильтруем ALL_POETS — там уже заложены веса (SUPER 3x, PRIMARY 2x, SECONDARY 1x)
+    let availablePoets = ALL_POETS.filter(
+      name => !existingPoetsLower.includes(name.toLowerCase())
+    );
+    
+    if (availablePoets.length === 0) {
+      setError('Все поэты из списка уже добавлены!');
+      return;
     }
+    
+    // Выбираем случайного поэта
+    const randomIndex = Math.floor(Math.random() * availablePoets.length);
+    const poetName = availablePoets[randomIndex];
+    
+    setNewPoetName(poetName);
   };
 
   const handleSubmit = async (e) => {
@@ -484,10 +584,9 @@ const PoetsPage = () => {
                     type="button" 
                     onClick={handleGenerateRandomPoet}
                     className="btn-copy-prompt"
-                    title="Сгенерировать случайного русского поэта"
-                    disabled={isGeneratingPoet}
+                    title="Выбрать случайного поэта из списка"
                   >
-                    {isGeneratingPoet ? 'Генерация...' : 'Случайный поэт'}
+                    Случайный поэт
                   </button>
                 </div>
                 <input
@@ -592,11 +691,12 @@ const PoetsPage = () => {
           const rawMaxYear = Math.max(...allYears);
           // Округляем до 50 лет для красивых подписей
           const minYear = Math.floor(rawMinYear / 50) * 50;
-          const maxYear = Math.max(2030, Math.ceil(rawMaxYear / 10) * 10);
+          const currentYear = new Date().getFullYear();
+          const maxYear = currentYear;
           const totalYears = maxYear - minYear;
           
           // Высота в пикселях на год (для масштабирования)
-          const pxPerYear = 6;
+          const pxPerYear = 5;
           const totalHeight = totalYears * pxPerYear;
 
           // Генерируем отметки на оси времени — каждые 10 лет с подписями, 50-летние более заметные
@@ -607,6 +707,14 @@ const PoetsPage = () => {
                 year,
                 position: ((year - minYear) / totalYears) * 100,
                 isMajor: year % 50 === 0 // 50-летние более заметные
+              });
+            }
+            // Добавляем метку текущего года (крупно, как 50-ки)
+            if (currentYear % 10 !== 0) {
+              marks.push({
+                year: currentYear,
+                position: ((currentYear - minYear) / totalYears) * 100,
+                isMajor: true
               });
             }
             return marks;
@@ -622,7 +730,7 @@ const PoetsPage = () => {
             { name: 'Серебряный век', start: 1890, end: 1920, color: '#A0AEC0', desc: 'Взрыв форм, богема и мистика на краю исторической катастрофы.' },
             { name: 'Советская эпоха', start: 1920, end: 1955, color: '#9d4451', desc: 'Эпоха соцреализма: идеология, война и жёсткий цензурный контроль.' },
             { name: 'Бронзовый век', start: 1955, end: 1991, color: '#8B7355', desc: 'Эпоха «Оттепели», стадионной и подпольной поэзии (самиздат).' },
-            { name: 'Современность', start: 1991, end: 2030, color: '#4a9c5d', desc: 'Полная свобода, тексты в смартфонах и поиск новой искренности.' },
+            { name: 'Современность', start: 1991, end: currentYear, color: '#4a9c5d', desc: 'Полная свобода, тексты в смартфонах и поиск новой искренности.' },
           ];
 
           return (
