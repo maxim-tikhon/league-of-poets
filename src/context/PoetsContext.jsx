@@ -12,15 +12,18 @@ export const usePoets = () => {
   return context;
 };
 
-// Категории и их коэффициенты (5-балльная система)
+// Категории и их дефолтные коэффициенты (5-балльная система)
 // Коэффициенты рассчитаны так, чтобы максимум был 5.0
-// 9:5:4:2 → 0.45:0.25:0.2:0.1 (сумма = 1.0, умноженная на 5)
-export const CATEGORIES = {
+// 50:20:20:10 → 0.5:0.2:0.2:0.1 (сумма = 1.0, умноженная на 5)
+export const DEFAULT_CATEGORIES = {
   creativity: { name: 'Творчество', coefficient: 0.5, description: 'Образность, язык, ритм, глубина мыслей, стиль, эмоциональность и т.д.' },
   influence: { name: 'Мораль', coefficient: 0.2, description: 'Нравственность, моральные качества, поступки, влияние на общество и культуру' },
   drama: { name: 'Драма', coefficient: 0.2, description: 'Степень трагичности жизни, страдания, утраты, судьба и т.д.' },
   beauty: { name: 'Красота', coefficient: 0.1, description: 'Внешность, харизма, обаяние' }   
 };
+
+// Deprecated: используйте categoryCoefficients из usePoets() вместо этого
+export const CATEGORIES = DEFAULT_CATEGORIES;
 
 export const PoetsProvider = ({ children }) => {
   const [poets, setPoets] = useState([]);
@@ -39,6 +42,9 @@ export const PoetsProvider = ({ children }) => {
     oleg: {}
   });
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Коэффициенты категорий (загружаются из Firebase)
+  const [categoryCoefficients, setCategoryCoefficients] = useState(DEFAULT_CATEGORIES);
 
   // Подписка на изменения поэтов в Firebase
   useEffect(() => {
@@ -141,6 +147,31 @@ export const PoetsProvider = ({ children }) => {
           maxim: {},
           oleg: {}
         });
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  // Подписка на изменения коэффициентов категорий в Firebase
+  useEffect(() => {
+    const coefficientsRef = ref(database, 'settings/categoryCoefficients');
+    
+    const unsubscribe = onValue(coefficientsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Объединяем с дефолтными значениями (name и description)
+        const mergedCategories = {};
+        Object.keys(DEFAULT_CATEGORIES).forEach(key => {
+          mergedCategories[key] = {
+            ...DEFAULT_CATEGORIES[key],
+            coefficient: data[key] !== undefined ? data[key] : DEFAULT_CATEGORIES[key].coefficient
+          };
+        });
+        setCategoryCoefficients(mergedCategories);
+      } else {
+        // Если данных нет - используем дефолтные значения
+        setCategoryCoefficients(DEFAULT_CATEGORIES);
       }
     });
     
@@ -505,14 +536,14 @@ export const PoetsProvider = ({ children }) => {
     const poetRatings = ratings[rater]?.[poetId];
     if (!poetRatings) return 0;
 
-    const score = Object.keys(CATEGORIES).reduce((total, category) => {
+    const score = Object.keys(categoryCoefficients).reduce((total, category) => {
       const rating = poetRatings[category] || 0;
-      const coefficient = CATEGORIES[category].coefficient;
+      const coefficient = categoryCoefficients[category].coefficient;
       return total + (rating * coefficient);
     }, 0);
     
     return score;
-  }, [ratings, poets]);
+  }, [ratings, poets, categoryCoefficients]);
 
   // Вычислить средний балл (общий рейтинг)
   const calculateAverageScore = useCallback((poetId) => {
@@ -603,6 +634,23 @@ export const PoetsProvider = ({ children }) => {
     await remove(ref(database, `poets/${poetId}/poems/${poemId}`));
   };
 
+  // Обновить коэффициенты категорий
+  const updateCategoryCoefficients = async (coefficients) => {
+    // Валидация: сумма должна быть равна 1.0 (100%)
+    const sum = Object.values(coefficients).reduce((acc, val) => acc + val, 0);
+    if (Math.abs(sum - 1.0) > 0.001) {
+      throw new Error(`Сумма коэффициентов должна быть равна 100% (текущая: ${(sum * 100).toFixed(1)}%)`);
+    }
+    
+    // Сохраняем только числовые значения коэффициентов
+    const coefficientsToSave = {};
+    Object.keys(coefficients).forEach(key => {
+      coefficientsToSave[key] = coefficients[key];
+    });
+    
+    await set(ref(database, 'settings/categoryCoefficients'), coefficientsToSave);
+  };
+
   const value = {
     poets,
     ratings,
@@ -625,6 +673,8 @@ export const PoetsProvider = ({ children }) => {
     calculateScore,
     calculateAverageScore,
     CATEGORIES,
+    categoryCoefficients,
+    updateCategoryCoefficients,
     getCategoryRankings,
     getOverallRankings,
     cleanupInvalidData,

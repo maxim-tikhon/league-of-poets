@@ -3,8 +3,8 @@ import { usePoets } from '../context/PoetsContext';
 import { ref, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
-import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
-import { BookOpen, Scale, Sparkles, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2 } from 'lucide-react';
+import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
+import { BookOpen, Scale, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2 } from 'lucide-react';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -21,6 +21,8 @@ const AdminPage = () => {
     deletePoet,
     calculateScore,
     CATEGORIES,
+    categoryCoefficients,
+    updateCategoryCoefficients,
     cleanupInvalidData
   } = usePoets();
   
@@ -28,6 +30,14 @@ const AdminPage = () => {
   const [garlandEnabled, setGarlandEnabled] = useState(true);
   const [glowEnabled, setGlowEnabled] = useState(true);
   const [breathingEnabled, setBreathingEnabled] = useState(false);
+  
+  // Состояние для редактирования процентов категорий
+  const [editingCoefficients, setEditingCoefficients] = useState({});
+  const [coefficientsError, setCoefficientsError] = useState('');
+  const [coefficientsSaved, setCoefficientsSaved] = useState(false);
+  
+  // Состояние настроек для бэкапа
+  const [garlandSettings, setGarlandSettings] = useState(null);
   
   // Загружаем настройки из Firebase
   useEffect(() => {
@@ -38,6 +48,7 @@ const AdminPage = () => {
         setGarlandEnabled(data.enabled !== false);
         setGlowEnabled(data.glow !== false);
         setBreathingEnabled(data.breathing === true);
+        setGarlandSettings(data); // Сохраняем для бэкапа
       }
     });
     
@@ -75,6 +86,62 @@ const AdminPage = () => {
     saveGarlandSettings(garlandEnabled, glowEnabled, newState);
   };
   
+  // Инициализация редактируемых коэффициентов
+  useEffect(() => {
+    if (categoryCoefficients) {
+      const coeffs = {};
+      Object.keys(categoryCoefficients).forEach(key => {
+        coeffs[key] = (categoryCoefficients[key].coefficient * 100).toFixed(1);
+      });
+      setEditingCoefficients(coeffs);
+    }
+  }, [categoryCoefficients]);
+  
+  // Обработка изменения процента категории
+  const handleCoefficientChange = (category, value) => {
+    setEditingCoefficients(prev => ({
+      ...prev,
+      [category]: value
+    }));
+    setCoefficientsError('');
+    setCoefficientsSaved(false);
+  };
+  
+  // Сохранение коэффициентов
+  const saveCategoryCoefficients = async () => {
+    try {
+      // Конвертируем проценты обратно в коэффициенты
+      const coefficients = {};
+      let sum = 0;
+      
+      Object.keys(editingCoefficients).forEach(key => {
+        const percent = parseFloat(editingCoefficients[key]);
+        if (isNaN(percent) || percent < 0) {
+          throw new Error(`Некорректное значение для ${categoryCoefficients[key].name}`);
+        }
+        coefficients[key] = percent / 100;
+        sum += percent;
+      });
+      
+      // Проверка суммы
+      if (Math.abs(sum - 100) > 0.1) {
+        setCoefficientsError(`Сумма должна быть равна 100% (текущая: ${sum.toFixed(1)}%)`);
+        return;
+      }
+      
+      await updateCategoryCoefficients(coefficients);
+      setCoefficientsError('');
+      setCoefficientsSaved(true);
+      
+      // Убираем сообщение об успехе через 3 секунды
+      setTimeout(() => {
+        setCoefficientsSaved(false);
+      }, 3000);
+    } catch (error) {
+      setCoefficientsError(error.message || 'Ошибка при сохранении');
+    }
+  };
+  
   const [selectedPoet, setSelectedPoet] = useState(null);
   const [selectedPoem, setSelectedPoem] = useState(null);
   const [editPoemTitle, setEditPoemTitle] = useState('');
@@ -92,11 +159,6 @@ const AdminPage = () => {
   const [showInfluenceModal, setShowInfluenceModal] = useState(false);
   const [editInfluenceText, setEditInfluenceText] = useState('');
   const [isGeneratingInfluence, setIsGeneratingInfluence] = useState(false);
-  
-  // Состояния для редактирования творчества
-  const [showCreativityModal, setShowCreativityModal] = useState(false);
-  const [editCreativityText, setEditCreativityText] = useState('');
-  const [isGeneratingCreativity, setIsGeneratingCreativity] = useState(false);
   
   // Состояния для редактирования драмы
   const [showDramaModal, setShowDramaModal] = useState(false);
@@ -276,15 +338,25 @@ const AdminPage = () => {
   // Экспорт всех данных в JSON файл
   const handleExportData = () => {
     try {
+      // Подготовка коэффициентов для экспорта
+      const coefficientsForBackup = {};
+      Object.keys(categoryCoefficients).forEach(key => {
+        coefficientsForBackup[key] = categoryCoefficients[key].coefficient;
+      });
+      
       const backupData = {
-        version: '1.0',
+        version: '2.0', // Обновляем версию для поддержки настроек
         exportDate: new Date().toISOString(),
         poets,
         ratings,
         categoryLeaders,
         overallDuelWinners,
         aiChoiceTiebreaker,
-        likes
+        likes,
+        settings: {
+          categoryCoefficients: coefficientsForBackup,
+          garland: garlandSettings
+        }
       };
       
       const dataStr = JSON.stringify(backupData, null, 2);
@@ -357,7 +429,18 @@ const AdminPage = () => {
           await set(ref(database, 'likes'), backupData.likes);
         }
         
-        alert('Данные успешно восстановлены!');
+        // Восстановление настроек (для бэкапов версии 2.0+)
+        if (backupData.settings) {
+          if (backupData.settings.categoryCoefficients) {
+            await set(ref(database, 'settings/categoryCoefficients'), backupData.settings.categoryCoefficients);
+          }
+          
+          if (backupData.settings.garland) {
+            await set(ref(database, 'settings/garland'), backupData.settings.garland);
+          }
+        }
+        
+        alert('Данные успешно восстановлены!' + (backupData.settings ? ' (включая настройки)' : ''));
         setSelectedPoet(null);
       } catch (err) {
         console.error('Ошибка импорта:', err);
@@ -467,56 +550,6 @@ const AdminPage = () => {
   const handleCopyInfluencePrompt = () => {
     if (!selectedPoet) return;
     const prompt = generatePoetInfluencePrompt(selectedPoet.name);
-    navigator.clipboard.writeText(prompt).catch(() => {});
-  };
-
-  // Редактировать творчество
-  const handleEditCreativity = (poet) => {
-    setSelectedPoet(poet);
-    setEditCreativityText(poet.creativity || '');
-    setShowCreativityModal(true);
-  };
-  
-  // Закрыть модалку творчества
-  const closeCreativityModal = () => {
-    setShowCreativityModal(false);
-    setEditCreativityText('');
-    setIsGeneratingCreativity(false);
-  };
-  
-  // Сгенерировать новое творчество
-  const handleGenerateCreativity = async () => {
-    if (!selectedPoet) return;
-    
-    setIsGeneratingCreativity(true);
-    try {
-      const prompt = generatePoetCreativityPrompt(selectedPoet.name);
-      const generatedCreativity = await generateContent(prompt);
-      setEditCreativityText(generatedCreativity);
-    } catch (err) {
-      console.error('Ошибка генерации творчества:', err);
-      alert('Ошибка при генерации творчества');
-    }
-    setIsGeneratingCreativity(false);
-  };
-  
-  // Сохранить отредактированное творчество
-  const handleSaveCreativity = async () => {
-    if (!selectedPoet) return;
-    
-    try {
-      await set(ref(database, `poets/${selectedPoet.id}/creativity`), editCreativityText.trim());
-      closeCreativityModal();
-    } catch (err) {
-      console.error('Ошибка сохранения творчества:', err);
-      alert('Ошибка при сохранении');
-    }
-  };
-
-  // Скопировать промпт для творчества
-  const handleCopyCreativityPrompt = () => {
-    if (!selectedPoet) return;
-    const prompt = generatePoetCreativityPrompt(selectedPoet.name);
     navigator.clipboard.writeText(prompt).catch(() => {});
   };
 
@@ -907,9 +940,8 @@ Note: В конкурсе будут участвовать все выдающ�
           <h2 className="section-title">Поэты</h2>
           <div className="poets-list">
             {[...poets].sort((a, b) => {
-              const lastNameA = a.name.split(' ').slice(-1)[0];
-              const lastNameB = b.name.split(' ').slice(-1)[0];
-              return lastNameA.localeCompare(lastNameB, 'ru');
+              // Сортировка по ID (Firebase push keys хронологические — новые сверху)
+              return b.id.localeCompare(a.id);
             }).map(poet => (
               <div
                 key={poet.id}
@@ -952,16 +984,6 @@ Note: В конкурсе будут участвовать все выдающ�
                     title="Мораль"
                   >
                     <Scale size={16} />
-                  </button>
-                  <button
-                    className="btn-edit-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditCreativity(poet);
-                    }}
-                    title="Творчество"
-                  >
-                    <Sparkles size={16} />
                   </button>
                   <button
                     className="btn-edit-icon"
@@ -1078,6 +1100,65 @@ Note: В конкурсе будут участвовать все выдающ�
               >
                 Показать претендентов
               </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Проценты категорий */}
+        <div className="admin-section settings-section">
+          <h2 className="section-title">Проценты категорий</h2>
+          <p className="section-hint">
+            Настройте веса категорий для расчета общего балла (сумма должна быть 100%)
+          </p>
+          
+          <div className="coefficients-grid">
+            {Object.entries(categoryCoefficients).map(([key, category]) => (
+              <div key={key} className="coefficient-item">
+                <label htmlFor={`coeff-${key}`}>
+                  <span className="coefficient-icon">
+                    {key === 'creativity' && <BookOpen size={18} />}
+                    {key === 'influence' && <Scale size={18} />}
+                    {key === 'drama' && <HeartCrack size={18} />}
+                    {key === 'beauty' && <Flower2 size={18} />}
+                  </span>
+                  <span className="coefficient-name">{category.name}</span>
+                </label>
+                <div className="coefficient-input-group">
+                  <input
+                    id={`coeff-${key}`}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={editingCoefficients[key] || '0'}
+                    onChange={(e) => handleCoefficientChange(key, e.target.value)}
+                    className="coefficient-input"
+                  />
+                  <span className="coefficient-unit">%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="coefficients-actions">
+            <button 
+              className="btn-save-coefficients"
+              onClick={saveCategoryCoefficients}
+              title="Сохранить проценты категорий"
+            >
+              Сохранить проценты
+            </button>
+            
+            {coefficientsError && (
+              <div className="coefficients-error">{coefficientsError}</div>
+            )}
+            
+            {coefficientsSaved && (
+              <div className="coefficients-success">✓ Проценты сохранены</div>
+            )}
+            
+            <div className="coefficients-sum">
+              Сумма: {Object.values(editingCoefficients).reduce((sum, val) => sum + parseFloat(val || 0), 0).toFixed(1)}%
             </div>
           </div>
         </div>
@@ -1377,68 +1458,6 @@ Note: В конкурсе будут участвовать все выдающ�
                   className="btn-save-bio" 
                   onClick={handleSaveInfluence}
                   disabled={isGeneratingInfluence}
-                >
-                  Сохранить
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Модалка редактирования творчества */}
-      {showCreativityModal && (
-        <div className="modal-overlay" onClick={closeCreativityModal}>
-          <div className="modal-content bio-modal" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="modal-close" 
-              onClick={closeCreativityModal}
-              title="Закрыть"
-            >
-              ✕
-            </button>
-            
-            <h2 className="modal-title">
-              Творчество: {selectedPoet?.name}
-            </h2>
-            
-            <div className="bio-modal-content">
-              <div className="bio-actions">
-                <button 
-                  className="btn-generate-bio"
-                  onClick={handleGenerateCreativity}
-                  disabled={isGeneratingCreativity}
-                >
-                  {isGeneratingCreativity ? 'Генерирую...' : 'Сгенерировать AI'}
-                </button>
-                <button 
-                  className="btn-copy-prompts"
-                  onClick={handleCopyCreativityPrompt}
-                  title="Скопировать промпт в буфер обмена"
-                >
-                  Промпт
-                </button>
-              </div>
-              
-              <textarea
-                className="bio-textarea"
-                value={editCreativityText}
-                onChange={(e) => setEditCreativityText(e.target.value)}
-                placeholder="Введите информацию о творчестве поэта..."
-                disabled={isGeneratingCreativity}
-              />
-              
-              <div className="bio-modal-actions">
-                <button 
-                  className="btn-cancel-bio" 
-                  onClick={closeCreativityModal}
-                >
-                  Отмена
-                </button>
-                <button 
-                  className="btn-save-bio" 
-                  onClick={handleSaveCreativity}
-                  disabled={isGeneratingCreativity}
                 >
                   Сохранить
                 </button>

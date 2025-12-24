@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
-import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetCreativityPrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
+import { generatePoetBioPrompt, generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
 
 // Пул 1: Самые известные поэты (наивысший шанс выпадения) — 22 поэта
 const SUPER_POETS = [
@@ -356,12 +356,12 @@ const PoetsPage = () => {
         const generatedInfluence = await generateContent(influencePrompt);
         await updatePoet(newPoet.id, { influence: generatedInfluence });
         
-        await delay(DELAY_MS);
+        // await delay(DELAY_MS);
         
-        // Генерируем творчество
-        const creativityPrompt = generatePoetCreativityPrompt(trimmedName);
-        const generatedCreativity = await generateContent(creativityPrompt);
-        await updatePoet(newPoet.id, { creativity: generatedCreativity });
+        // Генерируем творчество (отключено)
+        // const creativityPrompt = generatePoetCreativityPrompt(trimmedName);
+        // const generatedCreativity = await generateContent(creativityPrompt);
+        // await updatePoet(newPoet.id, { creativity: generatedCreativity });
         
         await delay(DELAY_MS);
         

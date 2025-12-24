@@ -143,7 +143,7 @@ const HeadToHeadPage = () => {
           ai: aiAvg,
           difference: Math.abs(diff),
           signedDiff: diff, // положительное = Максим выше, отрицательное = Олег выше
-          winner: diff > 0.1 ? 'maxim' : (diff < -0.1 ? 'oleg' : 'tie')
+          winner: diff >= 0.05 ? 'maxim' : (diff <= -0.05 ? 'oleg' : 'tie')
         };
       }
     });
@@ -152,12 +152,13 @@ const HeadToHeadPage = () => {
     // signedDiff = maximAvg - olegAvg
     // signedDiff < 0 → Максим ставит ниже → Максим строже
     // signedDiff > 0 → Олег ставит ниже → Олег строже
+    // Порог 0.05 чтобы минимальные различия тоже учитывались
     const maximStricterIn = Object.entries(categoryAverages)
-      .filter(([_, data]) => data.signedDiff < -0.1)
+      .filter(([_, data]) => data.signedDiff <= -0.05)
       .map(([key]) => CATEGORIES[key].name);
 
     const olegStricterIn = Object.entries(categoryAverages)
-      .filter(([_, data]) => data.signedDiff > 0.1)
+      .filter(([_, data]) => data.signedDiff >= 0.05)
       .map(([key]) => CATEGORIES[key].name);
 
     // Единодушны (разница < 0.5)
@@ -380,8 +381,9 @@ const HeadToHeadPage = () => {
             if (!catAvg) return null;
             
             // signedDiff < 0 = Максим строже, signedDiff > 0 = Олег строже
-            const stricter = catAvg.signedDiff < -0.1 ? 'Максим' : 
-                            catAvg.signedDiff > 0.1 ? 'Олег' : null;
+            // Порог 0.05 чтобы минимальные различия тоже учитывались
+            const stricter = catAvg.signedDiff <= -0.05 ? 'Максим' : 
+                            catAvg.signedDiff >= 0.05 ? 'Олег' : null;
             const isMaxim = stricter === 'Максим';
             const isOleg = stricter === 'Олег';
             

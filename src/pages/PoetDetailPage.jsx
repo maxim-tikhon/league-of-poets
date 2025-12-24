@@ -725,7 +725,7 @@ const PoetDetailPage = () => {
       
       // Проверяем, является ли строка подзаголовком 
       // Форматы: "YYYY — событие", "YYYY-YYYY — событие", "Осень YYYY — событие", "Январь YYYY — событие"
-      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|Начало|Конец)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
+      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|Начало|Конец|Середина|Наши)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
       
       if (isHeader) {
         // Если накопился параграф перед заголовком, добавляем его
@@ -785,60 +785,6 @@ const PoetDetailPage = () => {
         elements.push(
           <div key={`item-${index}`} className="influence-item">
             <span className="influence-item-text">{textWithoutPunkt}</span>
-          </div>
-        );
-      }
-    });
-    
-    return elements;
-  };
-
-  // Парсинг информации о творчестве
-  const parseCreativity = (text) => {
-    if (!text) return null;
-    
-    const lines = text.split('\n');
-    const elements = [];
-    let isReviewsSection = false;
-    
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-      
-      // Пропускаем пустые строки
-      if (!trimmedLine) return;
-      
-      // Проверяем, начинается ли раздел "Отзывы:"
-      if (trimmedLine === 'Отзывы:') {
-        isReviewsSection = true;
-        elements.push(
-          <h3 key={`reviews-header-${index}`} className="creativity-reviews-header">
-            Отзывы:
-          </h3>
-        );
-        return;
-      }
-      
-      // Если мы в разделе отзывов и строка начинается с ОТЗЫВ
-      if (isReviewsSection && trimmedLine.toLowerCase().startsWith('отзыв')) {
-        const reviewText = trimmedLine.replace(/^отзыв\s*/i, '').trim();
-        elements.push(
-          <div key={`review-${index}`} className="creativity-review-item">
-            <span className="creativity-review-text">{reviewText}</span>
-          </div>
-        );
-        return;
-      }
-      
-      // Обычные поля формата "Название: текст"
-      const match = trimmedLine.match(/^([^:]+):\s*(.+)$/);
-      
-      if (match && !isReviewsSection) {
-        const label = match[1].trim();
-        const value = match[2].trim();
-        
-        elements.push(
-          <div key={`creativity-${index}`} className="creativity-item">
-            <span className="creativity-label">{label}:</span> {value}
           </div>
         );
       }
@@ -1277,12 +1223,6 @@ const PoetDetailPage = () => {
             Биография
           </button>
           <button 
-            className={`menu-tab ${activeTab === 'creativity' ? 'active' : ''}`}
-            onClick={() => setActiveTab('creativity')}
-          >
-            Творчество
-          </button>
-          <button 
             className={`menu-tab ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
           >
@@ -1348,17 +1288,6 @@ const PoetDetailPage = () => {
               </div>
             </div>
           )}
-          {activeTab === 'creativity' && (
-            <div className="tab-panel">
-              {poet.creativity ? (
-                <div className="creativity-section">
-                  {parseCreativity(poet.creativity)}
-                </div>
-              ) : (
-                <div className="no-content">Информация о творчестве не найдена</div>
-              )}
-            </div>
-          )}
           {activeTab === 'influence' && (
             <div className="tab-panel">
               {poet.influence ? (
@@ -1417,6 +1346,7 @@ const PoetDetailPage = () => {
           category={battleConflict.category}
           onSelect={handleBattleSelect}
           onClose={() => setBattleConflict(null)}
+          isWorstConflict={battleConflict.isWorstConflict}
         />
       )}
       

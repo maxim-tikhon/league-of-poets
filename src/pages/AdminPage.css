@@ -1836,3 +1836,169 @@ body[data-theme="letterboxd"] .btn-add-link:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
+
+/* === Проценты категорий === */
+.coefficients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.coefficient-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.coefficient-item label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.coefficient-icon {
+  display: flex;
+  align-items: center;
+  color: var(--gold);
+}
+
+.coefficient-name {
+  flex: 1;
+}
+
+.coefficient-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coefficient-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(199, 163, 107, 0.25);
+  border-radius: 6px;
+  background: rgba(199, 163, 107, 0.05);
+  color: var(--ink);
+  font-size: 1rem;
+  text-align: right;
+  transition: all 0.2s ease;
+}
+
+.coefficient-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(199, 163, 107, 0.1);
+}
+
+.coefficient-unit {
+  font-size: 0.9rem;
+  color: var(--gold);
+  font-weight: 500;
+  min-width: 20px;
+}
+
+.coefficients-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.btn-save-coefficients {
+  background: rgba(199, 163, 107, 0.1);
+  color: var(--ink);
+  border: 1px solid rgba(199, 163, 107, 0.25);
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-save-coefficients:hover {
+  background: rgba(199, 163, 107, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.coefficients-error {
+  padding: 0.5rem 1rem;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  border-radius: 6px;
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+
+.coefficients-success {
+  padding: 0.5rem 1rem;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.25);
+  border-radius: 6px;
+  color: #28a745;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coefficients-sum {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  background: rgba(199, 163, 107, 0.1);
+  border: 1px solid rgba(199, 163, 107, 0.25);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Темная тема для коэффициентов */
+body[data-theme="letterboxd"] .coefficient-item label {
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .coefficient-icon {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .coefficient-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .coefficient-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #9ab;
+}
+
+body[data-theme="letterboxd"] .coefficient-unit {
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .btn-save-coefficients {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #9ab;
+}
+
+body[data-theme="letterboxd"] .btn-save-coefficients:hover {
+  background: rgba(0, 172, 28, 0.1);
+  border-color: #00ac1c;
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .coefficients-sum {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e5e5;
+}
