@@ -605,18 +605,7 @@ const OverallRankingPage = () => {
       }
       
       // Если несколько поэтов с одинаковым топовым баллом
-      // Сначала проверяем, есть ли победитель дуэли для этой категории
-      const duelData = overallDuelWinners?.[category];
-      if (duelData) {
-        const winnerId = duelData.winner || duelData; // Для обратной совместимости
-        const isWinnerInTop = topPoets.some(p => p.poet.id === winnerId);
-        if (isWinnerInTop) {
-          winners[category] = [winnerId];
-          return;
-        }
-      }
-      
-      // Если дуэли не было, смотрим на персональных победителей
+      // Сначала смотрим на персональных победителей
       const maximLeader = categoryLeaders.maxim?.[category];
       const olegLeader = categoryLeaders.oleg?.[category];
       
@@ -642,8 +631,23 @@ const OverallRankingPage = () => {
         return;
       }
       
-      // Если у обоих разные лидеры в топе - конфликт, требуется дуэль
-      // Или если никто не выбрал лидера
+      // Если у обоих разные лидеры в топе - проверяем результат дуэли
+      if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
+        const duelData = overallDuelWinners?.[category];
+        if (duelData) {
+          const winnerId = duelData.winner || duelData; // Для обратной совместимости
+          const isWinnerInTop = topPoets.some(p => p.poet.id === winnerId);
+          if (isWinnerInTop) {
+            winners[category] = [winnerId];
+            return;
+          }
+        }
+        // Если дуэли нет - конфликт
+        winners[category] = [];
+        return;
+      }
+      
+      // Если никто не выбрал лидера - конфликт
       winners[category] = [];
     });
     
@@ -653,17 +657,47 @@ const OverallRankingPage = () => {
       const topPoets = overallRankings.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
       
       if (topPoets.length > 1 && winners.overall.length === 0) {
-        // Сначала проверяем, есть ли победитель дуэли для overall
-        const duelWinner = overallDuelWinners?.overall;
-        if (duelWinner) {
-          const isWinnerInTop = topPoets.some(p => p.poet.id === duelWinner);
-          if (isWinnerInTop) {
-            winners.overall = [duelWinner];
-            return winners;
-          }
+        // Сначала проверяем персональных лидеров
+        const maximLeader = categoryLeaders.maxim?.['overall'];
+        const olegLeader = categoryLeaders.oleg?.['overall'];
+        
+        const maximLeaderInTop = maximLeader && topPoets.some(p => p.poet.id === maximLeader);
+        const olegLeaderInTop = olegLeader && topPoets.some(p => p.poet.id === olegLeader);
+        
+        // Если оба выбрали одного и того же - он победитель
+        if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
+          winners.overall = [maximLeader];
+          return winners;
         }
         
-        // Если дуэли не было - считаем количество категорийных наград
+        // Если только у Максима есть лидер в топе - он победитель
+        if (maximLeaderInTop && !olegLeaderInTop) {
+          winners.overall = [maximLeader];
+          return winners;
+        }
+        
+        // Если только у Олега есть лидер в топе - он победитель
+        if (olegLeaderInTop && !maximLeaderInTop) {
+          winners.overall = [olegLeader];
+          return winners;
+        }
+        
+        // Если у обоих разные лидеры - проверяем дуэль
+        if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
+          const duelWinner = overallDuelWinners?.overall;
+          if (duelWinner) {
+            const isWinnerInTop = topPoets.some(p => p.poet.id === duelWinner);
+            if (isWinnerInTop) {
+              winners.overall = [duelWinner];
+              return winners;
+            }
+          }
+          // Если дуэли нет - конфликт
+          winners.overall = [];
+          return winners;
+        }
+        
+        // Если никто не назначил лидера - считаем количество категорийных наград
         const poetsWithBadgeCount = topPoets.map(poet => {
           const badgeCount = ['creativity', 'influence', 'drama', 'beauty'].filter(
             cat => winners[cat] && winners[cat].includes(poet.poet.id)
@@ -699,6 +733,31 @@ const OverallRankingPage = () => {
       // Если только один поэт с минимальным баллом - он худший
       if (lowestPoets.length === 1) {
         losers.overall = [lowestPoets[0].poet.id];
+      } else if (lowestPoets.length > 1) {
+        // Если несколько поэтов с одинаковым минимальным баллом
+        // Сначала проверяем персональных худших
+        const maximLoser = categoryLeaders.maxim?.['overall_worst'];
+        const olegLoser = categoryLeaders.oleg?.['overall_worst'];
+        
+        const maximLoserInBottom = maximLoser && lowestPoets.some(p => p.poet.id === maximLoser);
+        const olegLoserInBottom = olegLoser && lowestPoets.some(p => p.poet.id === olegLoser);
+        
+        // Если оба выбрали одного и того же - он худший
+        if (maximLoser && olegLoser && maximLoser === olegLoser && maximLoserInBottom) {
+          losers.overall = [maximLoser];
+        } else if (maximLoserInBottom && !olegLoserInBottom) {
+          // Если только у Максима есть худший в нижних - он худший
+          losers.overall = [maximLoser];
+        } else if (olegLoserInBottom && !maximLoserInBottom) {
+          // Если только у Олега есть худший в нижних - он худший
+          losers.overall = [olegLoser];
+        } else if (maximLoserInBottom && olegLoserInBottom && maximLoser !== olegLoser) {
+          // Если у обоих разные - проверяем дуэль
+          const duelLoser = overallDuelWinners?.overall_worst;
+          if (duelLoser && lowestPoets.some(p => p.poet.id === duelLoser)) {
+            losers.overall = [duelLoser];
+          }
+        }
       }
     }
     
