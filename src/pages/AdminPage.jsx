@@ -172,7 +172,7 @@ const AdminPage = () => {
   
   // Состояния для AI-рейтинга
   const [showAIRatingModal, setShowAIRatingModal] = useState(false);
-  const [editAIRatings, setEditAIRatings] = useState({ creativity: 0, influence: 0, drama: 0, beauty: 0 });
+  const [editAIRatings, setEditAIRatings] = useState({ creativity: 0, drama: 0, influence: 0, beauty: 0 });
   const [isGeneratingAIRating, setIsGeneratingAIRating] = useState(false);
   
   // Состояния для настройки позиции фото
@@ -660,14 +660,14 @@ const AdminPage = () => {
   // Открыть модалку AI-рейтинга
   const handleEditAIRating = (poet) => {
     setSelectedPoet(poet);
-    setEditAIRatings(poet.aiRatings || { creativity: 0, influence: 0, drama: 0, beauty: 0 });
+    setEditAIRatings(poet.aiRatings || { creativity: 0, drama: 0, influence: 0, beauty: 0 });
     setShowAIRatingModal(true);
   };
   
   // Закрыть модалку AI-рейтинга
   const closeAIRatingModal = () => {
     setShowAIRatingModal(false);
-    setEditAIRatings({ creativity: 0, influence: 0, drama: 0, beauty: 0 });
+    setEditAIRatings({ creativity: 0, drama: 0, influence: 0, beauty: 0 });
     setIsGeneratingAIRating(false);
   };
   

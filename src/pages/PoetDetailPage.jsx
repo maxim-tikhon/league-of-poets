@@ -1223,17 +1223,18 @@ const PoetDetailPage = () => {
             Биография
           </button>
           <button 
-            className={`menu-tab ${activeTab === 'influence' ? 'active' : ''}`}
-            onClick={() => setActiveTab('influence')}
-          >
-            Мораль
-          </button>
-          <button 
             className={`menu-tab ${activeTab === 'drama' ? 'active' : ''}`}
             onClick={() => setActiveTab('drama')}
           >
             Драма
           </button>
+          <button 
+            className={`menu-tab ${activeTab === 'influence' ? 'active' : ''}`}
+            onClick={() => setActiveTab('influence')}
+          >
+            Мораль
+          </button>
+         
           <button 
             className={`menu-tab ${activeTab === 'beauty' ? 'active' : ''}`}
             onClick={() => setActiveTab('beauty')}

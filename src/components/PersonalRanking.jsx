@@ -155,7 +155,7 @@ const PersonalRanking = ({
     };
     
     // Победители по категориям
-    ['creativity', 'influence', 'drama', 'beauty'].forEach(category => {
+    ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const poetsWithRatings = poets.map(poet => ({
         id: poet.id,
         rating: ratings[raterId]?.[poet.id]?.[category] || 0
@@ -307,7 +307,7 @@ const PersonalRanking = ({
     
     if (sortBy === 'overall') {
       // На вкладке "Общий балл" показываем ВСЕ награды
-      categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+      categoriesToShow = ['overall', 'creativity', 'drama', 'influence', 'beauty'];
     } else {
       // На вкладке конкретной категории показываем ТОЛЬКО награду этой категории
       categoriesToShow = [sortBy];

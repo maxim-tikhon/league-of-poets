@@ -69,7 +69,7 @@ const AwardsPage = () => {
   const overallCategoryWinners = useMemo(() => {
     const winners = {};
     
-    ['creativity', 'influence', 'drama', 'beauty'].forEach(category => {
+    ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const rankedPoets = poets
         .map(poet => {
           const maximRating = ratings.maxim?.[poet.id]?.[category] || 0;
@@ -267,7 +267,7 @@ const AwardsPage = () => {
     const winners = {};
     
     // Категории
-    ['creativity', 'influence', 'drama', 'beauty'].forEach(category => {
+    ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const poetsWithRatings = poets
         .map(poet => ({
           id: poet.id,
@@ -396,8 +396,8 @@ const AwardsPage = () => {
   const overallAwards = [
     { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
     { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-    { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
+    { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
     { key: 'readers-choice', name: 'Выбор читателей', badge: 'readers-choice.png' },
     { key: 'ai-choice', name: 'Выбор ИИ', badge: 'ai-choice.png' },
@@ -408,8 +408,8 @@ const AwardsPage = () => {
   const personalAwards = [
     { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
     { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
-    { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
+    { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
     { key: 'last', name: 'Худший поэт', badge: 'last.png' }
   ];

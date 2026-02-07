@@ -211,7 +211,7 @@ export const generateAIRating = async (prompt, parseFunction) => {
   
   // Если все попытки провалились - возвращаем нули
   if (allRatings.length === 0) {
-    return { creativity: 0, influence: 0, drama: 0, beauty: 0 };
+    return { creativity: 0, drama: 0, influence: 0, beauty: 0 };
   }
   
   // Усредняем результаты
@@ -222,7 +222,7 @@ export const generateAIRating = async (prompt, parseFunction) => {
     beauty: 0
   };
   
-  const categories = ['creativity', 'influence', 'drama', 'beauty'];
+  const categories = ['creativity', 'drama', 'influence', 'beauty'];
   
   categories.forEach(category => {
     const sum = allRatings.reduce((acc, rating) => acc + (rating[category] || 0), 0);

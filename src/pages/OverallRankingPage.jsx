@@ -590,7 +590,7 @@ const OverallRankingPage = () => {
     }
     
     // Победители по категориям
-    ['creativity', 'influence', 'drama', 'beauty'].forEach(category => {
+    ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       // Находим поэтов с максимальным средним баллом (используем кэш)
       const rankings = allCategoryRankings[category];
       if (rankings.length === 0) return;
@@ -699,7 +699,7 @@ const OverallRankingPage = () => {
         
         // Если никто не назначил лидера - считаем количество категорийных наград
         const poetsWithBadgeCount = topPoets.map(poet => {
-          const badgeCount = ['creativity', 'influence', 'drama', 'beauty'].filter(
+          const badgeCount = ['creativity', 'drama', 'influence', 'beauty'].filter(
             cat => winners[cat] && winners[cat].includes(poet.poet.id)
           ).length;
           return { id: poet.poet.id, badgeCount };
@@ -841,7 +841,7 @@ const OverallRankingPage = () => {
     
     if (activeTab === 'overall') {
       // На вкладке "Общий балл" показываем ВСЕ награды
-      categoriesToShow = ['overall', 'creativity', 'influence', 'drama', 'beauty'];
+      categoriesToShow = ['overall', 'creativity', 'drama', 'influence', 'beauty'];
     } else if (activeTab === 'readers-choice' || activeTab === 'ai-choice') {
       // На вкладках "Выбор читателей" и "Выбор ИИ" не показываем награды в карточках
       // (там своя структура отображения)

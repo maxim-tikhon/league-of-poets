@@ -375,7 +375,7 @@ const HeadToHeadPage = () => {
         
         {/* Карточки категорий с графиками */}
         <div className="h2h-stats-cards category-cards">
-          {['creativity', 'influence', 'drama', 'beauty'].map(key => {
+          {['creativity', 'drama', 'influence', 'beauty'].map(key => {
             const cat = CATEGORIES[key];
             const catAvg = statistics.categoryAverages[key];
             if (!catAvg) return null;
