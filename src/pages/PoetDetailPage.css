@@ -1657,6 +1657,43 @@ body[data-theme="letterboxd"] .btn-add-confirm:hover:not(:disabled) {
   opacity: 1;
 }
 
+.poem-edit-modal {
+  max-width: 560px;
+  width: 92%;
+}
+
+.form-actions-poem-edit {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.form-actions-poem-edit .btn-delete-confirm {
+  background: rgba(126, 62, 69, 0.2);
+  color: var(--burgundy);
+  border: 1px solid rgba(126, 62, 69, 0.35);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.form-actions-poem-edit .btn-delete-confirm:hover:not(:disabled) {
+  background: rgba(126, 62, 69, 0.35);
+  color: white;
+}
+
+.form-actions-poem-edit .btn-delete-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+body[data-theme="letterboxd"] .form-actions-poem-edit .btn-delete-confirm {
+  border-color: rgba(255, 96, 96, 0.35);
+  color: #ff9c9c;
+}
+
 /* === Модалка просмотра/редактирования стихотворения === */
 
 .poem-view-modal {
@@ -1667,21 +1704,35 @@ body[data-theme="letterboxd"] .btn-add-confirm:hover:not(:disabled) {
 .poem-view-modal .modal-title {
   font-size: 1.2rem;
   font-weight: 400;
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.poem-modal-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(199, 163, 107, 0.2);
+  color: var(--ink);
 }
 
 .poem-title-link {
   display: block;
   font-size: 1.2rem;
   font-weight: 400;
-  color: var(--ink);
+  color: inherit;
   text-decoration: none;
-  margin: 0 0 1.5rem 0;
+  margin: 0;
   transition: color 0.2s ease;
   cursor: pointer;
 }
 
 .poem-title-link:hover {
-  color: var(--burgundy);
+  color: inherit;
+  text-decoration: underline;
 }
 
 .poem-title-modal {
@@ -1693,12 +1744,54 @@ body[data-theme="letterboxd"] .btn-add-confirm:hover:not(:disabled) {
   text-decoration: underline;
 }
 
-body[data-theme="letterboxd"] .poem-title-link {
+.poem-title-plain {
+  margin: 0;
+}
+
+.poem-song-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-light);
+  opacity: 0.9;
+  margin-left: 0.1rem;
+  position: relative;
+  top: 3px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.poem-song-link svg {
+  width: 19px;
+  height: 19px;
+}
+
+.poem-title-link:hover + .poem-song-link {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.poem-song-link:hover {
+  color: var(--ink);
+  opacity: 1;
+}
+
+body[data-theme="letterboxd"] .poem-modal-title-row {
   color: #e5e5e5;
+  border-bottom-color: rgba(255, 255, 255, 0.14);
 }
 
 body[data-theme="letterboxd"] .poem-title-link:hover {
-  opacity: 0.7;
+  opacity: 1;
+}
+
+body[data-theme="letterboxd"] .poem-title-link:hover + .poem-song-link {
+  color: inherit;
+  opacity: 0.9;
+}
+
+body[data-theme="letterboxd"] .poem-song-link:hover {
+  color: #ffffff;
+  opacity: 1;
 }
 
 .poem-view-content {

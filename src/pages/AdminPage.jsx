@@ -176,6 +176,7 @@ const AdminPage = () => {
   const [selectedPoem, setSelectedPoem] = useState(null);
   const [editPoemTitle, setEditPoemTitle] = useState('');
   const [editPoemUrl, setEditPoemUrl] = useState('');
+  const [editPoemSongUrl, setEditPoemSongUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
@@ -294,6 +295,7 @@ const AdminPage = () => {
     setSelectedPoem(poem);
     setEditPoemTitle(poem.title);
     setEditPoemUrl(poem.url || '');
+    setEditPoemSongUrl(poem.songUrl || '');
     setShowEditModal(true);
     setShowDeleteConfirm(false);
   };
@@ -304,6 +306,7 @@ const AdminPage = () => {
     setSelectedPoem(null);
     setEditPoemTitle('');
     setEditPoemUrl('');
+    setEditPoemSongUrl('');
     setShowDeleteConfirm(false);
   };
   
@@ -313,6 +316,7 @@ const AdminPage = () => {
     
     const trimmedTitle = editPoemTitle.trim();
     const trimmedUrl = editPoemUrl.trim();
+    const trimmedSongUrl = editPoemSongUrl.trim();
     
     // Проверка на дубликат (кроме текущего)
     const isDuplicate = poems.some(p => 
@@ -330,6 +334,11 @@ const AdminPage = () => {
       await set(ref(database, `poets/${selectedPoet.id}/poems/${selectedPoem.id}/title`), trimmedTitle);
       // Обновляем url
       await set(ref(database, `poets/${selectedPoet.id}/poems/${selectedPoem.id}/url`), trimmedUrl);
+      // Обновляем songUrl (опционально)
+      await set(
+        ref(database, `poets/${selectedPoet.id}/poems/${selectedPoem.id}/songUrl`),
+        trimmedSongUrl || null
+      );
       closeEditModal();
     } catch (err) {
       console.error('Ошибка сохранения:', err);
@@ -1307,6 +1316,19 @@ Note: В конкурсе будут участвовать все выдающ�
                   onChange={(e) => setEditPoemUrl(e.target.value)}
                   className="form-input"
                   placeholder="https://rustih.ru/..."
+                />
+              </div>
+
+              {/* Ссылка на песню (опционально, чаще YouTube) */}
+              <div className="form-field">
+                <label htmlFor="edit-poem-song-url">Ссылка на песню (опционально)</label>
+                <input
+                  id="edit-poem-song-url"
+                  type="url"
+                  value={editPoemSongUrl}
+                  onChange={(e) => setEditPoemSongUrl(e.target.value)}
+                  className="form-input"
+                  placeholder="https://youtube.com/..."
                 />
               </div>
               

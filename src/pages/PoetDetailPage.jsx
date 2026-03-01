@@ -11,13 +11,13 @@ import {
   generateThemedPoemPrompt,
   POEM_GENERATION_OPTIONS
 } from '../ai/prompts';
-import { Globe, BookOpen, Image, Youtube, ExternalLink, Quote, Link } from 'lucide-react';
+import { Globe, BookOpen, Image, Youtube, ExternalLink, Quote, Link, Music4 } from 'lucide-react';
 import './PoetDetailPage.css';
 
 const PoetDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { poets, ratings, calculateScore, isLoading, updateRating, categoryLeaders, setCategoryLeader, deletePoet: deletePoetFunc, updatePoet, likes, toggleLike, addPoem, updatePoemStatus } = usePoets();
+  const { poets, ratings, calculateScore, isLoading, updateRating, categoryLeaders, setCategoryLeader, deletePoet: deletePoetFunc, updatePoet, likes, toggleLike, addPoem, updatePoemStatus, deletePoem } = usePoets();
   
   const poet = poets.find(p => p.id === id);
   const [enlargedImage, setEnlargedImage] = useState(null); // Для lightbox
@@ -69,6 +69,13 @@ const PoetDetailPage = () => {
   // Модалка просмотра стихотворения
   const [showPoemModal, setShowPoemModal] = useState(false);
   const [selectedPoem, setSelectedPoem] = useState(null);
+  const [showQuickPoemEditModal, setShowQuickPoemEditModal] = useState(false);
+  const [editingPoem, setEditingPoem] = useState(null);
+  const [quickPoemTitle, setQuickPoemTitle] = useState('');
+  const [quickPoemUrl, setQuickPoemUrl] = useState('');
+  const [quickPoemSongUrl, setQuickPoemSongUrl] = useState('');
+  const [quickPoemError, setQuickPoemError] = useState('');
+  const [isSavingQuickPoem, setIsSavingQuickPoem] = useState(false);
   
   // Показать все ссылки
   const [showAllLinks, setShowAllLinks] = useState(false);
@@ -681,6 +688,94 @@ const PoetDetailPage = () => {
     setShowPoemModal(false);
     setSelectedPoem(null);
   };
+
+  const openQuickPoemEdit = (poem) => {
+    setEditingPoem(poem);
+    setQuickPoemTitle(poem.title || '');
+    setQuickPoemUrl(poem.url || '');
+    setQuickPoemSongUrl(poem.songUrl || '');
+    setQuickPoemError('');
+    setShowQuickPoemEditModal(true);
+  };
+
+  const closeQuickPoemEdit = () => {
+    setShowQuickPoemEditModal(false);
+    setEditingPoem(null);
+    setQuickPoemTitle('');
+    setQuickPoemUrl('');
+    setQuickPoemSongUrl('');
+    setQuickPoemError('');
+    setIsSavingQuickPoem(false);
+  };
+
+  const saveQuickPoemEdit = async () => {
+    if (!poet || !editingPoem) return;
+
+    const trimmedTitle = quickPoemTitle.trim();
+    const trimmedUrl = quickPoemUrl.trim();
+    const trimmedSongUrl = quickPoemSongUrl.trim();
+
+    if (!trimmedTitle) {
+      setQuickPoemError('Название не может быть пустым');
+      return;
+    }
+
+    const isDuplicate = poems.some(
+      (p) => p.id !== editingPoem.id && p.title?.trim().toLowerCase() === trimmedTitle.toLowerCase()
+    );
+    if (isDuplicate) {
+      setQuickPoemError('Стихотворение с таким названием уже существует');
+      return;
+    }
+
+    try {
+      setIsSavingQuickPoem(true);
+      const currentPoems = { ...(poet.poems || {}) };
+      const nextPoem = {
+        ...(currentPoems[editingPoem.id] || {}),
+        title: trimmedTitle,
+        url: trimmedUrl
+      };
+
+      if (trimmedSongUrl) {
+        nextPoem.songUrl = trimmedSongUrl;
+      } else {
+        delete nextPoem.songUrl;
+      }
+
+      currentPoems[editingPoem.id] = nextPoem;
+      await updatePoet(poet.id, { poems: currentPoems });
+
+      if (selectedPoem?.id === editingPoem.id) {
+        setSelectedPoem((prev) => (prev ? { ...prev, ...nextPoem } : prev));
+      }
+
+      closeQuickPoemEdit();
+    } catch (err) {
+      console.error('Ошибка редактирования стихотворения:', err);
+      setQuickPoemError('Ошибка при сохранении');
+      setIsSavingQuickPoem(false);
+    }
+  };
+
+  const removePoemFromQuickEdit = async () => {
+    if (!poet || !editingPoem) return;
+    const ok = window.confirm('Удалить это стихотворение?');
+    if (!ok) return;
+
+    try {
+      setIsSavingQuickPoem(true);
+      await deletePoem(poet.id, editingPoem.id);
+      if (selectedPoem?.id === editingPoem.id) {
+        closePoemModal();
+      }
+      closeQuickPoemEdit();
+    } catch (err) {
+      console.error('Ошибка удаления стихотворения:', err);
+      setQuickPoemError('Ошибка при удалении');
+      setIsSavingQuickPoem(false);
+    }
+  };
   
   // Переключить статус (viewed, liked, memorized)
   const togglePoemStatus = async (field) => {
@@ -1281,6 +1376,11 @@ const PoetDetailPage = () => {
                       key={poem.id} 
                       className={`poem-card ${statusClass}`}
                       onClick={() => handlePoemClick(poem)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        openQuickPoemEdit(poem);
+                      }}
+                      title="ПКМ для редактирования"
                     >
                       <span className="poem-title">{poem.title}</span>
                     </div>
@@ -1550,6 +1650,82 @@ const PoetDetailPage = () => {
           </div>
         </div>
       )}
+
+      {/* Быстрое редактирование стихотворения (ПКМ по карточке) */}
+      {showQuickPoemEditModal && editingPoem && (
+        <div className="modal-overlay" onClick={closeQuickPoemEdit}>
+          <div className="modal-content poem-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeQuickPoemEdit} title="Закрыть">
+              ✕
+            </button>
+            <h2 className="modal-title">Редактировать стихотворение</h2>
+
+            <div className="poem-form">
+              <div className="form-field">
+                <label htmlFor="quick-poem-title">Название</label>
+                <input
+                  id="quick-poem-title"
+                  type="text"
+                  value={quickPoemTitle}
+                  onChange={(e) => {
+                    setQuickPoemTitle(e.target.value);
+                    setQuickPoemError('');
+                  }}
+                  className="form-input"
+                  placeholder="Название стихотворения"
+                  disabled={isSavingQuickPoem}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="quick-poem-url">Ссылка на стихотворение</label>
+                <input
+                  id="quick-poem-url"
+                  type="url"
+                  value={quickPoemUrl}
+                  onChange={(e) => {
+                    setQuickPoemUrl(e.target.value);
+                    setQuickPoemError('');
+                  }}
+                  className="form-input"
+                  placeholder="https://rustih.ru/..."
+                  disabled={isSavingQuickPoem}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="quick-poem-song-url">Ссылка на песню (опционально)</label>
+                <input
+                  id="quick-poem-song-url"
+                  type="url"
+                  value={quickPoemSongUrl}
+                  onChange={(e) => {
+                    setQuickPoemSongUrl(e.target.value);
+                    setQuickPoemError('');
+                  }}
+                  className="form-input"
+                  placeholder="https://youtube.com/..."
+                  disabled={isSavingQuickPoem}
+                />
+              </div>
+
+              {quickPoemError && <div className="field-error">{quickPoemError}</div>}
+
+              <div className="form-actions form-actions-poem-edit">
+                <button onClick={closeQuickPoemEdit} className="btn-cancel" disabled={isSavingQuickPoem}>
+                  Отмена
+                </button>
+                <button onClick={removePoemFromQuickEdit} className="btn-delete-confirm" disabled={isSavingQuickPoem}>
+                  Удалить
+                </button>
+                <button onClick={saveQuickPoemEdit} className="btn-add-confirm" disabled={isSavingQuickPoem}>
+                  {isSavingQuickPoem ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Модалка просмотра стихотворения */}
       {showPoemModal && selectedPoem && (
@@ -1563,19 +1739,34 @@ const PoetDetailPage = () => {
               ✕
             </button>
             
-            {selectedPoem.url ? (
-              <a 
-                href={selectedPoem.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="modal-title poem-title-link"
-                title="Открыть на rustih.ru"
-              >
-                <span className="poem-title-modal">{selectedPoem.title}</span>
-              </a>
-            ) : (
-              <h2 className="modal-title">{selectedPoem.title}</h2>
-            )}
+            <div className="poem-modal-title-row">
+              {selectedPoem.url ? (
+                <a
+                  href={selectedPoem.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="modal-title poem-title-link"
+                  title="Открыть на rustih.ru"
+                >
+                  <span className="poem-title-modal">{selectedPoem.title}</span>
+                </a>
+              ) : (
+                <h2 className="modal-title poem-title-plain">{selectedPoem.title}</h2>
+              )}
+
+              {selectedPoem.songUrl && (
+                <a
+                  href={selectedPoem.songUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="poem-song-link"
+                  title="Открыть песню"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Music4 size={17} />
+                </a>
+              )}
+            </div>
             
             <div className="poem-view-content">
               {/* Статусы стихотворения */}
