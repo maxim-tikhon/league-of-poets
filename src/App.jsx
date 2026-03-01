@@ -11,6 +11,7 @@ import OverallRankingPage from './pages/OverallRankingPage';
 import HeadToHeadPage from './pages/HeadToHeadPage';
 import AdminPage from './pages/AdminPage';
 import AwardsPage from './pages/AwardsPage';
+import FavoritePoemsPage from './pages/FavoritePoemsPage';
 import UserSelector from './components/UserSelector';
 import './App.css';
 
@@ -57,6 +58,8 @@ function App() {
             <Route path="poet/:id" element={<PoetDetailPage />} />
             <Route path="personal-ranking" element={<PersonalRankingPage />} />
             <Route path="overall-ranking" element={<OverallRankingPage />} />
+            <Route path="likes" element={<FavoritePoemsPage />} />
+            <Route path="favorite-poems" element={<FavoritePoemsPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="head-to-head" element={<HeadToHeadPage />} />
             <Route path="awards" element={<AwardsPage />} />

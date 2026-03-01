@@ -63,6 +63,7 @@ const PoetDetailPage = () => {
   const [newPoemTitle, setNewPoemTitle] = useState('');
   const [poemError, setPoemError] = useState('');
   const [isGeneratingPoem, setIsGeneratingPoem] = useState(false);
+  const [isAddingPoem, setIsAddingPoem] = useState(false);
   const [selectedOption, setSelectedOption] = useState('random');
   
   // Модалка просмотра стихотворения
@@ -595,6 +596,8 @@ const PoetDetailPage = () => {
   };
 
   const handleAddPoem = async () => {
+    if (isAddingPoem) return;
+
     const trimmedTitle = newPoemTitle.trim();
     
     if (!trimmedTitle) {
@@ -608,6 +611,7 @@ const PoetDetailPage = () => {
     }
     
     try {
+      setIsAddingPoem(true);
       // Ищем ссылку на стихотворение
       const poemUrl = await searchPoemUrl(poet.name, trimmedTitle);
       
@@ -622,6 +626,8 @@ const PoetDetailPage = () => {
     } catch (err) {
       console.error('Ошибка добавления стихотворения:', err);
       setPoemError('Ошибка при добавлении стихотворения');
+    } finally {
+      setIsAddingPoem(false);
     }
   };
   
@@ -1528,16 +1534,16 @@ const PoetDetailPage = () => {
                 <button 
                   onClick={() => setShowAddPoemModal(false)} 
                   className="btn-cancel"
-                  disabled={isGeneratingPoem}
+                  disabled={isGeneratingPoem || isAddingPoem}
                 >
                   Отмена
                 </button>
                 <button 
                   onClick={handleAddPoem} 
                   className="btn-add-confirm"
-                  disabled={isGeneratingPoem}
+                  disabled={isGeneratingPoem || isAddingPoem}
                 >
-                  Добавить
+                  {isAddingPoem ? 'Добавление...' : 'Добавить'}
                 </button>
               </div>
             </div>

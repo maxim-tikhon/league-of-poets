@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../firebase/config';
 import StarRating from '../components/StarRating';
 import DuelGame from '../components/DuelGame';
 import Tooltip from '../components/Tooltip';
@@ -36,6 +38,7 @@ const OverallRankingPage = () => {
   const animationFrameId = useRef(null); // ID для requestAnimationFrame
   const animationTimeouts = useRef([]); // Массив ID таймаутов для очистки
   const [gameConflict, setGameConflict] = useState(null); // { category, poet1, poet2 }
+  const [jumpAnimationEnabled, setJumpAnimationEnabled] = useState(false); // OFF по умолчанию
   
   // Функция форматирования общего балла пользователя (2 знака после запятой)
   const formatScore = useCallback((score) => {
@@ -86,6 +89,16 @@ const OverallRankingPage = () => {
   const isNewestPoet = (poet) => {
     return newestPoet && poet.id === newestPoet.id;
   };
+
+  // Настройка из админки: включена ли "прыжковая" анимация новой карточки
+  useEffect(() => {
+    const settingsRef = ref(database, 'settings/overallRanking');
+    const unsubscribe = onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      setJumpAnimationEnabled(data?.jumpAnimationEnabled === true);
+    });
+    return () => unsubscribe();
+  }, []);
   
   // Переключение развертывания карточки для overall
   const toggleCardExpansion = (poetId) => {
@@ -390,6 +403,30 @@ const OverallRankingPage = () => {
     const animationShown = localStorage.getItem(animationKey);
 
     if (!animationShown) {
+      // Режим "Flat": без прыжков. Сразу показываем финальную позицию и раскрываем карточку.
+      if (!jumpAnimationEnabled) {
+        setActiveTab('overall');
+        setAnimatingPoet(null);
+        setShowScore(true);
+        setAnimationStep(0);
+        setExpandedCards(prev => {
+          const newSet = new Set(prev);
+          newSet.add(newestPoet.id);
+          return newSet;
+        });
+
+        // Чтобы было понятно, где новый поэт: прокручиваем к его карточке
+        setTimeout(() => {
+          const cardElement = document.querySelector(`[data-poet-id="${newestPoet.id}"]`);
+          if (cardElement) {
+            cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 350);
+
+        localStorage.setItem(animationKey, 'true');
+        return;
+      }
+
       // Сразу устанавливаем анимирующего поэта (плашка будет видна на первом месте)
       setAnimatingPoet(newestPoet.id);
       setShowScore(false);
@@ -521,7 +558,7 @@ const OverallRankingPage = () => {
       
       animationTimeouts.current.push(endTimeoutId);
     }
-  }, [isLoading, newestPoet, activeTab, overallRankings, allCategoryRankings, currentUser]);
+  }, [isLoading, newestPoet, activeTab, overallRankings, allCategoryRankings, currentUser, jumpAnimationEnabled]);
 
   // Очистка таймеров и анимаций при размонтировании компонента
   useEffect(() => {

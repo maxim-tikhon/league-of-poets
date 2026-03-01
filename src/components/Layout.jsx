@@ -13,7 +13,9 @@ const Layout = () => {
   const [garlandEnabled, setGarlandEnabled] = useState(false);
   const [glowEnabled, setGlowEnabled] = useState(true);
   const [breathingEnabled, setBreathingEnabled] = useState(false);
+  const [footerFlowersEnabled, setFooterFlowersEnabled] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [currentUser, setCurrentUser] = useState('');
   
   // Загружаем настройки из Firebase
   useEffect(() => {
@@ -24,11 +26,22 @@ const Layout = () => {
         setGarlandEnabled(data.enabled !== false); // По умолчанию включена
         setGlowEnabled(data.glow !== false); // По умолчанию включено
         setBreathingEnabled(data.breathing === true); // По умолчанию выключено
+        setFooterFlowersEnabled(data.footerFlowersEnabled !== false); // По умолчанию включено
       }
       setSettingsLoaded(true);
     });
     
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const syncCurrentUser = () => {
+      setCurrentUser(localStorage.getItem('currentUser') || '');
+    };
+
+    syncCurrentUser();
+    window.addEventListener('storage', syncCurrentUser);
+    return () => window.removeEventListener('storage', syncCurrentUser);
   }, []);
 
   return (
@@ -54,6 +67,9 @@ const Layout = () => {
             <NavLink to="/awards" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Награды
             </NavLink>
+            <NavLink to="/likes" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Лайки
+            </NavLink>
             <NavLink to="/head-to-head" className={({ isActive }) => isActive ? 'nav-link nav-link-icon active' : 'nav-link nav-link-icon'} title="Статистика">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -61,6 +77,14 @@ const Layout = () => {
                 <line x1="6" y1="20" x2="6" y2="14"></line>
               </svg>
             </NavLink>
+            {currentUser === 'maxim' && (
+              <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link nav-link-icon active' : 'nav-link nav-link-icon'} title="Админ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="3"></circle>
+                  <path d="M4 20c0-4.2 3.6-7 8-7s8 2.8 8 7"></path>
+                </svg>
+              </NavLink>
+            )}
             {/* <NavLink to="/timeline" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Временная линия
             </NavLink> */}
@@ -71,7 +95,7 @@ const Layout = () => {
           {/* <ThemeSelector /> */}
         </div>
         
-        {/* 🎄 Советская гирлянда — внутри хедера, чтобы была видна при скролле */}
+        {/* Декор хедера — внутри хедера, чтобы был виден при скролле */}
         {settingsLoaded && garlandEnabled && (
         <div className="christmas-garland">
         <svg viewBox="0 0 1200 55" preserveAspectRatio="none" className="garland-svg" style={{ overflow: 'visible' }}>
@@ -305,8 +329,11 @@ const Layout = () => {
       </main>
       
       <footer className="footer">
+        {settingsLoaded && footerFlowersEnabled && (
+          <img src="/images/flowers.png" alt="" className="footer-flowers" aria-hidden="true" />
+        )}
         <div className="container">
-          <p>© 2025 Лига Поэтов.</p>
+          <p>© 2026 Лига Поэтов.</p>
         </div>
       </footer>
     </div>

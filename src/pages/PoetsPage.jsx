@@ -245,6 +245,7 @@ const PoetsPage = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(true); // Флаг первой загрузки для анимации
   const [showNotification, setShowNotification] = useState(false); // Нотификация о копировании
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
+  const [timelineTooltip, setTimelineTooltip] = useState(null); // Tooltip в отдельном слое
 
   // Получаем текущего пользователя из localStorage
   useEffect(() => {
@@ -607,6 +608,22 @@ const PoetsPage = () => {
 
   const sortedPoets = getSortedPoets();
 
+  const handleTimelineTooltipMove = (event, poet) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const desiredX = rect.right + 12;
+    const clampedX = Math.max(8, Math.min(desiredX, window.innerWidth - 260));
+    const y = Math.max(8, rect.top - 10);
+
+    setTimelineTooltip({
+      name: poet.name,
+      birthYear: poet.birthYear,
+      deathYear: poet.deathYear,
+      lifespan: poet.lifespan,
+      x: clampedX,
+      y,
+    });
+  };
+
   return (
     <div className="poets-page">
       {/* <div className="page-header">
@@ -781,18 +798,12 @@ const PoetsPage = () => {
           }
 
           // Ширина колонки поэта
-          const columnWidth = 50; // пикселей
-          
-          // Рассчитываем сколько колонок влезает
-          // Ширина контейнера примерно 1200px, ось 60px слева + 50px справа
-          const containerWidth = 1200;
-          const axisWidth = 110;
-          const availableWidth = containerWidth - axisWidth;
-          const maxColumns = Math.floor(availableWidth / columnWidth);
-          
-          // Распределяем поэтов по колонкам
-          const poetsWithColumns = assignColumns(timelinePoets, maxColumns);
-          const totalColumns = Math.min(maxColumns, Math.max(...poetsWithColumns.map(p => p.column)) + 1);
+          const columnWidth = 49; // пикселей
+
+          // Один поэт — одна колонка, по порядку года рождения; колонок столько, сколько поэтов
+          const poetsWithColumns = timelinePoets.map((poet, index) => ({ ...poet, column: index }));
+          const totalColumns = poetsWithColumns.length;
+          const contentWidth = totalColumns * columnWidth;
 
           // Находим долгожителя и короткожителя (среди умерших)
           const deadPoets = poetsWithColumns.filter(p => !p.isAlive && p.lifespan);
@@ -849,6 +860,14 @@ const PoetsPage = () => {
             { name: 'Современность', start: 1991, end: currentYear, color: '#4a9c5d', desc: 'Полная свобода, тексты в смартфонах и поиск новой искренности.' },
           ];
 
+          const shortestLivedTop = [...deadPoets]
+            .sort((a, b) => a.lifespan - b.lifespan)
+            .slice(0, 3);
+
+          const longestLivedTop = [...deadPoets]
+            .sort((a, b) => b.lifespan - a.lifespan)
+            .slice(0, 3);
+
           return (
             <div className="gantt-timeline">
               {/* Легенда эпох */}
@@ -868,8 +887,8 @@ const PoetsPage = () => {
                 ))}
               </div>
 
-              <div className="gantt-container" style={{ '--total-height': `${totalHeight}px`, '--column-width': `${columnWidth}px`, '--total-columns': totalColumns }}>
-                {/* Ось времени слева */}
+              <div className="gantt-container" style={{ '--total-height': `${totalHeight}px`, '--column-width': `${columnWidth}px` }}>
+                {/* Ось времени слева — НЕ скроллится */}
                 <div className="gantt-axis">
                   <div className="gantt-axis-line"></div>
                   {timeMarks.map(mark => (
@@ -884,108 +903,78 @@ const PoetsPage = () => {
                   ))}
                 </div>
 
-                {/* Фоновые полосы эпох */}
-                <div className="epochs-background">
-                  {epochs.map(epoch => {
-                    // Пропускаем эпохи вне диапазона (включая те, что заканчиваются ровно на minYear)
-                    if (epoch.end <= minYear || epoch.start > maxYear) return null;
-                    
-                    const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
-                    const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
-                    const height = endPos - startPos;
-                    
-                    return (
-                      <React.Fragment key={epoch.name}>
-                        {/* Линия начала эпохи — цветная, еле заметная */}
+                {/* Правая панель с эпохами — НЕ скроллится */}
+                <div className="gantt-right-panel">
+                  <div className="epochs-line">
+                    {epochs.map(epoch => {
+                      if (epoch.end <= minYear || epoch.start > maxYear) return null;
+                      const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
+                      const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
+                      const height = endPos - startPos;
+                      return (
                         <div
-                          className="epoch-divider"
-                          style={{ 
-                            top: `${startPos}%`,
-                            background: epoch.color,
-                          }}
+                          key={epoch.name}
+                          className="epoch-line-segment"
+                          style={{ top: `${startPos}%`, height: `${height}%`, background: epoch.color }}
                         />
-                        {/* Фоновая полоса */}
-                        <div
-                          className="epoch-band"
-                          style={{
-                            top: `${startPos}%`,
-                            height: `${height}%`,
-                            background: epoch.color,
-                          }}
+                      );
+                    })}
+                  </div>
+                  <div className="epochs-labels">
+                    {epochs.map(epoch => {
+                      if (epoch.end <= minYear || epoch.start > maxYear) return null;
+                      const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
+                      const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
+                      const centerPos = (startPos + endPos) / 2;
+                      return (
+                        <div key={epoch.name} className="epoch-label" style={{ top: `${centerPos}%`, color: epoch.color }}>
+                          {epoch.name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Скроллируемая средняя область — только она скроллится */}
+                <div className="gantt-h-scroll">
+                  <div className="gantt-h-inner" style={{ width: `${contentWidth}px` }}>
+
+                    {/* Фоновые полосы эпох */}
+                    <div className="epochs-background">
+                      {epochs.map(epoch => {
+                        if (epoch.end <= minYear || epoch.start > maxYear) return null;
+                        const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
+                        const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
+                        const height = endPos - startPos;
+                        return (
+                          <React.Fragment key={epoch.name}>
+                            <div className="epoch-divider" style={{ top: `${startPos}%`, background: epoch.color }} />
+                            <div className="epoch-band" style={{ top: `${startPos}%`, height: `${height}%`, background: epoch.color }} />
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+
+                    {/* Горизонтальные линии сетки */}
+                    <div className="gantt-grid">
+                      {timeMarks.map(mark => (
+                        <div 
+                          key={mark.year}
+                          className={`gantt-grid-line ${mark.isMajor ? 'major' : 'minor'}`}
+                          style={{ top: `${mark.position}%` }}
                         />
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
+                      ))}
+                    </div>
 
-                {/* Цветная линия эпох справа */}
-                <div className="epochs-line">
-                  {epochs.map(epoch => {
-                    if (epoch.end <= minYear || epoch.start > maxYear) return null;
-                    
-                    const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
-                    const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
-                    const height = endPos - startPos;
-                    
-                    return (
-                      <div
-                        key={epoch.name}
-                        className="epoch-line-segment"
-                        style={{
-                          top: `${startPos}%`,
-                          height: `${height}%`,
-                          background: epoch.color,
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Названия эпох справа */}
-                <div className="epochs-labels">
-                  {epochs.map(epoch => {
-                    // Пропускаем эпохи вне диапазона
-                    if (epoch.end <= minYear || epoch.start > maxYear) return null;
-                    
-                    const startPos = Math.max(0, ((epoch.start - minYear) / totalYears) * 100);
-                    const endPos = Math.min(100, ((epoch.end - minYear) / totalYears) * 100);
-                    const centerPos = (startPos + endPos) / 2;
-                    
-                    return (
-                      <div
-                        key={epoch.name}
-                        className="epoch-label"
-                        style={{
-                          top: `${centerPos}%`,
-                          color: epoch.color,
-                        }}
-                      >
-                        {epoch.name}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Горизонтальные линии сетки */}
-                <div className="gantt-grid">
-                  {timeMarks.map(mark => (
-                    <div 
-                      key={mark.year}
-                      className={`gantt-grid-line ${mark.isMajor ? 'major' : 'minor'}`}
-                      style={{ top: `${mark.position}%` }}
-                    />
-                  ))}
-                </div>
-
-                {/* Область с поэтами */}
-                <div className="gantt-poets-area">
-                  {poetsWithColumns.map((poet, index) => {
-                    const birthPosition = ((poet.birthYear - minYear) / totalYears) * 100;
-                    const endYear = poet.deathYear || new Date().getFullYear();
-                    const deathPosition = ((endYear - minYear) / totalYears) * 100;
-                    const lifeHeight = deathPosition - birthPosition;
-                    // Позиция колонки — сразу после оси, близко друг к другу
-                    const leftOffset = 70 + (poet.column * columnWidth);
+                    {/* Область с поэтами */}
+                    <div className="gantt-poets-area">
+                      {poetsWithColumns.map((poet, index) => {
+                        const birthPosition = ((poet.birthYear - minYear) / totalYears) * 100;
+                        const endYear = poet.deathYear || new Date().getFullYear();
+                        const deathPosition = ((endYear - minYear) / totalYears) * 100;
+                        const lifeHeight = deathPosition - birthPosition;
+                        // Ось слева снаружи скролл-области, поэтому смещение от 0
+                        const leftOffset = poet.column * columnWidth;
 
                     const isLongest = poet.id === longestLivedId;
                     const isShortest = poet.id === shortestLivedId;
@@ -1000,6 +989,9 @@ const PoetsPage = () => {
                           height: `${lifeHeight}%`,
                           '--animation-delay': `${index * 0.08}s`
                         }}
+                        onMouseEnter={(e) => handleTimelineTooltipMove(e, poet)}
+                        onMouseMove={(e) => handleTimelineTooltipMove(e, poet)}
+                        onMouseLeave={() => setTimelineTooltip(null)}
                         onClick={() => navigate(`/poet/${poet.id}`)}
                       >
                         {/* Аватар (точка рождения) */}
@@ -1029,33 +1021,57 @@ const PoetsPage = () => {
                           <div className="gantt-death-point"></div>
                         )}
 
-                        {/* Tooltip при наведении — формат "А. Фамилия" */}
-                        <div className="gantt-tooltip">
-                          <div className="gantt-tooltip-name">
-                            {poet.name.split(' ').length === 1 
-                              ? poet.name 
-                              : `${poet.name.split(' ')[0].charAt(0)}. ${poet.name.split(' ').slice(1).join(' ')}`}
-                          </div>
-                          <div className="gantt-tooltip-dates">
-                            {poet.birthYear} — {poet.deathYear || 'н.в.'}
-                          </div>
-                          <div className="gantt-tooltip-lifespan">
-                            {poet.lifespan} {(() => {
-                              const n = poet.lifespan;
-                              const lastTwo = n % 100;
-                              const lastOne = n % 10;
-                              if (lastTwo >= 11 && lastTwo <= 19) return 'лет';
-                              if (lastOne === 1) return 'год';
-                              if (lastOne >= 2 && lastOne <= 4) return 'года';
-                              return 'лет';
-                            })()}
-                          </div>
-                        </div>
                       </div>
                     );
-                  })}
+                      })}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div className="timeline-lifespan-top">
+                <div className="timeline-lifespan-column">
+                  <h4 className="timeline-lifespan-title">Короткая жизнь</h4>
+                  {shortestLivedTop.length > 0 ? (
+                    <div className="timeline-lifespan-list">
+                      {shortestLivedTop.map((poet, index) => (
+                        <button
+                          key={`short-${poet.id}`}
+                          className="timeline-lifespan-item"
+                          onClick={() => navigate(`/poet/${poet.id}`)}
+                        >
+                          <span className="timeline-lifespan-rank">{index + 1}.</span>
+                          <span className="timeline-lifespan-name">{poet.name}</span>
+                          <span className="timeline-lifespan-years">{poet.lifespan} лет</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="timeline-lifespan-empty">Недостаточно данных</p>
+                  )}
                 </div>
 
+                <div className="timeline-lifespan-column">
+                  <h4 className="timeline-lifespan-title">Долгая жизнь</h4>
+                  {longestLivedTop.length > 0 ? (
+                    <div className="timeline-lifespan-list">
+                      {longestLivedTop.map((poet, index) => (
+                        <button
+                          key={`long-${poet.id}`}
+                          className="timeline-lifespan-item"
+                          onClick={() => navigate(`/poet/${poet.id}`)}
+                        >
+                          <span className="timeline-lifespan-rank">{index + 1}.</span>
+                          <span className="timeline-lifespan-name">{poet.name}</span>
+                          <span className="timeline-lifespan-years">{poet.lifespan} лет</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="timeline-lifespan-empty">Недостаточно данных</p>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -1169,6 +1185,30 @@ const PoetsPage = () => {
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
           <span>Промпт скопирован</span>
+        </div>
+      )}
+
+      {timelineTooltip && (
+        <div className="gantt-tooltip-layer" style={{ left: `${timelineTooltip.x}px`, top: `${timelineTooltip.y}px` }}>
+          <div className="gantt-tooltip-name">
+            {timelineTooltip.name.split(' ').length === 1
+              ? timelineTooltip.name
+              : `${timelineTooltip.name.split(' ')[0].charAt(0)}. ${timelineTooltip.name.split(' ').slice(1).join(' ')}`}
+          </div>
+          <div className="gantt-tooltip-dates">
+            {timelineTooltip.birthYear} — {timelineTooltip.deathYear || 'н.в.'}
+          </div>
+          <div className="gantt-tooltip-lifespan">
+            {timelineTooltip.lifespan} {(() => {
+              const n = timelineTooltip.lifespan;
+              const lastTwo = n % 100;
+              const lastOne = n % 10;
+              if (lastTwo >= 11 && lastTwo <= 19) return 'лет';
+              if (lastOne === 1) return 'год';
+              if (lastOne >= 2 && lastOne <= 4) return 'года';
+              return 'лет';
+            })()}
+          </div>
         </div>
       )}
     </div>

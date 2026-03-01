@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import './HeadToHeadPage.css';
 
+const STRICT_COMPARE_EPS = 0.001;
+
 const HeadToHeadPage = () => {
   const { poets, ratings, calculateScore, likes } = usePoets();
   const navigate = useNavigate();
@@ -136,29 +138,32 @@ const HeadToHeadPage = () => {
         const maximAvg = maximCatTotal / catCount;
         const olegAvg = olegCatTotal / catCount;
         const aiAvg = aiCatCount > 0 ? aiCatTotal / aiCatCount : 0;
-        const diff = maximAvg - olegAvg;
+        // Сравниваем на той же точности, что и показываем пользователю (1 знак после запятой)
+        const maximDisplayAvg = Number(maximAvg.toFixed(1));
+        const olegDisplayAvg = Number(olegAvg.toFixed(1));
+        const displayDiff = maximDisplayAvg - olegDisplayAvg;
+        const winner = displayDiff < -STRICT_COMPARE_EPS ? 'maxim' : (displayDiff > STRICT_COMPARE_EPS ? 'oleg' : 'tie');
         categoryAverages[key] = {
           maxim: maximAvg,
           oleg: olegAvg,
           ai: aiAvg,
-          difference: Math.abs(diff),
-          signedDiff: diff, // положительное = Максим выше, отрицательное = Олег выше
-          winner: diff >= 0.05 ? 'maxim' : (diff <= -0.05 ? 'oleg' : 'tie')
+          difference: Math.abs(displayDiff),
+          signedDiff: displayDiff, // положительное = Максим выше, отрицательное = Олег выше (на отображаемой точности)
+          winner
         };
       }
     });
 
     // Группировка по строгости (кто ставит НИЖЕ - тот строже)
-    // signedDiff = maximAvg - olegAvg
+    // signedDiff = maximAvg - olegAvg (на отображаемой точности)
     // signedDiff < 0 → Максим ставит ниже → Максим строже
     // signedDiff > 0 → Олег ставит ниже → Олег строже
-    // Порог 0.05 чтобы минимальные различия тоже учитывались
     const maximStricterIn = Object.entries(categoryAverages)
-      .filter(([_, data]) => data.signedDiff <= -0.05)
+      .filter(([_, data]) => data.winner === 'maxim')
       .map(([key]) => CATEGORIES[key].name);
 
     const olegStricterIn = Object.entries(categoryAverages)
-      .filter(([_, data]) => data.signedDiff >= 0.05)
+      .filter(([_, data]) => data.winner === 'oleg')
       .map(([key]) => CATEGORIES[key].name);
 
     // Единодушны (разница < 0.5)
@@ -380,10 +385,8 @@ const HeadToHeadPage = () => {
             const catAvg = statistics.categoryAverages[key];
             if (!catAvg) return null;
             
-            // signedDiff < 0 = Максим строже, signedDiff > 0 = Олег строже
-            // Порог 0.05 чтобы минимальные различия тоже учитывались
-            const stricter = catAvg.signedDiff <= -0.05 ? 'Максим' : 
-                            catAvg.signedDiff >= 0.05 ? 'Олег' : null;
+            const stricter = catAvg.winner === 'maxim' ? 'Максим' :
+                            catAvg.winner === 'oleg' ? 'Олег' : null;
             const isMaxim = stricter === 'Максим';
             const isOleg = stricter === 'Олег';
             

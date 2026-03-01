@@ -1,0 +1,208 @@
+.favorite-poems-page {
+  width: 100%;
+}
+
+.favorite-poems-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.likes-tabs-controls {
+  width: 100%;
+}
+
+.favorite-poems-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  margin-left: auto;
+}
+
+.favorite-poems-tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.favorite-poems-tabs .sort-btn {
+  min-width: auto;
+}
+
+.favorite-poems-toggle input {
+  display: none;
+}
+
+.favorite-poems-toggle .toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(199, 163, 107, 0.15);
+}
+
+.favorite-poems-toggle .toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.favorite-poems-toggle input:checked + .toggle-slider {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.favorite-poems-toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+.favorite-poems-toggle .toggle-label {
+  font-size: 0.9rem;
+  color: var(--ink-light);
+}
+
+.favorite-poems-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.favorite-poem-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #283038;
+  border-radius: 12px; /* более квадратные углы, чем в мокапе */
+  padding: 0.7rem 0.8rem;
+  min-height: 88px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.favorite-poem-card.poem-clickable {
+  cursor: pointer;
+}
+
+.favorite-poem-card:hover {
+  transform: translateY(-1px);
+  background: #323c47;
+}
+
+.favorite-poem-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  /* border: 2px solid rgba(255, 255, 255, 0.15); */
+}
+
+.favorite-poem-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favorite-poem-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.favorite-poem-title {
+  color: #f2f4f8;
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-decoration: none;
+  line-height: 1.2;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.favorite-poem-title:hover {
+  text-decoration: underline;
+}
+
+.favorite-poem-meta {
+  color: #a8b2c0;
+  font-size: 0.75rem;
+  margin-top: 0.18rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favorite-poem-poet-link {
+  color: #a8b2c0;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.favorite-poem-poet-link:hover {
+  color: #c7d2df;
+  text-decoration: underline;
+}
+
+.favorite-poems-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 220px;
+  color: var(--ink-light);
+}
+
+.favorite-poems-empty .empty-icon {
+  width: 60px;
+  opacity: 0.6;
+}
+
+body[data-theme="letterboxd"] .favorite-poems-toggle .toggle-slider {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+}
+
+body[data-theme="letterboxd"] .favorite-poems-toggle input:checked + .toggle-slider {
+  background: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .favorite-poems-toggle .toggle-label {
+  color: #b3b3b3;
+}
+
+@media (max-width: 800px) {
+  .favorite-poems-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .favorite-poems-toggle {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1280px) {
+  .favorite-poems-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .favorite-poems-grid {
+    grid-template-columns: 1fr;
+  }
+}

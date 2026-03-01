@@ -98,7 +98,7 @@
   cursor: pointer;
   user-select: none;
   padding-left: 1.5rem;
-  border-left: 1px solid rgba(199, 163, 107, 0.2);
+  /* border-left: 1px solid rgba(199, 163, 107, 0.2); */
 }
 
 .ratings-toggle input {
@@ -206,8 +206,8 @@ body[data-theme="letterboxd"] .generating-message {
 
 .poets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
   margin-top: 2rem;
 }
 
@@ -242,12 +242,6 @@ body[data-theme="letterboxd"] .generating-message {
 .poet-card.animate-in:nth-child(12) { animation-delay: 0.6s; }
 .poet-card.animate-in:nth-child(n+13) { animation-delay: 0.65s; } */
 
-.poet-card:hover {
-  /* transform: translateY(-8px) scale(1.02); */
-  transform: scale(1.1);
-  /* box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.12); */
-}
-
 .poet-card-image {
   width: 100%;
   height: 100%;
@@ -263,7 +257,7 @@ body[data-theme="letterboxd"] .generating-message {
 }
 
 .poet-card:hover .poet-card-image img {
-  transform: scale(1.08);
+  transform: scale(1.1);
 }
 
 /* Градиентный оверлей снизу для читаемости текста */
@@ -272,7 +266,7 @@ body[data-theme="letterboxd"] .generating-message {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 3rem 1rem 1.3rem 1rem;
+  padding: 3rem 0.75rem 1rem 0.75rem;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
   display: flex;
   align-items: flex-end;
@@ -292,11 +286,11 @@ body[data-theme="letterboxd"] .generating-message {
   font-size: 0.8rem;
   font-weight: 400;
   display: block;
-  margin-bottom: 0.1rem;
+  /* margin-bottom: 0.1rem; */
 }
 
 .poet-card-name .last-name {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   display: block;
 
@@ -305,13 +299,13 @@ body[data-theme="letterboxd"] .generating-message {
 /* Рейтинг поэта - бейдж в верхнем правом углу */
 .poet-card-rating {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.4rem;
+  right: 0.4rem;
   background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   border-radius: 4px;
   backdrop-filter: blur(4px);
   z-index: 15;
@@ -827,9 +821,6 @@ body[data-theme="letterboxd"] .sorting-controls span {
   color: #b3b3b3;
 }
 
-body[data-theme="letterboxd"] .ratings-toggle {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-}
 
 body[data-theme="letterboxd"] .ratings-toggle .toggle-slider {
   background: rgba(255, 255, 255, 0.05);
@@ -977,11 +968,6 @@ body[data-theme="letterboxd"] .poet-card {
   /* border: 1px solid rgba(255, 255, 255, 0.1); */
 }
 
-body[data-theme="letterboxd"] .poet-card:hover {
-  transform: scale(1.07);
-  /* box-shadow: 0 8px 24px rgba(229, 9, 20, 0.3); */
-}
-
 body[data-theme="letterboxd"] .poet-card-rating {
   background: rgba(20, 24, 28, 0.85);
 }
@@ -999,7 +985,6 @@ body[data-theme="letterboxd"] .empty-state {
 
 .gantt-timeline {
   margin-top: 2rem;
-  padding-bottom: 3rem;
 }
 
 /* Легенда эпох */
@@ -1076,13 +1061,13 @@ body[data-theme="letterboxd"] .empty-state {
   color: #8899a6;
 }
 
-/* Фоновые полосы эпох */
+/* Фоновые полосы эпох — внутри gantt-h-inner, занимают всю его область */
 .epochs-background {
   position: absolute;
-  left: 50px;
-  right: 25px;
-  top: 30px;
-  bottom: 30px;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: 0;
   z-index: -1;
   pointer-events: none;
 }
@@ -1103,12 +1088,12 @@ body[data-theme="letterboxd"] .empty-state {
   z-index: -1;
 }
 
-/* Цветная линия эпох справа */
+/* Цветная линия эпох — внутри gantt-right-panel */
 .epochs-line {
   position: absolute;
-  right: 25px;
-  top: 30px;
-  bottom: 30px;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 2px;
   z-index: 2;
   pointer-events: none;
@@ -1134,20 +1119,20 @@ body[data-theme="letterboxd"] .empty-state {
   white-space: nowrap;
 }
 
-/* Названия эпох справа */
+/* Названия эпох — внутри gantt-right-panel */
 .epochs-labels {
   position: absolute;
-  right: 25px;
-  top: 30px;
-  bottom: 30px;
-  width: 20px;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 34px;
   z-index: 2;
   pointer-events: none;
 }
 
 .epoch-label {
   position: absolute;
-  left: 28px;
+  left: 5px;
   transform: translateY(-50%);
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -1163,11 +1148,82 @@ body[data-theme="letterboxd"] .empty-state {
   position: relative;
   height: var(--total-height, 800px);
   min-height: 500px;
-  padding-top: 30px; /* Отступ сверху чтобы первый год был виден */
-  padding-bottom: 30px;
 }
 
-/* Ось времени слева */
+.timeline-lifespan-top {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.timeline-lifespan-column {
+  background: rgba(32, 40, 48, 0.95);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.timeline-lifespan-title {
+  margin: 0 0 0.55rem 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #d7dfeb;
+}
+
+.timeline-lifespan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.timeline-lifespan-item {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.45rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #e8edf4;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.timeline-lifespan-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.timeline-lifespan-rank {
+  color: #aeb8c8;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.timeline-lifespan-name {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline-lifespan-years {
+  font-size: 0.75rem;
+  color: #b9c4d5;
+}
+
+.timeline-lifespan-empty {
+  margin: 0;
+  color: #9aa6ba;
+  font-size: 0.78rem;
+}
+
+/* Ось времени слева — абсолютно позиционирована, не скроллится */
 .gantt-axis {
   position: absolute;
   left: 0;
@@ -1175,6 +1231,61 @@ body[data-theme="letterboxd"] .empty-state {
   bottom: 30px;
   width: 50px;
   z-index: 10;
+}
+
+@media (max-width: 900px) {
+  .timeline-lifespan-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Правая панель (линия эпох + подписи) — абсолютно позиционирована, не скроллится */
+.gantt-right-panel {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  bottom: 30px;
+  width: 34px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* Средняя область — только она скроллится горизонтально */
+.gantt-h-scroll {
+  position: absolute;
+  left: 50px;
+  right: 34px;
+  top: 12px; /* 30px - 18px: буфер под выходящий вверх аватар */
+  bottom: 30px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(120, 130, 150, 0.65) rgba(0, 0, 0, 0.12);
+}
+
+.gantt-h-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.gantt-h-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+
+.gantt-h-scroll::-webkit-scrollbar-thumb {
+  background: rgba(120, 130, 150, 0.7);
+  border-radius: 999px;
+}
+
+.gantt-h-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 130, 150, 0.9);
+}
+
+/* Внутренний блок с поэтами — ширина задаётся явно через style */
+.gantt-h-inner {
+  position: relative;
+  height: 100%;
+  min-width: 100%;
 }
 
 /* Правая ось */
@@ -1250,13 +1361,13 @@ body[data-theme="letterboxd"] .empty-state {
   opacity: 0.5;
 }
 
-/* Сетка */
+/* Сетка — внутри gantt-h-inner */
 .gantt-grid {
   position: absolute;
-  left: 50px;
-  right: 25px;
-  top: 30px;
-  bottom: 30px;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: 0;
   pointer-events: none;
   z-index: 0;
 }
@@ -1274,13 +1385,13 @@ body[data-theme="letterboxd"] .empty-state {
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Область с поэтами */
+/* Область с поэтами — внутри gantt-h-inner */
 .gantt-poets-area {
   position: absolute;
   left: 0;
   right: 0;
-  top: 30px;
-  bottom: 30px;
+  top: 18px;
+  bottom: 0;
   z-index: 5;
 }
 
@@ -1407,16 +1518,19 @@ body[data-theme="letterboxd"] .empty-state {
   box-shadow: 0 0 8px rgba(157, 68, 81, 0.5);
 }
 
-/* Tooltip — справа от аватара, по центру */
+/* Tooltip — сверху над аватаром, по центру */
 .gantt-tooltip {
   position: absolute;
-  top: -18px;
-  left: 56px; /* Правее от фото */
+  bottom: calc(100% + 10px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   background: var(--ink);
   color: white;
   padding: 10px 14px;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: none;
   opacity: 0;
   visibility: hidden;
   transition: all 0.2s ease;
@@ -1429,16 +1543,41 @@ body[data-theme="letterboxd"] .empty-state {
 .gantt-tooltip::before {
   content: '';
   position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--ink);
+}
+
+.gantt-poet:hover .gantt-tooltip {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip в отдельном верхнем слое (не влияет на ширину/скролл таймлайна) */
+.gantt-tooltip-layer {
+  position: fixed;
+  background: var(--ink);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 3000;
+  min-width: 100px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.gantt-tooltip-layer::before {
+  content: '';
+  position: absolute;
   left: -6px;
   top: 50%;
   transform: translateY(-50%);
   border: 6px solid transparent;
   border-right-color: var(--ink);
-}
-
-.gantt-poet:hover .gantt-tooltip {
-  opacity: 1;
-  visibility: visible;
 }
 
 .gantt-tooltip-name {
@@ -1712,7 +1851,17 @@ body[data-theme="letterboxd"] .gantt-tooltip {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
+body[data-theme="letterboxd"] .gantt-tooltip-layer {
+  background: #1a1f25;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
 body[data-theme="letterboxd"] .gantt-tooltip::before {
+  display: none;
+}
+
+body[data-theme="letterboxd"] .gantt-tooltip-layer::before {
   display: none;
 }
 
