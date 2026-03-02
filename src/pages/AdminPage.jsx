@@ -15,9 +15,13 @@ const AdminPage = () => {
     overallDuelWinners,
     aiChoiceTiebreaker,
     likes,
+    tournaments,
     updatePoet,
     updatePoemStatus, 
     deletePoem: deletePoemFunc, 
+    createTournament,
+    updateTournament,
+    deleteTournament,
     deletePoet,
     calculateScore,
     CATEGORIES,
@@ -41,6 +45,27 @@ const AdminPage = () => {
   // Состояние настроек для бэкапа
   const [garlandSettings, setGarlandSettings] = useState(null);
   const [overallRankingSettings, setOverallRankingSettings] = useState(null);
+
+  // Турниры
+  const badgeKeyFromFilename = (value = '') => value.replace(/\.png$/i, '').trim();
+  const badgeFilenameFromKey = (value = '') => {
+    const key = badgeKeyFromFilename(value);
+    return key ? `${key}.png` : '';
+  };
+  const [newTournamentName, setNewTournamentName] = useState('');
+  const [newTournamentBadge, setNewTournamentBadge] = useState('');
+  const [newTournamentSize, setNewTournamentSize] = useState(16);
+  const [newTournamentPrompt, setNewTournamentPrompt] = useState('');
+  const [tournamentError, setTournamentError] = useState('');
+  const [showTournamentCreateForm, setShowTournamentCreateForm] = useState(false);
+  const [editingTournamentId, setEditingTournamentId] = useState(null);
+  const [editingTournamentData, setEditingTournamentData] = useState({
+    name: '',
+    badge: '',
+    size: 16,
+    aiPromptTemplate: ''
+  });
+  const [poetSearchQuery, setPoetSearchQuery] = useState('');
   
   // Загружаем настройки из Firebase
   useEffect(() => {
@@ -114,6 +139,91 @@ const AdminPage = () => {
     setJumpAnimationEnabled(newState);
     const settingsRef = ref(database, 'settings/overallRanking');
     await set(settingsRef, { jumpAnimationEnabled: newState });
+  };
+
+  const handleCreateTournament = async () => {
+    const name = newTournamentName.trim();
+    if (!name) {
+      setTournamentError('Введите название турнира');
+      return;
+    }
+
+    try {
+      await createTournament({
+        name,
+        badge: badgeFilenameFromKey(newTournamentBadge),
+        size: newTournamentSize,
+        aiPromptTemplate: newTournamentPrompt
+      });
+      setNewTournamentName('');
+      setNewTournamentPrompt('');
+      setNewTournamentSize(16);
+      setNewTournamentBadge('');
+      setTournamentError('');
+      setShowTournamentCreateForm(false);
+    } catch (error) {
+      console.error('Ошибка создания турнира:', error);
+      setTournamentError('Не удалось создать турнир');
+    }
+  };
+
+  const startEditTournament = (tournament) => {
+    setEditingTournamentId(tournament.id);
+    setEditingTournamentData({
+      name: tournament.name || '',
+      badge: badgeKeyFromFilename(tournament.badge || ''),
+      size: tournament.size === 32 ? 32 : 16,
+      aiPromptTemplate: tournament.aiPromptTemplate || ''
+    });
+    setTournamentError('');
+  };
+
+  const cancelEditTournament = () => {
+    setEditingTournamentId(null);
+    setEditingTournamentData({
+      name: '',
+      badge: '',
+      size: 16,
+      aiPromptTemplate: ''
+    });
+    setTournamentError('');
+  };
+
+  const saveTournamentEdit = async () => {
+    if (!editingTournamentId) return;
+    const name = editingTournamentData.name.trim();
+    if (!name) {
+      setTournamentError('Название турнира не может быть пустым');
+      return;
+    }
+
+    try {
+      await updateTournament(editingTournamentId, {
+        name,
+        badge: badgeFilenameFromKey(editingTournamentData.badge),
+        size: editingTournamentData.size,
+        aiPromptTemplate: editingTournamentData.aiPromptTemplate
+      });
+      cancelEditTournament();
+    } catch (error) {
+      console.error('Ошибка сохранения турнира:', error);
+      setTournamentError('Не удалось сохранить турнир');
+    }
+  };
+
+  const handleDeleteTournament = async (tournamentId, tournamentName) => {
+    const confirmDelete = window.confirm(`Удалить турнир "${tournamentName}"?`);
+    if (!confirmDelete) return;
+
+    try {
+      await deleteTournament(tournamentId);
+      if (editingTournamentId === tournamentId) {
+        cancelEditTournament();
+      }
+    } catch (error) {
+      console.error('Ошибка удаления турнира:', error);
+      setTournamentError('Не удалось удалить турнир');
+    }
   };
   
   // Инициализация редактируемых коэффициентов
@@ -387,6 +497,7 @@ const AdminPage = () => {
         version: '2.0', // Обновляем версию для поддержки настроек
         exportDate: new Date().toISOString(),
         poets,
+        tournaments,
         ratings,
         categoryLeaders,
         overallDuelWinners,
@@ -436,6 +547,7 @@ const AdminPage = () => {
         const confirmed = window.confirm(
           `Вы собираетесь загрузить бэкап от ${new Date(backupData.exportDate).toLocaleDateString()}.\n\n` +
           `Поэтов в бэкапе: ${backupData.poets.length}\n\n` +
+          `Турниров в бэкапе: ${(backupData.tournaments || []).length}\n\n` +
           `Это заменит все текущие данные. Продолжить?`
         );
         
@@ -467,6 +579,17 @@ const AdminPage = () => {
         
         if (backupData.likes) {
           await set(ref(database, 'likes'), backupData.likes);
+        }
+
+        if (backupData.tournaments) {
+          await set(
+            ref(database, 'tournaments'),
+            backupData.tournaments.reduce((acc, tournament) => {
+              acc[tournament.id] = { ...tournament };
+              delete acc[tournament.id].id;
+              return acc;
+            }, {})
+          );
         }
         
         // Восстановление настроек (для бэкапов версии 2.0+)
@@ -942,6 +1065,12 @@ Note: В конкурсе будут участвовать все выдающ�
       alert('Ошибка при сохранении');
     }
   };
+
+  const sortedPoets = [...poets].sort((a, b) => b.id.localeCompare(a.id));
+  const normalizedPoetSearch = poetSearchQuery.trim().toLowerCase();
+  const visiblePoets = normalizedPoetSearch
+    ? sortedPoets.filter((poet) => poet.name?.toLowerCase().includes(normalizedPoetSearch))
+    : sortedPoets.slice(0, 4);
   
   return (
     <div className="admin-page">
@@ -982,24 +1111,30 @@ Note: В конкурсе будут участвовать все выдающ�
         {/* Список поэтов */}
         <div className="admin-section">
           <h2 className="section-title">Поэты</h2>
+          <div className="poets-search-row">
+            <input
+              type="text"
+              className="form-input poet-search-input"
+              placeholder="Поиск поэтов для редактирования..."
+              value={poetSearchQuery}
+              onChange={(e) => setPoetSearchQuery(e.target.value)}
+            />
+          </div>
           <div className="poets-list">
-            {[...poets].sort((a, b) => {
-              // Сортировка по ID (Firebase push keys хронологические — новые сверху)
-              return b.id.localeCompare(a.id);
-            }).map(poet => (
+            {visiblePoets.map(poet => (
               <div
                 key={poet.id}
                 className={`poet-item ${selectedPoet?.id === poet.id ? 'active' : ''}`}
               >
                 <div className="poet-item-main" onClick={() => setSelectedPoet(poet)}>
-                  <img 
+                  {/* <img 
                     src={poet.imageUrl} 
                     alt={poet.name}
                     className="poet-item-avatar"
                     style={{ 
                       objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
                     }}
-                  />
+                  /> */}
                   <span className="poet-item-name">
                     {(() => {
                       const parts = poet.name.split(' ');
@@ -1082,6 +1217,9 @@ Note: В конкурсе будут участвовать все выдающ�
                 </div>
               </div>
             ))}
+            {visiblePoets.length === 0 && (
+              <p className="empty-message">Ничего не найдено по запросу</p>
+            )}
           </div>
         </div>
         
@@ -1145,6 +1283,182 @@ Note: В конкурсе будут участвовать все выдающ�
                 Показать претендентов
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Турниры */}
+        <div className="admin-section settings-section">
+          <h2 className="section-title">Турниры</h2>
+          <p className="section-hint">Создание и управление турнирами (16 или 32 участника)</p>
+
+          <div className="settings-inline">
+            <button
+              className="btn-header-action btn-small"
+              onClick={() => {
+                setShowTournamentCreateForm((prev) => !prev);
+                setTournamentError('');
+              }}
+            >
+              {showTournamentCreateForm ? 'Скрыть форму' : 'Создать турнир'}
+            </button>
+          </div>
+
+          {showTournamentCreateForm && (
+            <div className="tournament-create-panel">
+              <div className="tournament-create-grid">
+                <div className="form-field">
+                  <label htmlFor="tournament-name">Название турнира</label>
+                  <input
+                    id="tournament-name"
+                    type="text"
+                    value={newTournamentName}
+                    onChange={(e) => {
+                      setNewTournamentName(e.target.value);
+                      setTournamentError('');
+                    }}
+                    className="form-input"
+                    placeholder="Например: Турнир по музыке"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="tournament-badge">Награда (имя файла без .png)</label>
+                  <input
+                    id="tournament-badge"
+                    type="text"
+                    value={newTournamentBadge}
+                    onChange={(e) => setNewTournamentBadge(e.target.value)}
+                    className="form-input"
+                    placeholder="music-tournament"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="tournament-size">Размер сетки</label>
+                  <select
+                    id="tournament-size"
+                    value={newTournamentSize}
+                    onChange={(e) => setNewTournamentSize(Number(e.target.value) === 32 ? 32 : 16)}
+                    className="form-input"
+                  >
+                    <option value={16}>16 участников</option>
+                    <option value={32}>32 участника</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="tournament-prompt">Промпт для AI (шаблон)</label>
+                <textarea
+                  id="tournament-prompt"
+                  value={newTournamentPrompt}
+                  onChange={(e) => setNewTournamentPrompt(e.target.value)}
+                  className="form-input tournament-prompt-input"
+                  placeholder={'Используйте плейсхолдеры:\n{{poetA_name}}, {{poetB_name}}, {{poetA_poems}}, {{poetB_poems}}'}
+                />
+              </div>
+
+              <div className="settings-inline">
+                <button className="btn-header-action btn-small" onClick={handleCreateTournament}>
+                  Создать
+                </button>
+                <button
+                  className="toggle-btn"
+                  onClick={() => {
+                    setShowTournamentCreateForm(false);
+                    setTournamentError('');
+                  }}
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
+
+          {tournamentError && <div className="coefficients-error">{tournamentError}</div>}
+
+          <div className="tournaments-list">
+            {tournaments.length === 0 ? (
+              <p className="empty-message">Пока нет созданных турниров</p>
+            ) : (
+              tournaments.map((tournament) => {
+                const isEditing = editingTournamentId === tournament.id;
+
+                if (isEditing) {
+                  return (
+                    <div key={tournament.id} className="tournament-item tournament-item-edit">
+                      <div className="tournament-create-grid">
+                        <div className="form-field">
+                          <label>Название</label>
+                          <input
+                            type="text"
+                            value={editingTournamentData.name}
+                            onChange={(e) => setEditingTournamentData((prev) => ({ ...prev, name: e.target.value }))}
+                            className="form-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>Badge (без .png)</label>
+                          <input
+                            type="text"
+                            value={editingTournamentData.badge}
+                            onChange={(e) => setEditingTournamentData((prev) => ({ ...prev, badge: e.target.value }))}
+                            className="form-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>Размер</label>
+                          <select
+                            value={editingTournamentData.size}
+                            onChange={(e) => setEditingTournamentData((prev) => ({ ...prev, size: Number(e.target.value) === 32 ? 32 : 16 }))}
+                            className="form-input"
+                          >
+                            <option value={16}>16</option>
+                            <option value={32}>32</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-field">
+                        <label>Промпт AI</label>
+                        <textarea
+                          value={editingTournamentData.aiPromptTemplate}
+                          onChange={(e) => setEditingTournamentData((prev) => ({ ...prev, aiPromptTemplate: e.target.value }))}
+                          className="form-input tournament-prompt-input"
+                        />
+                      </div>
+
+                      <div className="settings-inline">
+                        <button className="toggle-btn active" onClick={saveTournamentEdit}>Сохранить</button>
+                        <button className="toggle-btn" onClick={cancelEditTournament}>Отмена</button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={tournament.id} className="tournament-item">
+                    <div className="tournament-item-main">
+                      <div className="tournament-item-title">{tournament.name}</div>
+                      <div className="tournament-item-meta">
+                        <span>{tournament.size === 32 ? '32 участника' : '16 участников'}</span>
+                        <span>Badge: {badgeKeyFromFilename(tournament.badge || '') || '—'}</span>
+                        <span>Статус: {tournament.status || 'draft'}</span>
+                      </div>
+                    </div>
+                    <div className="settings-inline">
+                      <button className="toggle-btn" onClick={() => startEditTournament(tournament)}>Редактировать</button>
+                      <button
+                        className="toggle-btn"
+                        onClick={() => handleDeleteTournament(tournament.id, tournament.name)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
         

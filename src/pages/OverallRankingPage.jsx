@@ -21,6 +21,7 @@ const OverallRankingPage = () => {
     categoryLeaders: rawCategoryLeaders, 
     overallDuelWinners: rawOverallDuelWinners, 
     aiChoiceTiebreaker,
+    tournaments,
     isLoading, 
     getOverallRankings, 
     getCategoryRankings, 
@@ -59,6 +60,12 @@ const OverallRankingPage = () => {
   // Firebase уже оптимизирован и не будет создавать новые объекты если данные не изменились
   const categoryLeaders = rawCategoryLeaders || { maxim: {}, oleg: {} };
   const overallDuelWinners = rawOverallDuelWinners || {};
+  const tournamentAwards = useMemo(() => {
+    if (!Array.isArray(tournaments)) return [];
+    return tournaments.filter((tournament) =>
+      Boolean(tournament?.winnerPoetId) && Boolean(tournament?.badge)
+    );
+  }, [tournaments]);
   
   // Найти самого последнего оцененного поэта за последние 24 часа
   const getNewestPoet = () => {
@@ -970,6 +977,22 @@ const OverallRankingPage = () => {
           className="winner-badge loser-badge"
         />
       );
+    }
+
+    // Турнирные награды - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && tournamentAwards.length > 0) {
+      tournamentAwards.forEach((tournament) => {
+        if (tournament.winnerPoetId === poetId) {
+          badges.push(
+            <img
+              key={`tournament-${tournament.id}`}
+              src={`/images/badges/${tournament.badge}`}
+              alt={tournament.name || 'Турнирная награда'}
+              className="winner-badge"
+            />
+          );
+        }
+      });
     }
     
     return badges.length > 0 ? <div className="winner-badges">{badges}</div> : null;

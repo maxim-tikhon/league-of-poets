@@ -67,6 +67,9 @@ const Layout = () => {
             <NavLink to="/awards" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Награды
             </NavLink>
+            <NavLink to="/tournaments" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Турниры
+            </NavLink>
             <NavLink to="/likes" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Лайки
             </NavLink>

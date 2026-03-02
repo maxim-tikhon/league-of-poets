@@ -12,7 +12,8 @@ const AwardsPage = () => {
     calculateAverageScore,
     categoryLeaders,
     overallDuelWinners,
-    aiChoiceTiebreaker
+    aiChoiceTiebreaker,
+    tournaments
   } = usePoets();
   
   // Получаем текущего пользователя
@@ -414,6 +415,18 @@ const AwardsPage = () => {
     { key: 'last', name: 'Худший поэт', badge: 'last.png' }
   ];
 
+  const tournamentAwards = useMemo(() => {
+    if (!Array.isArray(tournaments)) return [];
+    return tournaments
+      .filter((tournament) => Boolean(tournament?.winnerPoetId) && Boolean(tournament?.badge))
+      .map((tournament) => ({
+        key: `tournament-${tournament.id}`,
+        name: tournament.name || 'Турнир',
+        badge: tournament.badge,
+        winners: [tournament.winnerPoetId]
+      }));
+  }, [tournaments]);
+
   // Получение победителей для текущей вкладки
   const getWinnersForAward = (awardKey) => {
     if (activeTab === 'overall') {
@@ -436,7 +449,9 @@ const AwardsPage = () => {
     }
   };
 
-  const currentAwards = activeTab === 'overall' ? overallAwards : personalAwards;
+  const currentAwards = activeTab === 'overall'
+    ? [...overallAwards, ...tournamentAwards]
+    : personalAwards;
   
   // Имя другого пользователя для вкладки (родительный падеж)
   const otherUserNameGenitive = otherUser === 'maxim' ? 'Максима' : 'Олега';
@@ -470,10 +485,10 @@ const AwardsPage = () => {
       <div className="awards-list-new">
         <div className="award-winners">
           {currentAwards.map(award => 
-            renderAwardCard(award, getWinnersForAward(award.key))
+            renderAwardCard(award, award.winners || getWinnersForAward(award.key))
           ).flat().filter(Boolean)}
           
-          {currentAwards.every(award => getWinnersForAward(award.key).length === 0) && (
+          {currentAwards.every(award => (award.winners || getWinnersForAward(award.key)).length === 0) && (
             <div className="no-awards-message">
               Пока нет наград для отображения
             </div>

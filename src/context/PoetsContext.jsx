@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ref, set, update, remove, onValue, push, get } from 'firebase/database';
 import { database } from '../firebase/config';
+import { generateContent } from '../ai/gemini';
 
 const PoetsContext = createContext();
 
@@ -41,6 +42,7 @@ export const PoetsProvider = ({ children }) => {
     maxim: {},
     oleg: {}
   });
+  const [tournaments, setTournaments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Коэффициенты категорий (загружаются из Firebase)
@@ -175,6 +177,34 @@ export const PoetsProvider = ({ children }) => {
       }
     });
     
+    return () => unsubscribe();
+  }, []);
+
+  // Подписка на турниры
+  useEffect(() => {
+    const tournamentsRef = ref(database, 'tournaments');
+
+    const unsubscribe = onValue(tournamentsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        setTournaments([]);
+        return;
+      }
+
+      const tournamentsArray = Object.keys(data)
+        .map((key) => ({
+          id: key,
+          ...data[key]
+        }))
+        .sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+
+      setTournaments(tournamentsArray);
+    });
+
     return () => unsubscribe();
   }, []);
 
@@ -634,6 +664,445 @@ export const PoetsProvider = ({ children }) => {
     await remove(ref(database, `poets/${poetId}/poems/${poemId}`));
   };
 
+  // === Функции для работы с турнирами ===
+  const createTournament = async ({
+    name,
+    badge,
+    size = 16,
+    aiPromptTemplate = ''
+  }) => {
+    const tournamentsRef = ref(database, 'tournaments');
+    const newTournamentRef = push(tournamentsRef);
+    const now = new Date().toISOString();
+
+    const normalizedSize = Number(size) === 32 ? 32 : 16;
+
+    await set(newTournamentRef, {
+      name: name?.trim() || 'Новый турнир',
+      badge: badge?.trim() || '',
+      size: normalizedSize,
+      aiPromptTemplate: aiPromptTemplate?.trim() || '',
+      status: 'draft',
+      winnerPoetId: null,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    return newTournamentRef.key;
+  };
+
+  const updateTournament = async (tournamentId, updates = {}) => {
+    if (!tournamentId) throw new Error('tournamentId is required');
+
+    const payload = { ...updates };
+    if (payload.name !== undefined) payload.name = payload.name?.trim() || '';
+    if (payload.badge !== undefined) payload.badge = payload.badge?.trim() || '';
+    if (payload.aiPromptTemplate !== undefined) {
+      payload.aiPromptTemplate = payload.aiPromptTemplate?.trim() || '';
+    }
+    if (payload.size !== undefined) {
+      payload.size = Number(payload.size) === 32 ? 32 : 16;
+    }
+    payload.updatedAt = new Date().toISOString();
+
+    await update(ref(database, `tournaments/${tournamentId}`), payload);
+  };
+
+  const deleteTournament = async (tournamentId) => {
+    if (!tournamentId) throw new Error('tournamentId is required');
+    await remove(ref(database, `tournaments/${tournamentId}`));
+  };
+
+  const addTournamentParticipant = async (tournamentId, participant) => {
+    if (!tournamentId) throw new Error('tournamentId is required');
+    const tournament = tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+
+    const size = tournament.size === 32 ? 32 : 16;
+    const participantsObj = tournament.participants || {};
+    const participantsArray = Object.keys(participantsObj).map((id) => ({
+      id,
+      ...participantsObj[id]
+    }));
+
+    const usedSlots = new Set(
+      participantsArray
+        .map((p) => p.slot)
+        .filter((slot) => Number.isInteger(slot))
+    );
+
+    const freeSlots = [];
+    for (let i = 0; i < size; i += 1) {
+      if (!usedSlots.has(i)) freeSlots.push(i);
+    }
+
+    if (freeSlots.length === 0) {
+      throw new Error('No free slots in tournament');
+    }
+
+    const randomSlot = freeSlots[Math.floor(Math.random() * freeSlots.length)];
+    const participantRef = push(ref(database, `tournaments/${tournamentId}/participants`));
+    const now = new Date().toISOString();
+    await set(participantRef, {
+      poetId: participant.poetId,
+      poemIds: Array.isArray(participant.poemIds) ? participant.poemIds : [],
+      slot: randomSlot,
+      createdAt: now,
+      updatedAt: now
+    });
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: now });
+    return participantRef.key;
+  };
+
+  const updateTournamentParticipant = async (tournamentId, participantId, updates = {}) => {
+    if (!tournamentId || !participantId) throw new Error('tournamentId and participantId are required');
+    await update(ref(database, `tournaments/${tournamentId}/participants/${participantId}`), {
+      ...updates,
+      updatedAt: new Date().toISOString()
+    });
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: new Date().toISOString() });
+  };
+
+  const deleteTournamentParticipant = async (tournamentId, participantId) => {
+    if (!tournamentId || !participantId) throw new Error('tournamentId and participantId are required');
+    await remove(ref(database, `tournaments/${tournamentId}/participants/${participantId}`));
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: new Date().toISOString() });
+  };
+
+  const getParticipantBySlot = (tournament, slot) => {
+    const participantsObj = tournament?.participants || {};
+    const participantEntry = Object.entries(participantsObj).find(([, value]) => value?.slot === slot);
+    if (!participantEntry) return null;
+    return { id: participantEntry[0], ...participantEntry[1] };
+  };
+
+  const buildPoemsText = (poetId, poemIds = []) => {
+    const poet = poets.find((p) => p.id === poetId);
+    if (!poet || !poet.poems) return '—';
+    const poems = Object.entries(poet.poems)
+      .filter(([id]) => poemIds.includes(id))
+      .map(([, poem]) => poem?.title?.trim())
+      .filter(Boolean);
+    return poems.length ? poems.join('; ') : '—';
+  };
+
+  const resolveAiWinner = async (tournament, matchData) => {
+    const poetA = poets.find((p) => p.id === matchData.poetAId);
+    const poetB = poets.find((p) => p.id === matchData.poetBId);
+    if (!poetA || !poetB) return null;
+
+    const poemsA = buildPoemsText(poetA.id, matchData.poetAPoemIds || []);
+    const poemsB = buildPoemsText(poetB.id, matchData.poetBPoemIds || []);
+    const fallbackPrompt = [
+      `Выбери победителя в категории "${tournament?.name || 'Турнир'}".`,
+      `Ответ строго одним именем: "${poetA.name}" или "${poetB.name}".`,
+      `Поэт A: ${poetA.name}. Стихи: ${poemsA}.`,
+      `Поэт B: ${poetB.name}. Стихи: ${poemsB}.`
+    ].join('\n');
+
+    const template = (tournament?.aiPromptTemplate || '').trim();
+    const prompt = template
+      ? template
+          .replaceAll('{{poetA_name}}', poetA.name)
+          .replaceAll('{{poetB_name}}', poetB.name)
+          .replaceAll('{{poetA_poems}}', poemsA)
+          .replaceAll('{{poetB_poems}}', poemsB)
+      : fallbackPrompt;
+
+    try {
+      const response = await generateContent(prompt, 0.1);
+      console.log('[Tournament AI] ── Raw response ──\n', response);
+      const text = String(response || '');
+
+      // Try JSON with winner: "A" or "B"
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          console.log('[Tournament AI] JSON block found:', jsonMatch[0]);
+          const parsed = JSON.parse(jsonMatch[0]);
+          console.log('[Tournament AI] Parsed JSON:', parsed);
+          const w = String(parsed.winner || '').trim().toUpperCase();
+          const reason = parsed.reason ? String(parsed.reason).trim() : null;
+          console.log('[Tournament AI] winner field:', w, '| reason:', reason);
+          if (w === 'A') { console.log('[Tournament AI] → Winner A:', poetA.name); return { winnerId: poetA.id, reason }; }
+          if (w === 'B') { console.log('[Tournament AI] → Winner B:', poetB.name); return { winnerId: poetB.id, reason }; }
+          console.log('[Tournament AI] winner field not A/B, falling through');
+        } else {
+          console.log('[Tournament AI] No JSON block found in response');
+        }
+      } catch (parseError) {
+        console.log('[Tournament AI] JSON parse error:', parseError);
+      }
+
+      // Fall back to name-based matching
+      const lower = text.toLowerCase();
+      console.log('[Tournament AI] Trying name match. poetA:', poetA.name, '| poetB:', poetB.name);
+      if (lower.includes(poetA.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetA'); return { winnerId: poetA.id, reason: null }; }
+      if (lower.includes(poetB.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetB'); return { winnerId: poetB.id, reason: null }; }
+      console.log('[Tournament AI] No name match found');
+    } catch (error) {
+      console.log('[Tournament AI] generateContent error:', error);
+    }
+    const fallbackWinner = Math.random() < 0.5 ? poetA.id : poetB.id;
+    console.log('[Tournament AI] Fallback winner used:', fallbackWinner);
+    return { winnerId: fallbackWinner, reason: null };
+  };
+
+  const getMatchPath = (match) =>
+    match.type === 'final'
+      ? 'finalMatch'
+      : `rounds/${match.roundIndex}/${match.side}/${match.nodeIndex}`;
+
+  const buildMatchData = (tournament, match) => {
+    const size = tournament.size === 32 ? 32 : 16;
+    const sideSize = size / 2;
+
+    if (match.type === 'final') {
+      const finalData = tournament.final || {};
+      return {
+        poetAId: finalData.poetAId || null,
+        poetBId: finalData.poetBId || null,
+        poetAPoemIds: finalData.poetAPoemIds || [],
+        poetBPoemIds: finalData.poetBPoemIds || [],
+        votes: {},
+        status: 'active',
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    const existing = tournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex];
+    if (match.roundIndex > 0) {
+      return existing || null;
+    }
+
+    const baseSlot = match.side === 'left' ? 0 : sideSize;
+    const firstSlot = baseSlot + match.nodeIndex * 2;
+    const p1 = getParticipantBySlot(tournament, firstSlot);
+    const p2 = getParticipantBySlot(tournament, firstSlot + 1);
+
+    return {
+      poetAId: p1?.poetId || null,
+      poetBId: p2?.poetId || null,
+      poetAPoemIds: p1?.poemIds || [],
+      poetBPoemIds: p2?.poemIds || [],
+      votes: existing?.votes || {},
+      status: existing?.status || 'active',
+      updatedAt: new Date().toISOString()
+    };
+  };
+
+  const ensureTournamentMatch = async (tournamentId, match, options = {}) => {
+    const { waitForAi = false } = options;
+    if (!tournamentId || !match) throw new Error('tournamentId and match are required');
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) throw new Error('Tournament not found');
+
+    const path = getMatchPath(match);
+    const existing = match.type === 'final'
+      ? (tournament.finalMatch || null)
+      : (tournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex] || null);
+
+    const built = buildMatchData(tournament, match);
+    if (!built || !built.poetAId || !built.poetBId) {
+      throw new Error('Match is not ready: two opponents required');
+    }
+
+    const payload = existing ? { ...existing } : built;
+    if (!payload.votes) payload.votes = {};
+
+    if (!existing) {
+      await set(ref(database, `tournaments/${tournamentId}/${path}`), payload);
+    }
+
+    const aiTask = async () => {
+      if (payload.votes.ai) return;
+      const result = await resolveAiWinner(tournament, payload);
+      if (result?.winnerId) {
+        console.log('[Tournament AI] Winner:', result.winnerId, result.reason ? `| Reason: ${result.reason}` : '');
+        const aiUpdate = { 'votes/ai': result.winnerId, updatedAt: new Date().toISOString() };
+        if (result.reason) aiUpdate['votes/aiReason'] = result.reason;
+        await update(ref(database, `tournaments/${tournamentId}/${path}`), aiUpdate);
+        await settleTournamentMatchIfReady(tournamentId, match);
+      }
+    };
+
+    if (waitForAi) {
+      await aiTask();
+    } else {
+      aiTask().catch(() => {});
+    }
+  };
+
+  const settleTournamentMatchIfReady = async (tournamentId, match) => {
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) return;
+
+    const matchPath = getMatchPath(match);
+    const matchData = match.type === 'final'
+      ? tournament.finalMatch
+      : tournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex];
+    if (!matchData || !matchData.poetAId || !matchData.poetBId) return;
+
+    const votes = matchData.votes || {};
+    if (!votes.maxim || !votes.oleg || !votes.ai) return;
+    if (matchData.winnerPoetId) return;
+
+    const counts = {};
+    [votes.maxim, votes.oleg, votes.ai].forEach((id) => {
+      counts[id] = (counts[id] || 0) + 1;
+    });
+    let winnerPoetId = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (!winnerPoetId) winnerPoetId = votes.ai || matchData.poetAId;
+
+    const winnerPoemIds =
+      winnerPoetId === matchData.poetAId
+        ? (matchData.poetAPoemIds || [])
+        : (matchData.poetBPoemIds || []);
+
+    await update(ref(database, `tournaments/${tournamentId}/${matchPath}`), {
+      winnerPoetId,
+      status: 'finished',
+      finishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    const size = tournament.size === 32 ? 32 : 16;
+    const roundsPerSide = Math.log2(size / 2);
+
+    if (match.type === 'final') {
+      await update(ref(database, `tournaments/${tournamentId}`), {
+        winnerPoetId,
+        status: 'finished',
+        finishedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    if (match.roundIndex < roundsPerSide - 1) {
+      const nextRoundIndex = match.roundIndex + 1;
+      const nextNodeIndex = Math.floor(match.nodeIndex / 2);
+      const isUpper = match.nodeIndex % 2 === 0;
+      const fieldPoet = isUpper ? 'poetAId' : 'poetBId';
+      const fieldPoems = isUpper ? 'poetAPoemIds' : 'poetBPoemIds';
+      const nextPath = `tournaments/${tournamentId}/rounds/${nextRoundIndex}/${match.side}/${nextNodeIndex}`;
+      await update(ref(database, nextPath), {
+        [fieldPoet]: winnerPoetId,
+        [fieldPoems]: winnerPoemIds,
+        status: 'active',
+        updatedAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const finalFieldPoet = match.side === 'left' ? 'poetAId' : 'poetBId';
+    const finalFieldPoems = match.side === 'left' ? 'poetAPoemIds' : 'poetBPoemIds';
+    await update(ref(database, `tournaments/${tournamentId}/final`), {
+      [finalFieldPoet]: winnerPoetId,
+      [finalFieldPoems]: winnerPoemIds,
+      updatedAt: new Date().toISOString()
+    });
+  };
+
+  const submitTournamentVote = async (tournamentId, match, user, winnerPoetId) => {
+    if (!tournamentId || !match || !user || !winnerPoetId) {
+      throw new Error('tournamentId, match, user and winnerPoetId are required');
+    }
+    if (!['maxim', 'oleg'].includes(user)) throw new Error('Invalid user');
+
+    await ensureTournamentMatch(tournamentId, match, { waitForAi: false });
+    const matchPath = getMatchPath(match);
+    await update(ref(database, `tournaments/${tournamentId}/${matchPath}`), {
+      [`votes/${user}`]: winnerPoetId,
+      updatedAt: new Date().toISOString()
+    });
+    await settleTournamentMatchIfReady(tournamentId, match);
+  };
+
+  const promoteTournamentWinnerByBye = async (tournamentId, match, winnerPoetId) => {
+    if (!tournamentId || !match || !winnerPoetId) {
+      throw new Error('tournamentId, match and winnerPoetId are required');
+    }
+
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) throw new Error('Tournament not found');
+
+    let winnerPoemIds = [];
+    if (match.type === 'final') {
+      const finalData = tournament.final || {};
+      winnerPoemIds = winnerPoetId === finalData.poetAId
+        ? (finalData.poetAPoemIds || [])
+        : (finalData.poetBPoemIds || []);
+    } else if (match.roundIndex === 0) {
+      const size = tournament.size === 32 ? 32 : 16;
+      const sideSize = size / 2;
+      const baseSlot = match.side === 'left' ? 0 : sideSize;
+      const firstSlot = baseSlot + match.nodeIndex * 2;
+      const participantsObj = tournament.participants || {};
+      const p1 = Object.values(participantsObj).find((p) => p?.slot === firstSlot);
+      const p2 = Object.values(participantsObj).find((p) => p?.slot === firstSlot + 1);
+      winnerPoemIds = winnerPoetId === p1?.poetId ? (p1?.poemIds || []) : (p2?.poemIds || []);
+    } else {
+      const matchData = tournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex];
+      if (!matchData) throw new Error('Match data not found');
+      winnerPoemIds = winnerPoetId === matchData.poetAId
+        ? (matchData.poetAPoemIds || [])
+        : (matchData.poetBPoemIds || []);
+    }
+
+    const now = new Date().toISOString();
+    if (match.type === 'final') {
+      await update(ref(database, `tournaments/${tournamentId}/finalMatch`), {
+        winnerPoetId,
+        status: 'finished',
+        finishedAt: now,
+        updatedAt: now
+      });
+      console.log('[Tournament] Manual promote final winner:', winnerPoetId);
+      await update(ref(database, `tournaments/${tournamentId}`), {
+        winnerPoetId,
+        status: 'finished',
+        finishedAt: now,
+        updatedAt: now
+      });
+      return;
+    }
+
+    const roundsPerSide = Math.log2((tournament.size === 32 ? 32 : 16) / 2);
+    await update(ref(database, `tournaments/${tournamentId}/rounds/${match.roundIndex}/${match.side}/${match.nodeIndex}`), {
+      winnerPoetId,
+      status: 'finished',
+      finishedAt: now,
+      updatedAt: now
+    });
+
+    if (match.roundIndex < roundsPerSide - 1) {
+      const nextRoundIndex = match.roundIndex + 1;
+      const nextNodeIndex = Math.floor(match.nodeIndex / 2);
+      const isUpper = match.nodeIndex % 2 === 0;
+      const fieldPoet = isUpper ? 'poetAId' : 'poetBId';
+      const fieldPoems = isUpper ? 'poetAPoemIds' : 'poetBPoemIds';
+      await update(ref(database, `tournaments/${tournamentId}/rounds/${nextRoundIndex}/${match.side}/${nextNodeIndex}`), {
+        [fieldPoet]: winnerPoetId,
+        [fieldPoems]: winnerPoemIds,
+        status: 'active',
+        updatedAt: now
+      });
+      return;
+    }
+
+    const finalFieldPoet = match.side === 'left' ? 'poetAId' : 'poetBId';
+    const finalFieldPoems = match.side === 'left' ? 'poetAPoemIds' : 'poetBPoemIds';
+    await update(ref(database, `tournaments/${tournamentId}/final`), {
+      [finalFieldPoet]: winnerPoetId,
+      [finalFieldPoems]: winnerPoemIds,
+      updatedAt: now
+    });
+  };
+
   // Обновить коэффициенты категорий
   const updateCategoryCoefficients = async (coefficients) => {
     // Валидация: сумма должна быть равна 1.0 (100%)
@@ -658,6 +1127,7 @@ export const PoetsProvider = ({ children }) => {
     overallDuelWinners,
     aiChoiceTiebreaker,
     likes,
+    tournaments,
     isLoading,
     addPoet,
     deletePoet,
@@ -670,6 +1140,15 @@ export const PoetsProvider = ({ children }) => {
     addPoem,
     updatePoemStatus,
     deletePoem,
+    createTournament,
+    updateTournament,
+    deleteTournament,
+    addTournamentParticipant,
+    updateTournamentParticipant,
+    deleteTournamentParticipant,
+    ensureTournamentMatch,
+    submitTournamentVote,
+    promoteTournamentWinnerByBye,
     calculateScore,
     calculateAverageScore,
     CATEGORIES,
