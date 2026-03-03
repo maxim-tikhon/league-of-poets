@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ref, set, update, remove, onValue, push, get } from 'firebase/database';
+import { ref, set, update, remove, onValue, push, get, runTransaction } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent } from '../ai/gemini';
 
@@ -917,13 +917,47 @@ export const PoetsProvider = ({ children }) => {
 
     const aiTask = async () => {
       if (payload.votes.ai) return;
-      const result = await resolveAiWinner(tournament, payload);
-      if (result?.winnerId) {
-        console.log('[Tournament AI] Winner:', result.winnerId, result.reason ? `| Reason: ${result.reason}` : '');
-        const aiUpdate = { 'votes/ai': result.winnerId, updatedAt: new Date().toISOString() };
-        if (result.reason) aiUpdate['votes/aiReason'] = result.reason;
-        await update(ref(database, `tournaments/${tournamentId}/${path}`), aiUpdate);
-        await settleTournamentMatchIfReady(tournamentId, match);
+
+      // Claim AI request lock: only one client should trigger AI for this match.
+      const matchRef = ref(database, `tournaments/${tournamentId}/${path}`);
+      const lockResult = await runTransaction(matchRef, (current) => {
+        if (!current) return current;
+        if (current?.votes?.ai) return;
+        if (current?.aiRequestStatus === 'pending') return;
+        return {
+          ...current,
+          aiRequestStatus: 'pending',
+          aiRequestedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+      if (!lockResult.committed) {
+        console.log('[Tournament AI] Skip duplicate AI request for match:', path);
+        return;
+      }
+
+      try {
+        const result = await resolveAiWinner(tournament, payload);
+        if (result?.winnerId) {
+          console.log('[Tournament AI] Winner:', result.winnerId, result.reason ? `| Reason: ${result.reason}` : '');
+          const aiUpdate = {
+            'votes/ai': result.winnerId,
+            aiRequestStatus: 'done',
+            aiRespondedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          if (result.reason) aiUpdate['votes/aiReason'] = result.reason;
+          await update(matchRef, aiUpdate);
+          await settleTournamentMatchIfReady(tournamentId, match);
+        }
+      } catch (error) {
+        await update(matchRef, {
+          aiRequestStatus: 'error',
+          aiErrorAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        throw error;
       }
     };
 
