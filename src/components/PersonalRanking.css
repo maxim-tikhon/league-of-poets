@@ -101,7 +101,7 @@
 
 .sorting-controls {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
   align-items: center;
   margin-bottom: 2rem;
