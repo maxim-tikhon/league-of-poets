@@ -225,7 +225,7 @@ const TournamentsPage = () => {
       .filter(Boolean);
     const poemsLabel = poemTitles.length > 0
       ? `\nСтих: ${poemTitles[0]}`
-      : '\nСтих: не выбран';
+      : '';
     const confirmed = window.confirm(`Удалить ${poetName} из турнира?${poemsLabel}`);
     if (!confirmed) return;
 
@@ -252,7 +252,7 @@ const TournamentsPage = () => {
     const hoverTitle = !poet
       ? 'Свободный слот'
       : poemTitles.length > 0
-        ? `${poet.name}\nСтих: ${poemTitles[0]}`
+        ? `${poet.name}\n${poemTitles[0]}`
         : poet.name;
 
     return (
@@ -514,7 +514,6 @@ const TournamentsPage = () => {
               <div
                 key={`${side}-round-${visualKey}-node-${nodeIndex}`}
                 className={`tournament-round-node ${isReadyToBattle ? 'duel-ready' : ''}`}
-                title={logicalRoundIndex === 0 ? 'Матч раунда' : 'Следующий раунд'}
                 style={{
                   '--node-top': `${centerRow * BRACKET_ROW_HEIGHT - BRACKET_CARD_HEIGHT / 2}px`,
                   '--connector-span': `${connectorSpan}px`,
@@ -632,7 +631,7 @@ const TournamentsPage = () => {
                         <div
                           className="tournament-winner-node"
                           title={winnerPoemTitles.length > 0
-                            ? `${winnerPoet.name}\nСтих: ${winnerPoemTitles[0]}`
+                            ? `${winnerPoet.name}\n${winnerPoemTitles[0]}`
                             : winnerPoet.name}
                         >
                           <img
