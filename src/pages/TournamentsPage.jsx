@@ -130,6 +130,12 @@ const TournamentsPage = () => {
       .map((poemId) => winnerPoet?.poems?.[poemId]?.title)
       .filter(Boolean);
   }, [activeTournament, winnerPoet]);
+  const resolveBadgeFilename = (badgeValue) => {
+    const raw = String(badgeValue || '').trim();
+    if (!raw) return 'overall.png';
+    return raw.toLowerCase().endsWith('.png') ? raw : `${raw}.png`;
+  };
+  const activeBadgeFilename = resolveBadgeFilename(activeTournament?.badge);
   const selectedPoetPoems = useMemo(() => {
     if (!selectedPoet?.poems) return [];
     return Object.keys(selectedPoet.poems).map((id) => ({
@@ -587,9 +593,12 @@ const TournamentsPage = () => {
                     <div className="tournament-center-top">
                       {activeTournament.badge ? (
                         <img
-                          src={`/images/badges/${activeTournament.badge}`}
+                          src={`/images/badges/${activeBadgeFilename}`}
                           alt={activeTournament.name}
                           className="tournament-badge"
+                          onError={(e) => {
+                            e.currentTarget.src = '/images/badges/overall.png';
+                          }}
                         />
                       ) : (
                         <div className="tournament-badge tournament-badge-placeholder">🏆</div>
@@ -823,9 +832,12 @@ const TournamentsPage = () => {
                     {renderPoetCard(battlePoetA, 'left', battlePoemsA)}
                     <div className="battle-prize">
                       <img
-                        src={`/images/badges/${activeTournament?.badge || 'overall.png'}`}
+                        src={`/images/badges/${activeBadgeFilename}`}
                         alt={activeTournament?.name}
                         className="battle-prize-icon"
+                        onError={(e) => {
+                          e.currentTarget.src = '/images/badges/overall.png';
+                        }}
                       />
                     </div>
                     {renderPoetCard(battlePoetB, 'right', battlePoemsB)}

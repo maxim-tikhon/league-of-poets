@@ -22,6 +22,11 @@ const AwardsPage = () => {
   const otherUser = currentUser === 'maxim' ? 'oleg' : 'maxim';
   
   const [activeTab, setActiveTab] = useState('overall'); // 'overall', 'my', 'other'
+  const resolveBadgeFilename = (badgeValue) => {
+    const raw = String(badgeValue || '').trim();
+    if (!raw) return 'overall.png';
+    return raw.toLowerCase().endsWith('.png') ? raw : `${raw}.png`;
+  };
 
   // ============ ОБЩИЕ НАГРАДЫ (логика из OverallRankingPage) ============
   
@@ -391,9 +396,12 @@ const AwardsPage = () => {
             <div className="award-winner-composition">
               <div className="award-badge-section">
                 <img 
-                  src={`/images/badges/${award.badge}`} 
+                  src={`/images/badges/${resolveBadgeFilename(award.badge)}`} 
                   alt={award.name}
                   className="award-badge-large-img"
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/badges/overall.png';
+                  }}
                 />
               </div>
               <div className="award-poet-section">
