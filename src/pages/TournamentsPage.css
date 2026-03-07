@@ -29,9 +29,12 @@
 }
 
 .tournament-badge {
-  width: 90px;
-  height: 93px;
-  object-fit: contain;
+  width: 100%;
+    max-width: 75px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0px 5px rgba(211, 175, 55, 0.2));
+    transition: transform 0.4s ease;
 }
 
 .tournament-badge-placeholder {
@@ -207,6 +210,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.tournament-poet-square.is-loser img {
+  filter: grayscale(0.7) brightness(0.55);
+  opacity: 0.75;
 }
 
 .tournament-transfer-btn,
@@ -328,7 +337,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .tournament-center-main-row {
@@ -341,11 +350,23 @@
 }
 
 .tournament-center-bottom {
+  position: relative;
   align-self: start;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 0.55rem;
+  /* margin-top: 0.55rem; */
+}
+
+.tournament-center-bottom::before {
+  content: '';
+  position: absolute;
+  top: 0rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2rem;
+  border-left: 1px solid rgba(233, 239, 248, 0.68);
 }
 
 .tournament-final-node .tournament-round-node-body {
@@ -354,11 +375,12 @@
 }
 
 .tournament-winner-node {
-  width: 78px;
-  height: 78px;
-  border-radius: 8px;
+  margin-top: 2rem;
+  width: 89px;
+  height: 89px;
+  border-radius: 7px;
   overflow: hidden;
-  border: 1px solid rgba(233, 239, 248, 0.78);
+  border: 0.5px solid rgba(233, 239, 248, 0.78);
   background: rgba(11, 15, 24, 0.58);
 }
 
@@ -367,6 +389,7 @@
   height: 100%;
   object-fit: cover;
 }
+
 
 .tournament-add-modal {
   max-width: 500px;
@@ -719,4 +742,30 @@ body[data-theme="letterboxd"] .tournament-context-item:hover {
 
 body[data-theme="letterboxd"] .tournament-context-item.danger {
   color: #ff6b6b;
+}
+
+.active-playin-panel {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(64, 188, 244, 0.28);
+  border-radius: 10px;
+  background: rgba(64, 188, 244, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.active-playin-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink-light);
+}
+
+.active-playin-subtitle {
+  font-size: 0.86rem;
+  color: var(--ink-muted);
+  flex: 1;
+  min-width: 220px;
 }

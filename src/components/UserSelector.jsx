@@ -2,17 +2,25 @@ import React, { useState } from 'react';
 import './UserSelector.css';
 
 const UserSelector = ({ onSelectUser }) => {
+  const ACCESS_WORD = 'пушкин';
   const [selectedUser, setSelectedUser] = useState('');
+  const [accessWord, setAccessWord] = useState('');
+  const [accessError, setAccessError] = useState('');
 
   const handleSelect = (user) => {
     setSelectedUser(user);
   };
 
   const handleConfirm = () => {
-    if (selectedUser) {
-      localStorage.setItem('currentUser', selectedUser);
-      onSelectUser(selectedUser);
+    if (!selectedUser) return;
+
+    if (accessWord.trim().toLowerCase() !== ACCESS_WORD) {
+      setAccessError('Неверное кодовое слово');
+      return;
     }
+
+    localStorage.setItem('currentUser', selectedUser);
+    onSelectUser(selectedUser);
   };
 
   return (
@@ -39,11 +47,24 @@ const UserSelector = ({ onSelectUser }) => {
             <span className="user-name">Олег</span>
           </button>
         </div>
+
+        <div className="user-access-row">
+          <input
+            value={accessWord}
+            onChange={(e) => {
+              setAccessWord(e.target.value);
+              if (accessError) setAccessError('');
+            }}
+            className="user-access-input"
+            placeholder="Кодовое слово"
+          />
+          {accessError && <div className="user-access-error">{accessError}</div>}
+        </div>
         
         <button
           className="confirm-btn"
           onClick={handleConfirm}
-          disabled={!selectedUser}
+          disabled={!selectedUser || !accessWord.trim()}
         >
           Продолжить
         </button>

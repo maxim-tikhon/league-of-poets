@@ -34,6 +34,7 @@ function App() {
     if (savedUser) {
       setCurrentUser(savedUser);
     }
+
     setIsChecking(false);
   }, []);
 

@@ -8,6 +8,7 @@ const AwardsPage = () => {
   const { 
     poets,
     ratings,
+    likes,
     calculateScore,
     calculateAverageScore,
     categoryLeaders,
@@ -35,8 +36,8 @@ const AwardsPage = () => {
     poemsArray.forEach(poem => {
       if (poem.viewed?.maxim) score += 1;
       if (poem.viewed?.oleg) score += 1;
-      if (poem.liked?.maxim) score += 3;
-      if (poem.liked?.oleg) score += 3;
+      if (poem.liked?.maxim) score += 5;
+      if (poem.liked?.oleg) score += 5;
       if (poem.memorized?.maxim) score += 10;
       if (poem.memorized?.oleg) score += 10;
     });
@@ -262,6 +263,27 @@ const AwardsPage = () => {
     return aiRankings.length > 0 ? [aiRankings[0].id] : [];
   }, [poets, aiChoiceTiebreaker]);
 
+  // Нобелевская премия (может быть у нескольких поэтов)
+  const nobelWinners = useMemo(() => {
+    return poets
+      .filter((poet) => {
+        const maximCreativity = ratings.maxim?.[poet.id]?.creativity || 0;
+        const olegCreativity = ratings.oleg?.[poet.id]?.creativity || 0;
+        if (maximCreativity < 4.5 || olegCreativity < 4.5) return false;
+
+        const likedByMaxim = Boolean(likes.maxim?.[poet.id]);
+        const likedByOleg = Boolean(likes.oleg?.[poet.id]);
+        if (!likedByMaxim || !likedByOleg) return false;
+
+        const poems = Object.values(poet.poems || {});
+        const maximPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.maxim)).length;
+        const olegPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.oleg)).length;
+
+        return maximPoemLikes >= 3 && olegPoemLikes >= 3;
+      })
+      .map((poet) => poet.id);
+  }, [poets, ratings, likes]);
+
   // ============ ПЕРСОНАЛЬНЫЕ НАГРАДЫ (логика из PersonalRanking) ============
   
   const getPersonalWinners = (rater) => {
@@ -358,6 +380,10 @@ const AwardsPage = () => {
     return winners.map(poetId => {
       const poet = poets.find(p => p.id === poetId);
       if (!poet) return null;
+      const isTournamentAward = String(award.key || '').startsWith('tournament-');
+      const bottomTitle = isTournamentAward && award.winnerPoemTitle
+        ? award.winnerPoemTitle
+        : (award.winnerPoemTitle ? `${poet.name} — ${award.winnerPoemTitle}` : poet.name);
       
       return (
         <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
@@ -385,7 +411,9 @@ const AwardsPage = () => {
             </div>
             <div className="award-winner-overlay">
               <div className="award-category-title">{award.name}</div>
-              <div className="award-winner-name">{poet.name}</div>
+              <div className={`award-winner-name${isTournamentAward ? ' tournament-poem-title' : ''}`}>
+                {bottomTitle}
+              </div>
             </div>
           </Link>
         </div>
@@ -400,6 +428,7 @@ const AwardsPage = () => {
     { key: 'drama', name: CATEGORIES.drama.name, badge: 'drama.png' },
     { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
+    { key: 'nobel', name: 'Нобелевская премия', badge: 'nobel.png' },
     { key: 'readers-choice', name: 'Выбор читателей', badge: 'readers-choice.png' },
     { key: 'ai-choice', name: 'Выбор ИИ', badge: 'ai-choice.png' },
     { key: 'last', name: 'Худший поэт', badge: 'last.png' }
@@ -419,18 +448,41 @@ const AwardsPage = () => {
     if (!Array.isArray(tournaments)) return [];
     return tournaments
       .filter((tournament) => Boolean(tournament?.winnerPoetId) && Boolean(tournament?.badge))
-      .map((tournament) => ({
-        key: `tournament-${tournament.id}`,
-        name: tournament.name || 'Турнир',
-        badge: tournament.badge,
-        winners: [tournament.winnerPoetId]
-      }));
-  }, [tournaments]);
+      .map((tournament) => {
+        const winnerPoet = poets.find((p) => String(p.id) === String(tournament.winnerPoetId));
+        const finalMatch = tournament.finalMatch || null;
+        let winnerPoemTitle = '';
+
+        if (winnerPoet && finalMatch) {
+          let winnerPoemIds = [];
+          if (Array.isArray(finalMatch.winnerPoemIds) && finalMatch.winnerPoemIds.length > 0) {
+            winnerPoemIds = finalMatch.winnerPoemIds;
+          } else if (finalMatch.winnerSide === 'A') {
+            winnerPoemIds = finalMatch.poetAPoemIds || [];
+          } else if (finalMatch.winnerSide === 'B') {
+            winnerPoemIds = finalMatch.poetBPoemIds || [];
+          }
+
+          if (winnerPoemIds.length > 0) {
+            winnerPoemTitle = winnerPoet.poems?.[winnerPoemIds[0]]?.title || '';
+          }
+        }
+
+        return {
+          key: `tournament-${tournament.id}`,
+          name: `Турнир «${tournament.name || 'Без названия'}»`,
+          badge: tournament.badge,
+          winners: [tournament.winnerPoetId],
+          winnerPoemTitle
+        };
+      });
+  }, [tournaments, poets]);
 
   // Получение победителей для текущей вкладки
   const getWinnersForAward = (awardKey) => {
     if (activeTab === 'overall') {
       if (awardKey === 'last') return overallLoser;
+      if (awardKey === 'nobel') return nobelWinners;
       if (awardKey === 'readers-choice') return readersChoiceWinner;
       if (awardKey === 'ai-choice') return aiChoiceWinner;
       return overallCategoryWinners[awardKey] || [];
@@ -450,7 +502,13 @@ const AwardsPage = () => {
   };
 
   const currentAwards = activeTab === 'overall'
-    ? [...overallAwards, ...tournamentAwards]
+    ? (() => {
+      const worstAward = overallAwards.find((award) => award.key === 'last');
+      const otherOverallAwards = overallAwards.filter((award) => award.key !== 'last');
+      return worstAward
+        ? [...otherOverallAwards, ...tournamentAwards, worstAward]
+        : [...otherOverallAwards, ...tournamentAwards];
+    })()
     : personalAwards;
   
   // Имя другого пользователя для вкладки (родительный падеж)

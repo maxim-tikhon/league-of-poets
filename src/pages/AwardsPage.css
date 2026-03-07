@@ -42,6 +42,13 @@
   margin-top: 0;
 }
 
+.awards-page .award-winner-name.tournament-poem-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
 .no-awards-message {
   grid-column: 1 / -1;
   text-align: center;

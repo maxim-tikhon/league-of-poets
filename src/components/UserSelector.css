@@ -70,6 +70,33 @@
   margin-bottom: 2rem;
 }
 
+.user-access-row {
+  margin-bottom: 1rem;
+}
+
+.user-access-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e5e5;
+  font-size: 0.95rem;
+}
+
+.user-access-input:focus {
+  outline: none;
+  border-color: #40BCF4;
+  box-shadow: 0 0 0 2px rgba(64, 188, 244, 0.2);
+}
+
+.user-access-error {
+  margin-top: 0.45rem;
+  color: #ff7f7f;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
 .user-btn {
   flex: 1;
   display: flex;

@@ -197,6 +197,13 @@ export const PoetsProvider = ({ children }) => {
           ...data[key]
         }))
         .sort((a, b) => {
+          const hasOrderA = Number.isFinite(Number(a.displayOrder));
+          const hasOrderB = Number.isFinite(Number(b.displayOrder));
+          if (hasOrderA && hasOrderB) {
+            return Number(a.displayOrder) - Number(b.displayOrder);
+          }
+          if (hasOrderA && !hasOrderB) return -1;
+          if (!hasOrderA && hasOrderB) return 1;
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return timeB - timeA;
@@ -674,6 +681,10 @@ export const PoetsProvider = ({ children }) => {
     const tournamentsRef = ref(database, 'tournaments');
     const newTournamentRef = push(tournamentsRef);
     const now = new Date().toISOString();
+    const maxDisplayOrder = tournaments.reduce((max, item) => {
+      const value = Number(item?.displayOrder);
+      return Number.isFinite(value) ? Math.max(max, value) : max;
+    }, -1);
 
     const normalizedSize = Number(size) === 32 ? 32 : 16;
 
@@ -682,6 +693,7 @@ export const PoetsProvider = ({ children }) => {
       badge: badge?.trim() || '',
       size: normalizedSize,
       aiPromptTemplate: aiPromptTemplate?.trim() || '',
+      displayOrder: maxDisplayOrder + 1,
       status: 'draft',
       winnerPoetId: null,
       createdAt: now,
@@ -824,8 +836,8 @@ export const PoetsProvider = ({ children }) => {
           const w = String(parsed.winner || '').trim().toUpperCase();
           const reason = parsed.reason ? String(parsed.reason).trim() : null;
           console.log('[Tournament AI] winner field:', w, '| reason:', reason);
-          if (w === 'A') { console.log('[Tournament AI] → Winner A:', poetA.name); return { winnerId: poetA.id, reason }; }
-          if (w === 'B') { console.log('[Tournament AI] → Winner B:', poetB.name); return { winnerId: poetB.id, reason }; }
+          if (w === 'A') { console.log('[Tournament AI] → Winner A:', poetA.name); return { winnerSide: 'A', winnerId: poetA.id, reason }; }
+          if (w === 'B') { console.log('[Tournament AI] → Winner B:', poetB.name); return { winnerSide: 'B', winnerId: poetB.id, reason }; }
           console.log('[Tournament AI] winner field not A/B, falling through');
         } else {
           console.log('[Tournament AI] No JSON block found in response');
@@ -837,21 +849,48 @@ export const PoetsProvider = ({ children }) => {
       // Fall back to name-based matching
       const lower = text.toLowerCase();
       console.log('[Tournament AI] Trying name match. poetA:', poetA.name, '| poetB:', poetB.name);
-      if (lower.includes(poetA.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetA'); return { winnerId: poetA.id, reason: null }; }
-      if (lower.includes(poetB.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetB'); return { winnerId: poetB.id, reason: null }; }
+      if (lower.includes(poetA.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetA'); return { winnerSide: 'A', winnerId: poetA.id, reason: null }; }
+      if (lower.includes(poetB.name.toLowerCase())) { console.log('[Tournament AI] → Name match: poetB'); return { winnerSide: 'B', winnerId: poetB.id, reason: null }; }
       console.log('[Tournament AI] No name match found');
     } catch (error) {
       console.log('[Tournament AI] generateContent error:', error);
     }
-    const fallbackWinner = Math.random() < 0.5 ? poetA.id : poetB.id;
+    const fallbackSide = Math.random() < 0.5 ? 'A' : 'B';
+    const fallbackWinner = fallbackSide === 'A' ? poetA.id : poetB.id;
     console.log('[Tournament AI] Fallback winner used:', fallbackWinner);
-    return { winnerId: fallbackWinner, reason: null };
+    return { winnerSide: fallbackSide, winnerId: fallbackWinner, reason: null };
   };
 
   const getMatchPath = (match) =>
     match.type === 'final'
       ? 'finalMatch'
       : `rounds/${match.roundIndex}/${match.side}/${match.nodeIndex}`;
+  const getPlayInPath = () => 'playIn';
+  const normalizeVoteToSide = (voteValue, poetAId, poetBId) => {
+    const raw = String(voteValue || '').trim();
+    if (!raw) return null;
+    if (raw === 'A' || raw === 'B') return raw;
+
+    const a = String(poetAId || '').trim();
+    const b = String(poetBId || '').trim();
+    if (!a || !b) return null;
+    if (a === b) return null;
+    if (raw === a) return 'A';
+    if (raw === b) return 'B';
+    return null;
+  };
+
+  const buildStoredVoteValue = (winnerPoetId, winnerSide, poetAId, poetBId) => {
+    if (winnerSide === 'A' || winnerSide === 'B') return winnerSide;
+
+    const chosen = String(winnerPoetId || '').trim();
+    const a = String(poetAId || '').trim();
+    const b = String(poetBId || '').trim();
+    if (!chosen || !a || !b) return chosen;
+    if (a === b) throw new Error('Нужно выбрать конкретную сторону дуэли (A/B) для одинаковых поэтов');
+    if (chosen === a || chosen === b) return chosen;
+    throw new Error('Неверный выбор победителя');
+  };
 
   const buildMatchData = (tournament, match) => {
     const size = tournament.size === 32 ? 32 : 16;
@@ -892,7 +931,7 @@ export const PoetsProvider = ({ children }) => {
   };
 
   const ensureTournamentMatch = async (tournamentId, match, options = {}) => {
-    const { waitForAi = false } = options;
+    const { waitForAi = false, triggerAi = true } = options;
     if (!tournamentId || !match) throw new Error('tournamentId and match are required');
     const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
     const tournament = tournamentSnapshot.val();
@@ -942,7 +981,7 @@ export const PoetsProvider = ({ children }) => {
         if (result?.winnerId) {
           console.log('[Tournament AI] Winner:', result.winnerId, result.reason ? `| Reason: ${result.reason}` : '');
           const aiUpdate = {
-            'votes/ai': result.winnerId,
+            'votes/ai': result.winnerSide || result.winnerId,
             aiRequestStatus: 'done',
             aiRespondedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -961,10 +1000,12 @@ export const PoetsProvider = ({ children }) => {
       }
     };
 
-    if (waitForAi) {
-      await aiTask();
-    } else {
-      aiTask().catch(() => {});
+    if (triggerAi) {
+      if (waitForAi) {
+        await aiTask();
+      } else {
+        aiTask().catch(() => {});
+      }
     }
   };
 
@@ -983,20 +1024,28 @@ export const PoetsProvider = ({ children }) => {
     if (!votes.maxim || !votes.oleg || !votes.ai) return;
     if (matchData.winnerPoetId) return;
 
+    const sideVotes = [votes.maxim, votes.oleg, votes.ai]
+      .map((vote) => normalizeVoteToSide(vote, matchData.poetAId, matchData.poetBId))
+      .filter(Boolean);
+    if (sideVotes.length < 3) return;
+
     const counts = {};
-    [votes.maxim, votes.oleg, votes.ai].forEach((id) => {
-      counts[id] = (counts[id] || 0) + 1;
+    sideVotes.forEach((side) => {
+      counts[side] = (counts[side] || 0) + 1;
     });
-    let winnerPoetId = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-    if (!winnerPoetId) winnerPoetId = votes.ai || matchData.poetAId;
+    let winnerSide = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (!winnerSide) winnerSide = normalizeVoteToSide(votes.ai, matchData.poetAId, matchData.poetBId) || 'A';
+    const winnerPoetId = winnerSide === 'A' ? matchData.poetAId : matchData.poetBId;
 
     const winnerPoemIds =
-      winnerPoetId === matchData.poetAId
+      winnerSide === 'A'
         ? (matchData.poetAPoemIds || [])
         : (matchData.poetBPoemIds || []);
 
     await update(ref(database, `tournaments/${tournamentId}/${matchPath}`), {
       winnerPoetId,
+      winnerSide,
+      winnerPoemIds,
       status: 'finished',
       finishedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -1040,19 +1089,216 @@ export const PoetsProvider = ({ children }) => {
     });
   };
 
-  const submitTournamentVote = async (tournamentId, match, user, winnerPoetId) => {
+  const submitTournamentVote = async (tournamentId, match, user, winnerPoetId, winnerSide = null) => {
     if (!tournamentId || !match || !user || !winnerPoetId) {
       throw new Error('tournamentId, match, user and winnerPoetId are required');
     }
     if (!['maxim', 'oleg'].includes(user)) throw new Error('Invalid user');
 
-    await ensureTournamentMatch(tournamentId, match, { waitForAi: false });
+    await ensureTournamentMatch(tournamentId, match, {
+      waitForAi: false,
+      triggerAi: user === 'maxim'
+    });
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) throw new Error('Tournament not found');
+
     const matchPath = getMatchPath(match);
+    const matchData = match.type === 'final'
+      ? tournament.finalMatch
+      : tournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex];
+    if (!matchData?.poetAId || !matchData?.poetBId) throw new Error('Match is not ready');
+    const voteValue = buildStoredVoteValue(
+      winnerPoetId,
+      winnerSide,
+      matchData.poetAId,
+      matchData.poetBId
+    );
+
     await update(ref(database, `tournaments/${tournamentId}/${matchPath}`), {
-      [`votes/${user}`]: winnerPoetId,
+      [`votes/${user}`]: voteValue,
       updatedAt: new Date().toISOString()
     });
     await settleTournamentMatchIfReady(tournamentId, match);
+  };
+
+  const ensureTournamentPlayIn = async (tournamentId, payload = {}, options = {}) => {
+    const { waitForAi = false, triggerAi = true } = options;
+    if (!tournamentId) throw new Error('tournamentId is required');
+
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) throw new Error('Tournament not found');
+
+    const playInPath = getPlayInPath();
+    const existing = tournament.playIn || null;
+    const now = new Date().toISOString();
+
+    const shouldCreateNew = !existing
+      || existing.status === 'finished'
+      || !existing.poetAId
+      || !existing.poetBId;
+
+    let playInPayload = existing;
+    if (shouldCreateNew) {
+      if (!payload?.incumbentParticipantId || !payload?.incumbentPoetId || !payload?.challengerPoetId) {
+        throw new Error('Play-in payload is incomplete');
+      }
+
+      playInPayload = {
+        incumbentParticipantId: payload.incumbentParticipantId,
+        poetAId: payload.incumbentPoetId,
+        poetBId: payload.challengerPoetId,
+        poetAPoemIds: Array.isArray(payload.incumbentPoemIds) ? payload.incumbentPoemIds : [],
+        poetBPoemIds: Array.isArray(payload.challengerPoemIds) ? payload.challengerPoemIds : [],
+        votes: {},
+        status: 'active',
+        createdAt: now,
+        updatedAt: now
+      };
+      await set(ref(database, `tournaments/${tournamentId}/${playInPath}`), playInPayload);
+    }
+
+    if (!playInPayload?.poetAId || !playInPayload?.poetBId) {
+      throw new Error('Play-in is not ready: two opponents required');
+    }
+
+    const aiTask = async () => {
+      if (playInPayload?.votes?.ai) return;
+      const playInRef = ref(database, `tournaments/${tournamentId}/${playInPath}`);
+
+      const lockResult = await runTransaction(playInRef, (current) => {
+        if (!current) return current;
+        if (current?.votes?.ai) return;
+        if (current?.aiRequestStatus === 'pending') return;
+        return {
+          ...current,
+          aiRequestStatus: 'pending',
+          aiRequestedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+      if (!lockResult.committed) {
+        console.log('[Tournament AI] Skip duplicate AI request for play-in');
+        return;
+      }
+
+      try {
+        const result = await resolveAiWinner(tournament, playInPayload);
+        if (result?.winnerId) {
+          const aiUpdate = {
+            'votes/ai': result.winnerSide || result.winnerId,
+            aiRequestStatus: 'done',
+            aiRespondedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          if (result.reason) aiUpdate['votes/aiReason'] = result.reason;
+          await update(playInRef, aiUpdate);
+          await settleTournamentPlayInIfReady(tournamentId);
+        }
+      } catch (error) {
+        await update(playInRef, {
+          aiRequestStatus: 'error',
+          aiErrorAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        throw error;
+      }
+    };
+
+    if (triggerAi) {
+      if (waitForAi) {
+        await aiTask();
+      } else {
+        aiTask().catch(() => {});
+      }
+    }
+  };
+
+  const settleTournamentPlayInIfReady = async (tournamentId) => {
+    if (!tournamentId) return;
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament) return;
+
+    const playIn = tournament.playIn;
+    if (!playIn || playIn.status !== 'active') return;
+    if (!playIn.poetAId || !playIn.poetBId) return;
+
+    const votes = playIn.votes || {};
+    if (!votes.maxim || !votes.oleg || !votes.ai) return;
+    if (playIn.winnerPoetId) return;
+
+    const sideVotes = [votes.maxim, votes.oleg, votes.ai]
+      .map((vote) => normalizeVoteToSide(vote, playIn.poetAId, playIn.poetBId))
+      .filter(Boolean);
+    if (sideVotes.length < 3) return;
+
+    const counts = {};
+    sideVotes.forEach((side) => {
+      counts[side] = (counts[side] || 0) + 1;
+    });
+    let winnerSide = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (!winnerSide) winnerSide = normalizeVoteToSide(votes.ai, playIn.poetAId, playIn.poetBId) || 'A';
+    const winnerPoetId = winnerSide === 'A' ? playIn.poetAId : playIn.poetBId;
+
+    const now = new Date().toISOString();
+    if (
+      String(winnerPoetId) === String(playIn.poetBId)
+      && playIn.incumbentParticipantId
+    ) {
+      const participantRef = ref(database, `tournaments/${tournamentId}/participants/${playIn.incumbentParticipantId}`);
+      const participantSnapshot = await get(participantRef);
+      if (participantSnapshot.exists()) {
+        await update(participantRef, {
+          poetId: playIn.poetBId,
+          poemIds: Array.isArray(playIn.poetBPoemIds) ? playIn.poetBPoemIds : [],
+          updatedAt: now
+        });
+      }
+    }
+
+    await update(ref(database, `tournaments/${tournamentId}/playIn`), {
+      winnerPoetId,
+      winnerSide,
+      status: 'finished',
+      finishedAt: now,
+      updatedAt: now
+    });
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: now });
+  };
+
+  const submitTournamentPlayInVote = async (tournamentId, user, winnerPoetId, winnerSide = null) => {
+    if (!tournamentId || !user || !winnerPoetId) {
+      throw new Error('tournamentId, user and winnerPoetId are required');
+    }
+    if (!['maxim', 'oleg'].includes(user)) throw new Error('Invalid user');
+
+    await ensureTournamentPlayIn(tournamentId, {}, {
+      waitForAi: false,
+      triggerAi: user === 'maxim'
+    });
+
+    const tournamentSnapshot = await get(ref(database, `tournaments/${tournamentId}`));
+    const tournament = tournamentSnapshot.val();
+    if (!tournament?.playIn || tournament.playIn.status !== 'active') {
+      throw new Error('Активной дуэли за место нет');
+    }
+
+    const playIn = tournament.playIn;
+    const voteValue = buildStoredVoteValue(
+      winnerPoetId,
+      winnerSide,
+      playIn.poetAId,
+      playIn.poetBId
+    );
+
+    await update(ref(database, `tournaments/${tournamentId}/playIn`), {
+      [`votes/${user}`]: voteValue,
+      updatedAt: new Date().toISOString()
+    });
+    await settleTournamentPlayInIfReady(tournamentId);
   };
 
   const promoteTournamentWinnerByBye = async (tournamentId, match, winnerPoetId) => {
@@ -1089,8 +1335,12 @@ export const PoetsProvider = ({ children }) => {
 
     const now = new Date().toISOString();
     if (match.type === 'final') {
+      const finalData = tournament.final || {};
+      const winnerSide = String(winnerPoetId) === String(finalData.poetAId) ? 'A' : 'B';
       await update(ref(database, `tournaments/${tournamentId}/finalMatch`), {
         winnerPoetId,
+        winnerSide,
+        winnerPoemIds,
         status: 'finished',
         finishedAt: now,
         updatedAt: now
@@ -1182,6 +1432,8 @@ export const PoetsProvider = ({ children }) => {
     deleteTournamentParticipant,
     ensureTournamentMatch,
     submitTournamentVote,
+    ensureTournamentPlayIn,
+    submitTournamentPlayInVote,
     promoteTournamentWinnerByBye,
     calculateScore,
     calculateAverageScore,

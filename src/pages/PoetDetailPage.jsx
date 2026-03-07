@@ -824,9 +824,10 @@ const PoetDetailPage = () => {
         return;
       }
       
-      // Проверяем, является ли строка подзаголовком 
-      // Форматы: "YYYY — событие", "YYYY-YYYY — событие", "Осень YYYY — событие", "Январь YYYY — событие"
-      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|Начало|Конец|Середина|Наши)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*[-–—]/.test(trimmedLine);
+      // Проверяем, является ли строка подзаголовком
+      // Форматы: "YYYY — событие", "YYYY-YYYY — событие", "YYYY: событие",
+      // "Осень YYYY — событие", "Январь YYYY: событие"
+      const isHeader = /^(Весна|Лето|Осень|Зима|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|Начало|Конец|Середина|Наши)?\s*\d{4}(\s*[-–—]\s*\d{4})?\s*([-–—:]|\.\s)/.test(trimmedLine);
       
       if (isHeader) {
         // Если накопился параграф перед заголовком, добавляем его
@@ -1112,11 +1113,11 @@ const PoetDetailPage = () => {
                 }
                 allLinks.push({ type: 'photo', name: 'Фотографии и портреты', url: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(poet.name)}` });
                 if (poet.links?.poems) {
-                  allLinks.push({ type: 'poems', name: 'Стихи на Rustih.ru', url: poet.links.poems });
+                  allLinks.push({ type: 'poems', name: 'Стихи', url: poet.links.poems });
                 }
-                if (poet.links?.wikiquote) {
-                  allLinks.push({ type: 'quotes', name: 'Цитаты', url: poet.links.wikiquote });
-                }
+                // if (poet.links?.wikiquote) {
+                //   allLinks.push({ type: 'quotes', name: 'Цитаты', url: poet.links.wikiquote });
+                // }
                 
                 const ytLinks = poet.links?.youtube;
                 if (ytLinks) {

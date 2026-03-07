@@ -18,6 +18,7 @@ const OverallRankingPage = () => {
   const { 
     poets, 
     ratings, 
+    likes,
     categoryLeaders: rawCategoryLeaders, 
     overallDuelWinners: rawOverallDuelWinners, 
     aiChoiceTiebreaker,
@@ -66,6 +67,27 @@ const OverallRankingPage = () => {
       Boolean(tournament?.winnerPoetId) && Boolean(tournament?.badge)
     );
   }, [tournaments]);
+
+  const nobelWinners = useMemo(() => {
+    return new Set(
+      poets
+        .filter((poet) => {
+          const maximCreativity = ratings.maxim?.[poet.id]?.creativity || 0;
+          const olegCreativity = ratings.oleg?.[poet.id]?.creativity || 0;
+          if (maximCreativity < 4.5 || olegCreativity < 4.5) return false;
+
+          const likedByMaxim = Boolean(likes.maxim?.[poet.id]);
+          const likedByOleg = Boolean(likes.oleg?.[poet.id]);
+          if (!likedByMaxim || !likedByOleg) return false;
+
+          const poems = Object.values(poet.poems || {});
+          const maximPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.maxim)).length;
+          const olegPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.oleg)).length;
+          return maximPoemLikes >= 3 && olegPoemLikes >= 3;
+        })
+        .map((poet) => poet.id)
+    );
+  }, [poets, ratings, likes]);
   
   // Найти самого последнего оцененного поэта за последние 24 часа
   const getNewestPoet = () => {
@@ -134,8 +156,8 @@ const OverallRankingPage = () => {
       if (poem.viewed?.oleg) score += 1;
       
       // Лайки: 3 балла за каждого пользователя
-      if (poem.liked?.maxim) score += 3;
-      if (poem.liked?.oleg) score += 3;
+      if (poem.liked?.maxim) score += 5;
+      if (poem.liked?.oleg) score += 5;
       
       // Выучено: 10 баллов за каждого пользователя
       if (poem.memorized?.maxim) score += 10;
@@ -930,6 +952,18 @@ const OverallRankingPage = () => {
           />
         );
       }
+    }
+
+    // Нобелевская премия - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && nobelWinners.has(poetId)) {
+      badges.push(
+        <img
+          key="nobel"
+          src="/images/badges/nobel.png"
+          alt="Нобелевская премия"
+          className="winner-badge"
+        />
+      );
     }
     
     // Награда "Выбор ИИ" - показываем только на вкладке "Общий балл"

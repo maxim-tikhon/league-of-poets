@@ -15,6 +15,8 @@ const TournamentsPage = () => {
     deleteTournamentParticipant,
     ensureTournamentMatch,
     submitTournamentVote,
+    ensureTournamentPlayIn,
+    submitTournamentPlayInVote,
     promoteTournamentWinnerByBye
   } = usePoets();
   const [activeTournamentId, setActiveTournamentId] = useState('');
@@ -29,7 +31,7 @@ const TournamentsPage = () => {
   const [isBattleSubmitting, setIsBattleSubmitting] = useState(false);
   const [promotingMatchKey, setPromotingMatchKey] = useState('');
   const [deletingParticipantId, setDeletingParticipantId] = useState('');
-  const [contextMenu, setContextMenu] = useState(null); // { x, y, poet, match, canPromote }
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, poet, participant, match, canPromote }
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -81,14 +83,12 @@ const TournamentsPage = () => {
   }, [poets]);
 
   const filteredPoets = useMemo(() => {
-    const addedIds = new Set(participants.map((p) => String(p.poetId)));
     const query = participantQuery.trim().toLowerCase();
-    const available = poets.filter((p) => !addedIds.has(String(p.id)));
-    if (!query) return available.slice(0, 10);
-    return available
+    if (!query) return poets.slice(0, 10);
+    return poets
       .filter((p) => p.name?.toLowerCase().includes(query))
       .slice(0, 12);
-  }, [poets, participantQuery, participants]);
+  }, [poets, participantQuery]);
 
   const selectedPoet = selectedPoetId ? poetById.get(selectedPoetId) : null;
   const winnerPoet = activeTournament?.winnerPoetId
@@ -108,6 +108,28 @@ const TournamentsPage = () => {
       .filter(Boolean)
       .slice(0, 2);
   }, [activeTournament, poetById]);
+  const winnerPoemTitles = useMemo(() => {
+    if (!winnerPoet) return [];
+    const finalMatch = activeTournament?.finalMatch || null;
+    if (!finalMatch) return [];
+
+    let poemIds = [];
+    if (Array.isArray(finalMatch.winnerPoemIds) && finalMatch.winnerPoemIds.length > 0) {
+      poemIds = finalMatch.winnerPoemIds;
+    } else if (finalMatch.winnerSide === 'A') {
+      poemIds = finalMatch.poetAPoemIds || [];
+    } else if (finalMatch.winnerSide === 'B') {
+      poemIds = finalMatch.poetBPoemIds || [];
+    } else if (String(finalMatch.winnerPoetId) === String(finalMatch.poetAId) && String(finalMatch.poetAId) !== String(finalMatch.poetBId)) {
+      poemIds = finalMatch.poetAPoemIds || [];
+    } else if (String(finalMatch.winnerPoetId) === String(finalMatch.poetBId)) {
+      poemIds = finalMatch.poetBPoemIds || [];
+    }
+
+    return poemIds
+      .map((poemId) => winnerPoet?.poems?.[poemId]?.title)
+      .filter(Boolean);
+  }, [activeTournament, winnerPoet]);
   const selectedPoetPoems = useMemo(() => {
     if (!selectedPoet?.poems) return [];
     return Object.keys(selectedPoet.poems).map((id) => ({
@@ -131,21 +153,42 @@ const TournamentsPage = () => {
       return;
     }
 
-    const alreadyInTournament = participants.some((p) => String(p.poetId) === String(selectedPoetId));
-    if (alreadyInTournament) {
-      setParticipantError('Этот поэт уже участвует в турнире');
-      return;
-    }
-
     try {
       await addTournamentParticipant(activeTournament.id, {
         poetId: selectedPoetId,
-        poemIds: selectedPoemIds
+        poemIds: selectedPoemIds.slice(0, 1)
       });
       closeAddParticipantModal();
     } catch (error) {
       console.error('Ошибка добавления участника:', error);
-      setParticipantError('Не удалось добавить участника');
+      if (String(error?.message || '').includes('No free slots')) {
+        const candidates = participants.filter((p) => String(p.poetId) !== String(selectedPoetId));
+        const pool = candidates.length > 0 ? candidates : participants;
+        if (pool.length === 0) {
+          setParticipantError('Нет доступных участников для дуэли за слот');
+          return;
+        }
+        const incumbentParticipant = pool[Math.floor(Math.random() * pool.length)];
+        try {
+          await ensureTournamentPlayIn(activeTournament.id, {
+            incumbentParticipantId: incumbentParticipant.id,
+            incumbentPoetId: incumbentParticipant.poetId,
+            incumbentPoemIds: (incumbentParticipant.poemIds || []).slice(0, 1),
+            challengerPoetId: selectedPoetId,
+            challengerPoemIds: selectedPoemIds.slice(0, 1)
+          }, {
+            waitForAi: false,
+            triggerAi: currentUser === 'maxim'
+          });
+          closeAddParticipantModal();
+          setBattleError('');
+          setBattleModal({ type: 'playIn' });
+        } catch (playInError) {
+          setParticipantError(playInError?.message || 'Не удалось запустить дуэль за слот');
+        }
+        return;
+      }
+      setParticipantError(error?.message || 'Не удалось добавить участника');
     }
   };
 
@@ -155,17 +198,21 @@ const TournamentsPage = () => {
     return poetById.get(participant.poetId) || null;
   };
 
-  const handleDeleteParticipant = async (poetId) => {
-    if (!activeTournament || !poetId) return;
-
-    const participant = participants.find((item) => String(item.poetId) === String(poetId));
-    if (!participant?.id) {
+  const handleDeleteParticipant = async (participant) => {
+    if (!activeTournament || !participant?.id) {
       setBattleError('Этого поэта нельзя удалить из сетки: он уже в результатах раундов.');
       return;
     }
 
-    const poetName = poetById.get(poetId)?.name || 'участника';
-    const confirmed = window.confirm(`Удалить ${poetName} из турнира?`);
+    const poet = poetById.get(participant.poetId);
+    const poetName = poet?.name || 'участника';
+    const poemTitles = (Array.isArray(participant.poemIds) ? participant.poemIds.slice(0, 1) : [])
+      .map((poemId) => poet?.poems?.[poemId]?.title)
+      .filter(Boolean);
+    const poemsLabel = poemTitles.length > 0
+      ? `\nСтих: ${poemTitles[0]}`
+      : '\nСтих: не выбран';
+    const confirmed = window.confirm(`Удалить ${poetName} из турнира?${poemsLabel}`);
     if (!confirmed) return;
 
     setDeletingParticipantId(participant.id);
@@ -179,15 +226,37 @@ const TournamentsPage = () => {
     }
   };
 
-  const renderPoetSquare = (poet, key, matchCtx = null) => (
+  const renderPoetSquare = (poet, key, matchCtx = null, participant = null, poemIdsOverride = null, stateClass = '') => {
+    const sourcePoemIds = Array.isArray(poemIdsOverride)
+      ? poemIdsOverride.slice(0, 1)
+      : (participant?.poemIds || []).slice(0, 1);
+    const poemTitles = poet && Array.isArray(sourcePoemIds)
+      ? sourcePoemIds
+        .map((poemId) => poet.poems?.[poemId]?.title)
+        .filter(Boolean)
+      : [];
+    const hoverTitle = !poet
+      ? 'Свободный слот'
+      : poemTitles.length > 0
+        ? `${poet.name}\nСтих: ${poemTitles[0]}`
+        : poet.name;
+
+    return (
     <div
       key={key}
-      className={`tournament-poet-square ${poet ? 'filled' : ''}`}
-      title={poet ? poet.name : 'Свободный слот'}
+      className={`tournament-poet-square ${poet ? 'filled' : ''} ${stateClass}`.trim()}
+      title={hoverTitle}
       onContextMenu={(e) => {
         if (!poet) return;
         e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY, poet, match: matchCtx?.match || null, canPromote: matchCtx?.canPromote || false });
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          poet,
+          participant,
+          match: matchCtx?.match || null,
+          canPromote: matchCtx?.canPromote || false
+        });
       }}
     >
       <img
@@ -196,11 +265,21 @@ const TournamentsPage = () => {
         style={poet?.imageUrl ? { objectPosition: `center ${poet.imagePositionY ?? 25}%` } : undefined}
       />
     </div>
-  );
+    );
+  };
 
-  const renderMatchNodeContent = (poets, match) => {
+  const renderMatchNodeContent = (poets, match, firstSlot = null) => {
     const filledPoets = poets.filter(Boolean);
     const matchData = getMatchData(match);
+    const isFirstRoundMatch = match?.type === 'round' && match?.roundIndex === 0 && Number.isInteger(firstSlot);
+    const leftParticipant = isFirstRoundMatch ? (slotToParticipant.get(firstSlot) || null) : null;
+    const rightParticipant = isFirstRoundMatch ? (slotToParticipant.get(firstSlot + 1) || null) : null;
+    const leftPoemIds = Array.isArray(matchData?.poetAPoemIds)
+      ? matchData.poetAPoemIds
+      : (leftParticipant?.poemIds || []);
+    const rightPoemIds = Array.isArray(matchData?.poetBPoemIds)
+      ? matchData.poetBPoemIds
+      : (rightParticipant?.poemIds || []);
 
     if (filledPoets.length === 0) {
       return <div className="tournament-match-empty" />;
@@ -208,9 +287,19 @@ const TournamentsPage = () => {
 
     if (filledPoets.length === 1) {
       const alreadyPromoted = matchData?.status === 'finished';
+      const singleParticipant = isFirstRoundMatch
+        ? (poets[0] ? leftParticipant : rightParticipant)
+        : null;
+      const singlePoemIds = poets[0] ? leftPoemIds : rightPoemIds;
       return (
         <div className="tournament-match-content one-poet">
-          {renderPoetSquare(filledPoets[0], 'single', { match, canPromote: !alreadyPromoted })}
+          {renderPoetSquare(
+            filledPoets[0],
+            'single',
+            { match, canPromote: !alreadyPromoted },
+            singleParticipant,
+            singlePoemIds
+          )}
         </div>
       );
     }
@@ -219,20 +308,31 @@ const TournamentsPage = () => {
     const isFinished = Boolean(matchData?.status === 'finished' && matchData?.winnerPoetId);
     const leftPoetId = filledPoets[0]?.id;
     const rightPoetId = filledPoets[1]?.id;
+    const hasWinnerSide = matchData?.winnerSide === 'A' || matchData?.winnerSide === 'B';
+    const winnerSide = !isFinished
+      ? null
+      : hasWinnerSide
+        ? matchData.winnerSide
+        : (String(leftPoetId) !== String(rightPoetId) && String(matchData?.winnerPoetId) === String(leftPoetId) ? 'A' : 'B');
+    const leftStateClass = isFinished && winnerSide === 'B' ? 'is-loser' : '';
+    const rightStateClass = isFinished && winnerSide === 'A' ? 'is-loser' : '';
 
-    let leftScore = Object.values(votes).filter((id) => id === leftPoetId).length;
-    let rightScore = Object.values(votes).filter((id) => id === rightPoetId).length;
+    const voteSides = Object.values(votes)
+      .map((vote) => resolveVoteSide(vote, matchData))
+      .filter(Boolean);
+    let leftScore = voteSides.filter((side) => side === 'A').length;
+    let rightScore = voteSides.filter((side) => side === 'B').length;
     if (isFinished && leftScore === 0 && rightScore === 0) {
-      if (matchData.winnerPoetId === leftPoetId) {
+      if (matchData.winnerSide === 'A' || (matchData.winnerPoetId === leftPoetId && String(leftPoetId) !== String(rightPoetId))) {
         leftScore = 1;
-      } else if (matchData.winnerPoetId === rightPoetId) {
+      } else if (matchData.winnerSide === 'B' || matchData.winnerPoetId === rightPoetId) {
         rightScore = 1;
       }
     }
 
     return (
       <div className="tournament-match-content two-poets">
-        {renderPoetSquare(filledPoets[0], 'left')}
+        {renderPoetSquare(filledPoets[0], 'left', null, leftParticipant, leftPoemIds, leftStateClass)}
         {isFinished ? (
           <div className="tournament-match-score" title="Счет матча">
             <span className={`score-left ${leftScore >= rightScore ? 'winner' : 'loser'}`}>{leftScore}</span>
@@ -248,7 +348,7 @@ const TournamentsPage = () => {
             <Swords size={14} />
           </button>
         )}
-        {renderPoetSquare(filledPoets[1], 'right')}
+        {renderPoetSquare(filledPoets[1], 'right', null, rightParticipant, rightPoemIds, rightStateClass)}
       </div>
     );
   };
@@ -273,6 +373,7 @@ const TournamentsPage = () => {
 
   const getMatchData = (match) => {
     if (!activeTournament || !match) return null;
+    if (match.type === 'playIn') return activeTournament.playIn || null;
     if (match.type === 'final') return activeTournament.finalMatch || null;
     return activeTournament?.rounds?.[match.roundIndex]?.[match.side]?.[match.nodeIndex] || null;
   };
@@ -288,12 +389,40 @@ const TournamentsPage = () => {
       .filter((poem) => poem?.title);
   };
 
+  const resolveVoteSide = (voteValue, matchData) => {
+    if (!matchData) return null;
+    const raw = String(voteValue || '').trim();
+    if (!raw) return null;
+    if (raw === 'A' || raw === 'B') return raw;
+    const a = String(matchData.poetAId || '').trim();
+    const b = String(matchData.poetBId || '').trim();
+    if (!a || !b || a === b) return null;
+    if (raw === a) return 'A';
+    if (raw === b) return 'B';
+    return null;
+  };
+
   const openBattleModal = (match) => {
     if (!activeTournament) return;
     setBattleError('');
     setBattleModal(match);
-    ensureTournamentMatch(activeTournament.id, match, { waitForAi: false }).catch((error) => {
+    ensureTournamentMatch(activeTournament.id, match, {
+      waitForAi: false,
+      triggerAi: currentUser === 'maxim'
+    }).catch((error) => {
       setBattleError(error?.message || 'Нельзя начать бой: не хватает участников');
+    });
+  };
+
+  const openPlayInModal = () => {
+    if (!activeTournament?.playIn || activeTournament.playIn.status !== 'active') return;
+    setBattleError('');
+    setBattleModal({ type: 'playIn' });
+    ensureTournamentPlayIn(activeTournament.id, {}, {
+      waitForAi: false,
+      triggerAi: currentUser === 'maxim'
+    }).catch((error) => {
+      setBattleError(error?.message || 'Не удалось открыть дуэль за слот');
     });
   };
 
@@ -303,12 +432,16 @@ const TournamentsPage = () => {
     setIsBattleSubmitting(false);
   };
 
-  const handleVote = async (winnerPoetId) => {
+  const handleVote = async (winnerPoetId, winnerSide) => {
     if (!activeTournament || !battleModal || !winnerPoetId) return;
     setIsBattleSubmitting(true);
     setBattleError('');
     try {
-      await submitTournamentVote(activeTournament.id, battleModal, currentUser, winnerPoetId);
+      if (battleModal.type === 'playIn') {
+        await submitTournamentPlayInVote(activeTournament.id, currentUser, winnerPoetId, winnerSide);
+      } else {
+        await submitTournamentVote(activeTournament.id, battleModal, currentUser, winnerPoetId, winnerSide);
+      }
     } catch (error) {
       setBattleError(error?.message || 'Не удалось сохранить голос');
     } finally {
@@ -378,7 +511,7 @@ const TournamentsPage = () => {
                   <span className={`tournament-connector-in ${side === 'right' ? 'is-right' : ''}`} />
                 )}
                 <div className="tournament-round-node-body">
-                  {renderMatchNodeContent(nodePoets, match)}
+                  {renderMatchNodeContent(nodePoets, match, logicalRoundIndex === 0 ? firstSlot : null)}
                 </div>
                 {hasOutConnector && (
                   <span
@@ -402,6 +535,11 @@ const TournamentsPage = () => {
   const battleWinnerId = battleMatchData?.winnerPoetId || null;
   const isBattleRevealReady = Boolean(battleVotes.maxim && battleVotes.oleg && battleVotes.ai);
   const battleAiReason = battleVotes.aiReason || null;
+  const isPlayInBattle = battleModal?.type === 'playIn';
+  const activePlayIn = activeTournament?.playIn?.status === 'active' ? activeTournament.playIn : null;
+  const activePlayInPoetA = activePlayIn?.poetAId ? (poetById.get(activePlayIn.poetAId) || null) : null;
+  const activePlayInPoetB = activePlayIn?.poetBId ? (poetById.get(activePlayIn.poetBId) || null) : null;
+  const hasCurrentUserPlayInVote = Boolean(activePlayIn?.votes?.[currentUser]);
 
   return (
     <div className="tournaments-page">
@@ -431,62 +569,80 @@ const TournamentsPage = () => {
           </div>
 
           {activeTournament && (
-            <div className="tournament-stage">
-              <div
-                className="tournament-bracket"
-                style={{
-                  '--side-height': `${sideSize * BRACKET_ROW_HEIGHT}px`,
-                  '--connector-in-len': `${size === 16 ? 55 : 15}px`,
-                  '--semifinal-final-len': `${size === 16 ? 21 : 11}px`
-                }}
-              >
-                <div className="tournament-side tournament-side-left">
-                  {Array.from({ length: roundsPerSide }, (_, i) => renderRoundColumn('left', i, i))}
-                </div>
+            <>
+              <div className="tournament-stage">
+                <div
+                  className="tournament-bracket"
+                  style={{
+                    '--side-height': `${sideSize * BRACKET_ROW_HEIGHT}px`,
+                    '--connector-in-len': `${size === 16 ? 55 : 15}px`,
+                    '--semifinal-final-len': `${size === 16 ? 21 : 11}px`
+                  }}
+                >
+                  <div className="tournament-side tournament-side-left">
+                    {Array.from({ length: roundsPerSide }, (_, i) => renderRoundColumn('left', i, i))}
+                  </div>
 
-                <div className="tournament-center-column">
-                  <div className="tournament-center-top">
-                    {activeTournament.badge ? (
-                      <img
-                        src={`/images/badges/${activeTournament.badge}`}
-                        alt={activeTournament.name}
-                        className="tournament-badge"
-                      />
-                    ) : (
-                      <div className="tournament-badge tournament-badge-placeholder">🏆</div>
+                  <div className="tournament-center-column">
+                    <div className="tournament-center-top">
+                      {activeTournament.badge ? (
+                        <img
+                          src={`/images/badges/${activeTournament.badge}`}
+                          alt={activeTournament.name}
+                          className="tournament-badge"
+                        />
+                      ) : (
+                        <div className="tournament-badge tournament-badge-placeholder">🏆</div>
+                      )}
+                    </div>
+
+                    <div className="tournament-center-main-row">
+                      {/* <div className="tournament-final-label">Финал</div> */}
+                      <div className="tournament-final-node">
+                        <div className="tournament-round-node-body">
+                          {renderMatchNodeContent(finalPoets, { type: 'final' }, null)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {winnerPoet && (
+                      <div className="tournament-center-bottom">
+                        <div
+                          className="tournament-winner-node"
+                          title={winnerPoemTitles.length > 0
+                            ? `${winnerPoet.name}\nСтих: ${winnerPoemTitles[0]}`
+                            : winnerPoet.name}
+                        >
+                          <img
+                            src={winnerPoet.imageUrl || '/images/poet.png'}
+                            alt={winnerPoet.name}
+                            style={winnerPoet.imageUrl ? { objectPosition: `center ${winnerPoet.imagePositionY ?? 25}%` } : undefined}
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  <div className="tournament-center-main-row">
-                    {/* <div className="tournament-final-label">Финал</div> */}
-                    <div className="tournament-final-node">
-                      <div className="tournament-round-node-body">
-                        {renderMatchNodeContent(finalPoets, { type: 'final' })}
-                      </div>
-                    </div>
+                  <div className="tournament-side tournament-side-right">
+                    {Array.from({ length: roundsPerSide }, (_, i) =>
+                      renderRoundColumn('right', roundsPerSide - 1 - i, i)
+                    )}
                   </div>
-
-                  {winnerPoet && (
-                    <div className="tournament-center-bottom">
-                      <div className="tournament-winner-label">Победитель</div>
-                      <div className="tournament-winner-node" title={winnerPoet.name}>
-                        <img
-                          src={winnerPoet.imageUrl || '/images/poet.png'}
-                          alt={winnerPoet.name}
-                          style={winnerPoet.imageUrl ? { objectPosition: `center ${winnerPoet.imagePositionY ?? 25}%` } : undefined}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="tournament-side tournament-side-right">
-                  {Array.from({ length: roundsPerSide }, (_, i) =>
-                    renderRoundColumn('right', roundsPerSide - 1 - i, i)
-                  )}
                 </div>
               </div>
-            </div>
+
+              {activePlayIn && activePlayInPoetA && activePlayInPoetB && (
+                <div className="active-playin-panel">
+                  <div className="active-playin-title">Активная дуэль за место</div>
+                  <div className="active-playin-subtitle">
+                    {activePlayInPoetA.name} vs {activePlayInPoetB.name}
+                  </div>
+                  <button className="btn-add-poet" onClick={openPlayInModal}>
+                    {hasCurrentUserPlayInVote ? 'Открыть дуэль' : 'Проголосовать в дуэли'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -531,7 +687,7 @@ const TournamentsPage = () => {
 
             {selectedPoet && (
               <div className="form-field">
-                <label>Стихи для участия (опционально)</label>
+                <label>Стих для участия (опционально)</label>
                 <div className="tournament-poems-list">
                   {selectedPoetPoems.length === 0 ? (
                     <span className="empty-message">У поэта нет стихов</span>
@@ -540,12 +696,12 @@ const TournamentsPage = () => {
                       <label key={poem.id} className="tournament-poem-option">
                         <input
                           type="checkbox"
-                          checked={selectedPoemIds.includes(poem.id)}
+                          checked={selectedPoemIds[0] === poem.id}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedPoemIds((prev) => [...prev, poem.id]);
+                              setSelectedPoemIds([poem.id]);
                             } else {
-                              setSelectedPoemIds((prev) => prev.filter((id) => id !== poem.id));
+                              setSelectedPoemIds([]);
                             }
                           }}
                         />
@@ -578,9 +734,11 @@ const TournamentsPage = () => {
             <button className="battle-close-btn" onClick={closeBattleModal}>✕</button>
 
             <div className="battle-header">
-              <h2 className="battle-title">ДУЭЛЬ</h2>
+              <h2 className="battle-title">{isPlayInBattle ? 'ДУЭЛЬ ЗА МЕСТО' : 'ДУЭЛЬ'}</h2>
               <p className="battle-subtitle">
-                Выберите победителя в категории: <strong>{activeTournament?.name || 'Турнир'}</strong>
+                {isPlayInBattle
+                  ? <>Победитель занимает слот в турнире: <strong>{activeTournament?.name || 'Турнир'}</strong></>
+                  : <>Выберите победителя в категории: <strong>{activeTournament?.name || 'Турнир'}</strong></>}
               </p>
             </div>
 
@@ -589,14 +747,27 @@ const TournamentsPage = () => {
             ) : (() => {
               const currentUserVoted = !!battleVotes[currentUser];
               const renderPoetCard = (poet, side, poems) => {
-                const isWinner = isBattleRevealReady && String(battleWinnerId) === String(poet.id);
-                const isLoser = isBattleRevealReady && battleWinnerId && String(battleWinnerId) !== String(poet.id);
+                const sideKey = side === 'left' ? 'A' : 'B';
+                const hasWinnerBySide = battleMatchData?.winnerSide === 'A' || battleMatchData?.winnerSide === 'B';
+                const isWinner = isBattleRevealReady && (
+                  hasWinnerBySide
+                    ? battleMatchData?.winnerSide === sideKey
+                    : String(battleWinnerId) === String(poet.id)
+                );
+                const isLoser = isBattleRevealReady && (
+                  hasWinnerBySide
+                    ? battleMatchData?.winnerSide !== sideKey
+                    : (battleWinnerId && String(battleWinnerId) !== String(poet.id))
+                );
                 const nameParts = poet.name.split(' ');
                 return (
                   <div className="tournament-duel-col">
                     <button
                       className={`battle-poet-card ${side}${isWinner ? ' duel-winner' : ''}${isLoser ? ' duel-loser' : ''}`}
-                      onClick={() => { if (!currentUserVoted && !isBattleSubmitting) handleVote(poet.id); }}
+                      onClick={() => {
+                        if (currentUserVoted || isBattleSubmitting) return;
+                        handleVote(poet.id, side === 'left' ? 'A' : 'B');
+                      }}
                       style={{ cursor: currentUserVoted ? 'default' : 'pointer' }}
                     >
                       <div className="battle-poet-image">
@@ -669,8 +840,8 @@ const TournamentsPage = () => {
                         { key: 'ai', label: 'ИИ' },
                       ];
                       if (isBattleRevealReady) {
-                        const leftVoters = voters.filter(v => String(battleVotes[v.key]) === String(battlePoetA.id));
-                        const rightVoters = voters.filter(v => String(battleVotes[v.key]) === String(battlePoetB.id));
+                        const leftVoters = voters.filter((v) => resolveVoteSide(battleVotes[v.key], battleMatchData) === 'A');
+                        const rightVoters = voters.filter((v) => resolveVoteSide(battleVotes[v.key], battleMatchData) === 'B');
                         const leftScore = leftVoters.length;
                         const rightScore = rightVoters.length;
                         const renderBadge = ({ key, label }) => {
@@ -738,8 +909,9 @@ const TournamentsPage = () => {
               className="tournament-context-item danger"
               onClick={() => {
                 setContextMenu(null);
-                handleDeleteParticipant(contextMenu.poet.id);
+                handleDeleteParticipant(contextMenu.participant);
               }}
+              disabled={!contextMenu.participant?.id}
             >
               Удалить из турнира
             </button>

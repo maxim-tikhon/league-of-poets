@@ -469,9 +469,14 @@ const PoetsPage = () => {
         await delay(DELAY_MS);
         
         // Генерируем влияние
-        const influencePrompt = generatePoetInfluencePrompt(trimmedName);
-        const generatedInfluence = await generateContent(influencePrompt);
-        await updatePoet(newPoet.id, { influence: generatedInfluence });
+        const readyLifeStory = String(generatedLifeStory || '').trim();
+        if (readyLifeStory) {
+          const influencePrompt = generatePoetInfluencePrompt(trimmedName, readyLifeStory);
+          const generatedInfluence = await generateContent(influencePrompt);
+          await updatePoet(newPoet.id, { influence: generatedInfluence });
+        } else {
+          console.log('[Influence AI] Skipped: lifeStory is empty');
+        }
         
         // await delay(DELAY_MS);
         
@@ -482,10 +487,14 @@ const PoetsPage = () => {
         
         await delay(DELAY_MS);
         
-        // Генерируем драму
-        const dramaPrompt = generatePoetDramaPrompt(trimmedName);
-        const generatedDrama = await generateContent(dramaPrompt);
-        await updatePoet(newPoet.id, { drama: generatedDrama });
+        // Генерируем драму только после готовой биографии
+        if (readyLifeStory) {
+          const dramaPrompt = generatePoetDramaPrompt(trimmedName, readyLifeStory);
+          const generatedDrama = await generateContent(dramaPrompt);
+          await updatePoet(newPoet.id, { drama: generatedDrama });
+        } else {
+          console.log('[Drama AI] Skipped: lifeStory is empty');
+        }
         
         await delay(DELAY_MS);
         

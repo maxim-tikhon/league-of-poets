@@ -225,6 +225,54 @@ const AdminPage = () => {
       setTournamentError('Не удалось удалить турнир');
     }
   };
+
+  const getOrderedTournaments = () => {
+    return [...tournaments].sort((a, b) => {
+      const hasOrderA = Number.isFinite(Number(a.displayOrder));
+      const hasOrderB = Number.isFinite(Number(b.displayOrder));
+      if (hasOrderA && hasOrderB) {
+        return Number(a.displayOrder) - Number(b.displayOrder);
+      }
+      if (hasOrderA && !hasOrderB) return -1;
+      if (!hasOrderA && hasOrderB) return 1;
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  };
+
+  const handleMoveTournament = async (tournamentId, direction) => {
+    const ordered = getOrderedTournaments();
+    const currentIndex = ordered.findIndex((t) => t.id === tournamentId);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= ordered.length) return;
+
+    try {
+      const hasMissingOrder = ordered.some((t) => !Number.isFinite(Number(t.displayOrder)));
+      if (hasMissingOrder) {
+        await Promise.all(
+          ordered.map((t, index) => updateTournament(t.id, { displayOrder: index }))
+        );
+        ordered.forEach((t, index) => {
+          t.displayOrder = index;
+        });
+      }
+
+      const current = ordered[currentIndex];
+      const target = ordered[targetIndex];
+      const currentOrder = Number(current.displayOrder);
+      const targetOrder = Number(target.displayOrder);
+
+      await Promise.all([
+        updateTournament(current.id, { displayOrder: targetOrder }),
+        updateTournament(target.id, { displayOrder: currentOrder })
+      ]);
+    } catch (error) {
+      console.error('Ошибка изменения порядка турниров:', error);
+      setTournamentError('Не удалось изменить порядок турниров');
+    }
+  };
   
   // Инициализация редактируемых коэффициентов
   useEffect(() => {
@@ -687,10 +735,15 @@ const AdminPage = () => {
   // Сгенерировать новое влияние
   const handleGenerateInfluence = async () => {
     if (!selectedPoet) return;
+    const readyLifeStory = String(selectedPoet.lifeStory || '').trim();
+    if (!readyLifeStory) {
+      alert('Сначала должна быть заполнена биография (жизненный путь).');
+      return;
+    }
     
     setIsGeneratingInfluence(true);
     try {
-      const prompt = generatePoetInfluencePrompt(selectedPoet.name);
+      const prompt = generatePoetInfluencePrompt(selectedPoet.name, readyLifeStory);
       const generatedInfluence = await generateContent(prompt);
       setEditInfluenceText(generatedInfluence);
     } catch (err) {
@@ -716,7 +769,12 @@ const AdminPage = () => {
   // Скопировать промпт для влияния
   const handleCopyInfluencePrompt = () => {
     if (!selectedPoet) return;
-    const prompt = generatePoetInfluencePrompt(selectedPoet.name);
+    const readyLifeStory = String(selectedPoet.lifeStory || '').trim();
+    if (!readyLifeStory) {
+      alert('Сначала должна быть заполнена биография (жизненный путь).');
+      return;
+    }
+    const prompt = generatePoetInfluencePrompt(selectedPoet.name, readyLifeStory);
     navigator.clipboard.writeText(prompt).catch(() => {});
   };
 
@@ -737,10 +795,15 @@ const AdminPage = () => {
   // Сгенерировать новую драму
   const handleGenerateDrama = async () => {
     if (!selectedPoet) return;
+    const readyLifeStory = String(selectedPoet.lifeStory || '').trim();
+    if (!readyLifeStory) {
+      alert('Сначала должна быть заполнена биография (жизненный путь).');
+      return;
+    }
     
     setIsGeneratingDrama(true);
     try {
-      const prompt = generatePoetDramaPrompt(selectedPoet.name);
+      const prompt = generatePoetDramaPrompt(selectedPoet.name, readyLifeStory);
       const generatedDrama = await generateContent(prompt);
       setEditDramaText(generatedDrama);
     } catch (err) {
@@ -766,7 +829,12 @@ const AdminPage = () => {
   // Скопировать промпт для драмы
   const handleCopyDramaPrompt = () => {
     if (!selectedPoet) return;
-    const prompt = generatePoetDramaPrompt(selectedPoet.name);
+    const readyLifeStory = String(selectedPoet.lifeStory || '').trim();
+    if (!readyLifeStory) {
+      alert('Сначала должна быть заполнена биография (жизненный путь).');
+      return;
+    }
+    const prompt = generatePoetDramaPrompt(selectedPoet.name, readyLifeStory);
     navigator.clipboard.writeText(prompt).catch(() => {});
   };
 
@@ -1071,6 +1139,7 @@ Note: В конкурсе будут участвовать все выдающ�
   const visiblePoets = normalizedPoetSearch
     ? sortedPoets.filter((poet) => poet.name?.toLowerCase().includes(normalizedPoetSearch))
     : sortedPoets.slice(0, 4);
+  const orderedTournaments = getOrderedTournaments();
   
   return (
     <div className="admin-page">
@@ -1381,7 +1450,7 @@ Note: В конкурсе будут участвовать все выдающ�
             {tournaments.length === 0 ? (
               <p className="empty-message">Пока нет созданных турниров</p>
             ) : (
-              tournaments.map((tournament) => {
+              orderedTournaments.map((tournament, index) => {
                 const isEditing = editingTournamentId === tournament.id;
 
                 if (isEditing) {
@@ -1447,6 +1516,22 @@ Note: В конкурсе будут участвовать все выдающ�
                       </div>
                     </div>
                     <div className="settings-inline">
+                      <button
+                        className="toggle-btn"
+                        onClick={() => handleMoveTournament(tournament.id, 'up')}
+                        disabled={index === 0}
+                        title="Переместить выше"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        className="toggle-btn"
+                        onClick={() => handleMoveTournament(tournament.id, 'down')}
+                        disabled={index === orderedTournaments.length - 1}
+                        title="Переместить ниже"
+                      >
+                        ↓
+                      </button>
                       <button className="toggle-btn" onClick={() => startEditTournament(tournament)}>Редактировать</button>
                       <button
                         className="toggle-btn"
