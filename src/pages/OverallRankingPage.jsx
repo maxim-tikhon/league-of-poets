@@ -61,11 +61,6 @@ const OverallRankingPage = () => {
   // Firebase уже оптимизирован и не будет создавать новые объекты если данные не изменились
   const categoryLeaders = rawCategoryLeaders || { maxim: {}, oleg: {} };
   const overallDuelWinners = rawOverallDuelWinners || {};
-  const resolveBadgeFilename = (badgeValue) => {
-    const raw = String(badgeValue || '').trim();
-    if (!raw) return 'overall.png';
-    return raw.toLowerCase().endsWith('.png') ? raw : `${raw}.png`;
-  };
   const tournamentAwards = useMemo(() => {
     if (!Array.isArray(tournaments)) return [];
     return tournaments.filter((tournament) =>
@@ -1025,12 +1020,9 @@ const OverallRankingPage = () => {
           badges.push(
             <img
               key={`tournament-${tournament.id}`}
-              src={`/images/badges/${resolveBadgeFilename(tournament.badge)}`}
+              src={`/images/badges/${tournament.badge}`}
               alt={tournament.name || 'Турнирная награда'}
               className="winner-badge"
-              onError={(e) => {
-                e.currentTarget.src = '/images/badges/overall.png';
-              }}
             />
           );
         }

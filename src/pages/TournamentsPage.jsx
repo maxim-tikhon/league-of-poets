@@ -130,12 +130,20 @@ const TournamentsPage = () => {
       .map((poemId) => winnerPoet?.poems?.[poemId]?.title)
       .filter(Boolean);
   }, [activeTournament, winnerPoet]);
-  const resolveBadgeFilename = (badgeValue) => {
-    const raw = String(badgeValue || '').trim();
-    if (!raw) return 'overall.png';
-    return raw.toLowerCase().endsWith('.png') ? raw : `${raw}.png`;
-  };
-  const activeBadgeFilename = resolveBadgeFilename(activeTournament?.badge);
+  useEffect(() => {
+    if (!activeTournament) return;
+    const topBadgeSrc = activeTournament.badge
+      ? `/images/badges/${activeTournament.badge}`
+      : '';
+    const duelBadgeSrc = `/images/badges/${activeTournament.badge || 'overall.png'}`;
+    console.log('[Tournament Badge Debug]', {
+      tournamentId: activeTournament.id,
+      tournamentName: activeTournament.name,
+      badgeRaw: activeTournament.badge,
+      topBadgeSrc,
+      duelBadgeSrc
+    });
+  }, [activeTournament]);
   const selectedPoetPoems = useMemo(() => {
     if (!selectedPoet?.poems) return [];
     return Object.keys(selectedPoet.poems).map((id) => ({
@@ -593,11 +601,16 @@ const TournamentsPage = () => {
                     <div className="tournament-center-top">
                       {activeTournament.badge ? (
                         <img
-                          src={`/images/badges/${activeBadgeFilename}`}
+                          src={`/images/badges/${activeTournament.badge}`}
                           alt={activeTournament.name}
                           className="tournament-badge"
                           onError={(e) => {
-                            e.currentTarget.src = '/images/badges/overall.png';
+                            console.log('[Tournament Badge Debug] top badge load error', {
+                              tournamentId: activeTournament.id,
+                              tournamentName: activeTournament.name,
+                              badgeRaw: activeTournament.badge,
+                              attemptedSrc: e.currentTarget.currentSrc || e.currentTarget.src
+                            });
                           }}
                         />
                       ) : (
@@ -832,11 +845,16 @@ const TournamentsPage = () => {
                     {renderPoetCard(battlePoetA, 'left', battlePoemsA)}
                     <div className="battle-prize">
                       <img
-                        src={`/images/badges/${activeBadgeFilename}`}
+                        src={`/images/badges/${activeTournament?.badge || 'overall.png'}`}
                         alt={activeTournament?.name}
                         className="battle-prize-icon"
                         onError={(e) => {
-                          e.currentTarget.src = '/images/badges/overall.png';
+                          console.log('[Tournament Badge Debug] duel badge load error', {
+                            tournamentId: activeTournament?.id,
+                            tournamentName: activeTournament?.name,
+                            badgeRaw: activeTournament?.badge,
+                            attemptedSrc: e.currentTarget.currentSrc || e.currentTarget.src
+                          });
                         }}
                       />
                     </div>
