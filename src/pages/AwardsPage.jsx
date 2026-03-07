@@ -36,10 +36,10 @@ const AwardsPage = () => {
     poemsArray.forEach(poem => {
       if (poem.viewed?.maxim) score += 1;
       if (poem.viewed?.oleg) score += 1;
-      if (poem.liked?.maxim) score += 5;
-      if (poem.liked?.oleg) score += 5;
-      if (poem.memorized?.maxim) score += 10;
-      if (poem.memorized?.oleg) score += 10;
+      if (poem.liked?.maxim) score += 15;
+      if (poem.liked?.oleg) score += 15;
+      if (poem.memorized?.maxim) score += 50;
+      if (poem.memorized?.oleg) score += 50;
     });
     
     return score;

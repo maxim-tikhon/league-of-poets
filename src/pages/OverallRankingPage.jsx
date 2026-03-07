@@ -156,12 +156,12 @@ const OverallRankingPage = () => {
       if (poem.viewed?.oleg) score += 1;
       
       // Лайки: 3 балла за каждого пользователя
-      if (poem.liked?.maxim) score += 5;
-      if (poem.liked?.oleg) score += 5;
+      if (poem.liked?.maxim) score += 15;
+      if (poem.liked?.oleg) score += 15;
       
       // Выучено: 10 баллов за каждого пользователя
-      if (poem.memorized?.maxim) score += 10;
-      if (poem.memorized?.oleg) score += 10;
+      if (poem.memorized?.maxim) score += 50;
+      if (poem.memorized?.oleg) score += 50;
     });
     
     return score;
