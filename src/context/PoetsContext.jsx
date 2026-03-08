@@ -781,6 +781,41 @@ export const PoetsProvider = ({ children }) => {
     await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: new Date().toISOString() });
   };
 
+  const addToBench = async (tournamentId, entry) => {
+    if (!tournamentId) throw new Error('tournamentId is required');
+    const benchRef = push(ref(database, `tournaments/${tournamentId}/bench`));
+    const now = new Date().toISOString();
+    await set(benchRef, {
+      poetId: entry.poetId,
+      poemIds: Array.isArray(entry.poemIds) ? entry.poemIds.slice(0, 1) : [],
+      createdAt: now,
+      updatedAt: now
+    });
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: now });
+    return benchRef.key;
+  };
+
+  const removeFromBench = async (tournamentId, benchEntryId) => {
+    if (!tournamentId || !benchEntryId) throw new Error('tournamentId and benchEntryId are required');
+    await remove(ref(database, `tournaments/${tournamentId}/bench/${benchEntryId}`));
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: new Date().toISOString() });
+  };
+
+  const clearBench = async (tournamentId) => {
+    if (!tournamentId) throw new Error('tournamentId is required');
+    await set(ref(database, `tournaments/${tournamentId}/bench`), {});
+    await update(ref(database, `tournaments/${tournamentId}`), { updatedAt: new Date().toISOString() });
+  };
+
+  const addParticipantFromBench = async (tournamentId, benchEntryId) => {
+    if (!tournamentId || !benchEntryId) throw new Error('tournamentId and benchEntryId are required');
+    const benchSnap = await get(ref(database, `tournaments/${tournamentId}/bench/${benchEntryId}`));
+    if (!benchSnap.exists()) throw new Error('Запись на скамейке не найдена');
+    const { poetId, poemIds } = benchSnap.val();
+    await addTournamentParticipant(tournamentId, { poetId, poemIds: poemIds || [] });
+    await removeFromBench(tournamentId, benchEntryId);
+  };
+
   const getParticipantBySlot = (tournament, slot) => {
     const participantsObj = tournament?.participants || {};
     const participantEntry = Object.entries(participantsObj).find(([, value]) => value?.slot === slot);
@@ -1430,6 +1465,10 @@ export const PoetsProvider = ({ children }) => {
     addTournamentParticipant,
     updateTournamentParticipant,
     deleteTournamentParticipant,
+    addToBench,
+    removeFromBench,
+    addParticipantFromBench,
+    clearBench,
     ensureTournamentMatch,
     submitTournamentVote,
     ensureTournamentPlayIn,

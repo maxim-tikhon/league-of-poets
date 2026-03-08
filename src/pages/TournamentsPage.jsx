@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Music4, Swords } from 'lucide-react';
+import { Music4, CirclePlus, CircleX, Swords, X } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { usePoets } from '../context/PoetsContext';
 import './TournamentsPage.css';
@@ -13,6 +13,10 @@ const TournamentsPage = () => {
     poets,
     addTournamentParticipant,
     deleteTournamentParticipant,
+    addToBench,
+    addParticipantFromBench,
+    removeFromBench,
+    clearBench,
     ensureTournamentMatch,
     submitTournamentVote,
     ensureTournamentPlayIn,
@@ -32,6 +36,11 @@ const TournamentsPage = () => {
   const [promotingMatchKey, setPromotingMatchKey] = useState('');
   const [deletingParticipantId, setDeletingParticipantId] = useState('');
   const [contextMenu, setContextMenu] = useState(null); // { x, y, poet, participant, match, canPromote }
+  const [addToBenchOnly, setAddToBenchOnly] = useState(false);
+  const [benchActionError, setBenchActionError] = useState('');
+  const [addingFromBenchId, setAddingFromBenchId] = useState('');
+  const [clearingBench, setClearingBench] = useState(false);
+  const [removingFromBenchId, setRemovingFromBenchId] = useState('');
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -61,6 +70,14 @@ const TournamentsPage = () => {
     return Object.keys(activeTournament.participants).map((id) => ({
       id,
       ...activeTournament.participants[id]
+    }));
+  }, [activeTournament]);
+
+  const bench = useMemo(() => {
+    if (!activeTournament?.bench) return [];
+    return Object.keys(activeTournament.bench).map((id) => ({
+      id,
+      ...activeTournament.bench[id]
     }));
   }, [activeTournament]);
 
@@ -158,12 +175,26 @@ const TournamentsPage = () => {
     setSelectedPoetId('');
     setSelectedPoemIds([]);
     setParticipantError('');
+    setAddToBenchOnly(false);
   };
 
   const handleAddParticipant = async () => {
     if (!activeTournament) return;
     if (!selectedPoetId) {
       setParticipantError('Выберите поэта');
+      return;
+    }
+
+    if (addToBenchOnly) {
+      try {
+        await addToBench(activeTournament.id, {
+          poetId: selectedPoetId,
+          poemIds: selectedPoemIds.slice(0, 1)
+        });
+        closeAddParticipantModal();
+      } catch (error) {
+        setParticipantError(error?.message || 'Не удалось добавить на скамейку');
+      }
       return;
     }
 
@@ -348,7 +379,7 @@ const TournamentsPage = () => {
       <div className="tournament-match-content two-poets">
         {renderPoetSquare(filledPoets[0], 'left', null, leftParticipant, leftPoemIds, leftStateClass)}
         {isFinished ? (
-          <div className="tournament-match-score" title="Счет матча">
+          <div className="tournament-match-score">
             <span className={`score-left ${leftScore >= rightScore ? 'winner' : 'loser'}`}>{leftScore}</span>
             <span className="score-separator">:</span>
             <span className={`score-right ${rightScore >= leftScore ? 'winner' : 'loser'}`}>{rightScore}</span>
@@ -356,7 +387,6 @@ const TournamentsPage = () => {
         ) : (
           <button
             className="tournament-battle-btn"
-            title="Начать битву"
             onClick={() => openBattleModal(match)}
           >
             <Swords size={14} />
@@ -663,6 +693,98 @@ const TournamentsPage = () => {
                   </button>
                 </div>
               )}
+
+              {bench.length > 0 && (
+                <div className="tournament-bench-section">
+                  <div className="tournament-bench-header">
+                    <h3 className="tournament-bench-title">Скамейка запасных</h3>
+                    <button
+                      type="button"
+                      className="tournament-bench-clear-all"
+                      disabled={clearingBench}
+                      onClick={async () => {
+                        if (!window.confirm('Очистить всю скамейку запасных?')) return;
+                        setBenchActionError('');
+                        setClearingBench(true);
+                        try {
+                          await clearBench(activeTournament.id);
+                        } catch (err) {
+                          setBenchActionError(err?.message || 'Не удалось очистить скамейку');
+                        } finally {
+                          setClearingBench(false);
+                        }
+                      }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {benchActionError && <div className="field-error tournament-bench-error">{benchActionError}</div>}
+                  <ul className="tournament-bench-list">
+                    {bench.map((entry) => {
+                      const poet = poetById.get(entry.poetId);
+                      const poemTitle = Array.isArray(entry.poemIds) && entry.poemIds[0] && poet?.poems?.[entry.poemIds[0]]?.title;
+                      const isAdding = addingFromBenchId === entry.id;
+                      const isRemoving = removingFromBenchId === entry.id;
+                      return (
+                        <li key={entry.id} className="tournament-bench-item">
+                          <div className="tournament-bench-item-info">
+                            {poet?.imageUrl && (
+                              <img
+                                src={poet.imageUrl}
+                                alt=""
+                                className="tournament-bench-avatar"
+                                style={poet.imageUrl ? { objectPosition: `center ${poet.imagePositionY ?? 25}%` } : undefined}
+                              />
+                            )}
+                            <div>
+                              <span className="tournament-bench-poet-name">{poet?.name || '—'}</span>
+                              {poemTitle && <span className="tournament-bench-poem">{poemTitle}</span>}
+                            </div>
+                          </div>
+                          <div className="tournament-bench-item-actions">
+                            <button
+                              type="button"
+                              className="tournament-bench-plus"
+                              disabled={isAdding || isRemoving}
+                              onClick={async () => {
+                                setBenchActionError('');
+                                setAddingFromBenchId(entry.id);
+                                try {
+                                  await addParticipantFromBench(activeTournament.id, entry.id);
+                                } catch (err) {
+                                  setBenchActionError(err?.message || 'Не удалось добавить в турнир (нет свободных мест?)');
+                                } finally {
+                                  setAddingFromBenchId('');
+                                }
+                              }}
+                            >
+                              {isAdding ? '…' : <CirclePlus size={20} />}
+                            </button>
+                            <button
+                              type="button"
+                              className="tournament-bench-remove"
+                              disabled={isAdding || isRemoving}
+                              onClick={async () => {
+                                setBenchActionError('');
+                                setRemovingFromBenchId(entry.id);
+                                try {
+                                  await removeFromBench(activeTournament.id, entry.id);
+                                } catch (err) {
+                                  setBenchActionError(err?.message || 'Не удалось убрать');
+                                } finally {
+                                  setRemovingFromBenchId('');
+                                }
+                              }}
+                            >
+                              <CircleX size={20} />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </>
           )}
         </>
@@ -728,7 +850,7 @@ const TournamentsPage = () => {
                         />
                         <span>{poem.title}</span>
                         {poem.songUrl && (
-                          <a href={poem.songUrl} target="_blank" rel="noreferrer" className="tournament-poem-song-link" title="Открыть песню" onClick={(e) => e.stopPropagation()}>
+                          <a href={poem.songUrl} target="_blank" rel="noreferrer" className="tournament-poem-song-link" onClick={(e) => e.stopPropagation()}>
                             <Music4 size={13} />
                           </a>
                         )}
@@ -738,6 +860,17 @@ const TournamentsPage = () => {
                 </div>
               </div>
             )}
+
+            <div className="form-field tournament-bench-checkbox">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={addToBenchOnly}
+                  onChange={(e) => setAddToBenchOnly(e.target.checked)}
+                />
+                <span>Добавить на скамейку запасных</span>
+              </label>
+            </div>
 
             {participantError && <div className="field-error">{participantError}</div>}
 
@@ -827,7 +960,7 @@ const TournamentsPage = () => {
                               <span className="poem-card">{poem.title}</span>
                             )}
                             {poem.songUrl && (
-                              <a href={poem.songUrl} target="_blank" rel="noreferrer" className="tournament-poem-song-link" title="Открыть песню">
+                              <a href={poem.songUrl} target="_blank" rel="noreferrer" className="tournament-poem-song-link">
                                 <Music4 size={13} />
                               </a>
                             )}

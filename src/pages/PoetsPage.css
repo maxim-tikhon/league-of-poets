@@ -73,7 +73,7 @@
   color: var(--ink);
   border: 2px solid var(--gold);
   border-radius: 6px;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;

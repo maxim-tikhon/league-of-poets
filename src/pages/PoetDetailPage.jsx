@@ -1381,7 +1381,6 @@ const PoetDetailPage = () => {
                         e.preventDefault();
                         openQuickPoemEdit(poem);
                       }}
-                      title="ПКМ для редактирования"
                     >
                       <span className="poem-title">{poem.title}</span>
                     </div>

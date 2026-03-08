@@ -769,3 +769,178 @@ body[data-theme="letterboxd"] .tournament-context-item.danger {
   flex: 1;
   min-width: 220px;
 }
+
+.tournament-bench-section {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  /* border: 1px solid rgba(233, 239, 248, 0.2); */
+  border-radius: 10px;
+  background: rgba(233, 239, 248, 0.04);
+}
+
+.tournament-bench-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tournament-bench-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-light);
+  margin: 0;
+}
+
+.tournament-bench-clear-all {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-muted);
+  border-radius: 4px;
+}
+
+.tournament-bench-clear-all:hover:not(:disabled) {
+  color: var(--ink-light);
+  background: rgba(233, 239, 248, 0.1);
+}
+
+.tournament-bench-clear-all:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tournament-bench-error {
+  margin-bottom: 0.5rem;
+}
+
+.tournament-bench-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.tournament-bench-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  /* background: rgba(233, 239, 248, 0.06); */
+  border-radius: 8px;
+  border: 1px solid rgba(233, 239, 248, 0.12);
+  min-width: 0;
+}
+
+.tournament-bench-item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.tournament-bench-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tournament-bench-poet-name {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-light);
+}
+
+.tournament-bench-poem {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.tournament-bench-add-btn {
+  flex-shrink: 0;
+}
+
+.tournament-bench-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.tournament-bench-plus {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #00ac1c;
+}
+
+.tournament-bench-plus:hover:not(:disabled) {
+  color: #00d924;
+}
+
+.tournament-bench-plus:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tournament-bench-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #ff6b6b;
+  border-radius: 4px;
+}
+
+.tournament-bench-remove:hover:not(:disabled) {
+  color: #ff8585;
+}
+
+.tournament-bench-remove:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tournament-add-modal .tournament-bench-checkbox {
+  margin-top: 0.5rem;
+}
+
+.tournament-add-modal .checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.tournament-add-modal .checkbox-label input {
+  accent-color: #40BCF4;
+}
