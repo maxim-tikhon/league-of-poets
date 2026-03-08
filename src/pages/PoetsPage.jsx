@@ -68,13 +68,13 @@ const SECONDARY_POETS = [
   'Майк Науменко',
   'Юрий Шевчук',
   'Борис Гребенщиков',
-  'Эдуард Асадов',
+  // 'Эдуард Асадов',
   'Муса Джалиль',
   'Земфира',
   'Оксимирон',
   'Эдуард Лимонов',
   'Иван Барков',
-  'Александр Грибоедов',
+  // 'Александр Грибоедов',
   'Самуил Маршак',
   'Корней Чуковский',
   // 'Дмитрий Веневитинов',
@@ -122,19 +122,16 @@ const TERTIARY_POETS = [
   'Игорь Тальков',
   'Вера Полозкова',
   'Андрей Вознесенский',
-  'Александр Радищев',
   'Дельфин',
   'Монеточка',
   'Ника Турбина',
   'Татьяна Снежина',
   'Noize MC',
-  'Сергей Михалков',
   'Алексей Крученых',
   'Николай Клюев',
   'Михаил Кузмин',
   'Геннадий Шпаликов',
   'Дмитрий Пригов',
-  'Алексей Толстой',
   'Владимир Набоков',
   'Тэффи',
   'Леонид Филатов',
@@ -145,12 +142,15 @@ const TERTIARY_POETS = [
   'Николай Олейников',
   'София Парнок',
   'Диана Арбенина',
-  'Денис Давыдов',
-  'Юнна Мориц',
+  // 'Денис Давыдов',
   'Даниил Андреев',
   'Борис Поплавский',
   'Давид Бурлюк',
   'Агния Барто',
+  // 'Юнна Мориц',
+  // 'Александр Радищев',
+  // 'Алексей Толстой',
+  // 'Сергей Михалков',
   // 'Борис Заходер',
   // 'Иннокентий Анненский',
   // 'Евгений Баратынский',
@@ -224,10 +224,10 @@ const RESERVE_POETS = [
 
 // Полный список всех поэтов (SUPER ×3, PRIMARY ×3, SECONDARY ×2, TERTIARY ×2, QUATERNARY ×1, QUINARY ×1)
 // RESERVE_POETS не включены — они на запасной скамейке
-const ALL_POETS = [...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS, ...QUATERNARY_POETS,
-  ...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS,
-  ...SUPER_POETS, ...PRIMARY_POETS, ...SECONDARY_POETS, 
-  ...SUPER_POETS, ...PRIMARY_POETS, ...SUPER_POETS];
+const ALL_POETS = [...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS];
+  // ...SUPER_POETS,...PRIMARY_POETS, ...SECONDARY_POETS, ...TERTIARY_POETS,
+  // ...SUPER_POETS, ...PRIMARY_POETS, ...SECONDARY_POETS, 
+  // ...SUPER_POETS, ...PRIMARY_POETS, ...SUPER_POETS];
 import './PoetsPage.css';
 
 const PoetsPage = () => {

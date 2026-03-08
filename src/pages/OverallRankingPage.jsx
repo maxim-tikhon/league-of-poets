@@ -1078,7 +1078,7 @@ const OverallRankingPage = () => {
       {/* Блок конфликтов */}
       {detectConflicts.length > 0 && (
         <div className="conflicts-block">
-          <h3 className="conflicts-title">Критики не сошлись во мнении — пусть судьба решит.</h3>
+          {/* <h3 className="conflicts-title">Критики не сошлись во мнении — пусть судьба решит.</h3> */}
 
           <div className="conflicts-list">
             {detectConflicts.map((conflict) => (
