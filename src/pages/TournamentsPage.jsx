@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Music4, CirclePlus, CircleX, Swords, X } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { usePoets } from '../context/PoetsContext';
@@ -6,6 +7,7 @@ import './TournamentsPage.css';
 import '../components/BattleModal.css';
 
 const TournamentsPage = () => {
+  const navigate = useNavigate();
   const BRACKET_ROW_HEIGHT = 44;
   const BRACKET_CARD_HEIGHT = 40;
   const {
@@ -285,6 +287,9 @@ const TournamentsPage = () => {
       : poemTitles.length > 0
         ? `${poet.name}\n${poemTitles[0]}`
         : poet.name;
+    const poemUrl = poet && sourcePoemIds.length > 0
+      ? poet.poems?.[sourcePoemIds[0]]?.url
+      : '';
 
     return (
     <div
@@ -299,6 +304,7 @@ const TournamentsPage = () => {
           y: e.clientY,
           poet,
           participant,
+          poemUrl: poemUrl || '',
           match: matchCtx?.match || null,
           canPromote: matchCtx?.canPromote || false
         });
@@ -723,24 +729,50 @@ const TournamentsPage = () => {
                     {bench.map((entry) => {
                       const poet = poetById.get(entry.poetId);
                       const poemTitle = Array.isArray(entry.poemIds) && entry.poemIds[0] && poet?.poems?.[entry.poemIds[0]]?.title;
+                      const poemUrl = Array.isArray(entry.poemIds) && entry.poemIds[0] && poet?.poems?.[entry.poemIds[0]]?.url;
                       const isAdding = addingFromBenchId === entry.id;
                       const isRemoving = removingFromBenchId === entry.id;
                       return (
                         <li key={entry.id} className="tournament-bench-item">
-                          <div className="tournament-bench-item-info">
-                            {poet?.imageUrl && (
-                              <img
-                                src={poet.imageUrl}
-                                alt=""
-                                className="tournament-bench-avatar"
-                                style={poet.imageUrl ? { objectPosition: `center ${poet.imagePositionY ?? 25}%` } : undefined}
-                              />
-                            )}
-                            <div>
-                              <span className="tournament-bench-poet-name">{poet?.name || '—'}</span>
-                              {poemTitle && <span className="tournament-bench-poem">{poemTitle}</span>}
+                          {poet ? (
+                            <div className="tournament-bench-item-info">
+                              {poet.imageUrl && (
+                                <Link to={`/poet/${poet.id}`} className="tournament-bench-poet-link">
+                                  <img
+                                    src={poet.imageUrl}
+                                    alt={poet.name}
+                                    className="tournament-bench-avatar"
+                                    style={poet.imageUrl ? { objectPosition: `center ${poet.imagePositionY ?? 25}%` } : undefined}
+                                  />
+                                </Link>
+                              )}
+                              <div className="tournament-bench-text">
+                                <Link to={`/poet/${poet.id}`} className="tournament-bench-poet-link tournament-bench-poet-name-link">
+                                  <span className="tournament-bench-poet-name">{poet.name}</span>
+                                </Link>
+                                {poemTitle && (
+                                  poemUrl ? (
+                                    <a
+                                      href={poemUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="tournament-bench-poem tournament-bench-poem-link"
+                                    >
+                                      {poemTitle}
+                                    </a>
+                                  ) : (
+                                    <span className="tournament-bench-poem">{poemTitle}</span>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="tournament-bench-item-info">
+                              <div>
+                                <span className="tournament-bench-poet-name">—</span>
+                              </div>
+                            </div>
+                          )}
                           <div className="tournament-bench-item-actions">
                             <button
                               type="button"
@@ -1056,6 +1088,28 @@ const TournamentsPage = () => {
             style={{ top: contextMenu.y, left: contextMenu.x }}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              className="tournament-context-item"
+              onClick={() => {
+                const poetId = contextMenu.poet?.id;
+                if (!poetId) return;
+                setContextMenu(null);
+                navigate(`/poet/${poetId}`);
+              }}
+            >
+              Открыть страницу поэта
+            </button>
+            <button
+              className="tournament-context-item"
+              onClick={() => {
+                if (!contextMenu.poemUrl) return;
+                setContextMenu(null);
+                window.open(contextMenu.poemUrl, '_blank', 'noopener,noreferrer');
+              }}
+              disabled={!contextMenu.poemUrl}
+            >
+              Открыть стих
+            </button>
             {contextMenu.canPromote && (
               <button
                 className="tournament-context-item"

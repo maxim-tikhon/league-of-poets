@@ -1143,6 +1143,23 @@ const OverallRankingPage = () => {
         >
           Выбор ИИ
         </button>
+
+        {activeTab === 'readers-choice' && (
+          <div className="readers-choice-legend" aria-label="Легенда баллов выбор читателей">
+            <div className="readers-choice-legend-item">
+              <img src="/images/viewed.png" alt="Просмотрено" />
+              <span>× 1</span>
+            </div>
+            <div className="readers-choice-legend-item">
+              <img src="/images/like.png" alt="Лайк" />
+              <span>× 15</span>
+            </div>
+            <div className="readers-choice-legend-item">
+              <img src="/images/memorized.png" alt="Выучено наизусть" />
+              <span>× 50</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {activeTab === 'readers-choice' ? (
@@ -1263,6 +1280,22 @@ const OverallRankingPage = () => {
                 </div>
               );
             }
+
+            const aiCategoryBounds = {
+              creativity: { max: -Infinity, min: Infinity },
+              influence: { max: -Infinity, min: Infinity },
+              drama: { max: -Infinity, min: Infinity },
+              beauty: { max: -Infinity, min: Infinity }
+            };
+
+            aiRankings.forEach(({ aiRatings }) => {
+              ['creativity', 'influence', 'drama', 'beauty'].forEach((key) => {
+                const value = Number(aiRatings?.[key]);
+                if (!Number.isFinite(value) || value <= 0) return;
+                if (value > aiCategoryBounds[key].max) aiCategoryBounds[key].max = value;
+                if (value < aiCategoryBounds[key].min) aiCategoryBounds[key].min = value;
+              });
+            });
             
             // Определяем победителя - используем результат тайбрейкера, если есть
             let winnerId = null;
@@ -1284,6 +1317,21 @@ const OverallRankingPage = () => {
               const { poet, aiScore, aiRatings } = item;
               const rank = index + 1;
               const isWinner = poet.id === winnerId;
+              const isAiRatingMax = (key) => {
+                const value = Number(aiRatings?.[key]);
+                const max = aiCategoryBounds[key].max;
+                return Number.isFinite(value) && Number.isFinite(max) && value > 0 && Math.abs(value - max) < 0.001;
+              };
+              const isAiRatingMin = (key) => {
+                const value = Number(aiRatings?.[key]);
+                const min = aiCategoryBounds[key].min;
+                const max = aiCategoryBounds[key].max;
+                return Number.isFinite(value) &&
+                  Number.isFinite(min) &&
+                  value > 0 &&
+                  Math.abs(value - min) < 0.001 &&
+                  Math.abs(max - min) >= 0.001;
+              };
               
               return (
                 <div 
@@ -1322,19 +1370,19 @@ const OverallRankingPage = () => {
                     <div className="scores-compact-row">
                       {/* AI-оценки по категориям */}
                       <div className="ai-ratings-inline">
-                        <div className="ai-rating-mini" title="Творчество">
+                        <div className={`ai-rating-mini ${isAiRatingMax('creativity') ? 'max' : ''} ${isAiRatingMin('creativity') ? 'min' : ''}`.trim()} title="Творчество">
                           <span className="ai-rating-label">Т:</span>
                           <span className="ai-rating-value">{aiRatings.creativity?.toFixed(1) || '—'}</span>
                         </div>
-                        <div className="ai-rating-mini" title="Мораль">
+                        <div className={`ai-rating-mini ${isAiRatingMax('influence') ? 'max' : ''} ${isAiRatingMin('influence') ? 'min' : ''}`.trim()} title="Мораль">
                           <span className="ai-rating-label">М:</span>
                           <span className="ai-rating-value">{aiRatings.influence?.toFixed(1) || '—'}</span>
                         </div>
-                        <div className="ai-rating-mini" title="Драма">
+                        <div className={`ai-rating-mini ${isAiRatingMax('drama') ? 'max' : ''} ${isAiRatingMin('drama') ? 'min' : ''}`.trim()} title="Драма">
                           <span className="ai-rating-label">Д:</span>
                           <span className="ai-rating-value">{aiRatings.drama?.toFixed(1) || '—'}</span>
                         </div>
-                        <div className="ai-rating-mini" title="Красота">
+                        <div className={`ai-rating-mini ${isAiRatingMax('beauty') ? 'max' : ''} ${isAiRatingMin('beauty') ? 'min' : ''}`.trim()} title="Красота">
                           <span className="ai-rating-label">К:</span>
                           <span className="ai-rating-value">{aiRatings.beauty?.toFixed(1) || '—'}</span>
                         </div>

@@ -196,6 +196,31 @@
   min-height: 38px;
 }
 
+.readers-choice-legend {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(199, 163, 107, 0.08);
+  border-radius: 8px;
+}
+
+.readers-choice-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-light);
+  font-size: 0.85rem;
+}
+
+.readers-choice-legend-item img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
 .tabs span:first-child {
   font-size: 1rem;
   font-weight: 500;
@@ -1755,6 +1780,14 @@ body[data-theme="letterboxd"] .tab-btn.active {
 
 }
 
+body[data-theme="letterboxd"] .readers-choice-legend {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body[data-theme="letterboxd"] .readers-choice-legend-item {
+  color: #9ab;
+}
+
 body[data-theme="letterboxd"] .overall-card {
   background: #445566;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1895,6 +1928,16 @@ body[data-theme="letterboxd"] .empty-state {
   font-weight: 600;
 }
 
+.ai-rating-mini.max .ai-rating-value {
+  color: #00ac1c;
+  font-weight: 700;
+}
+
+.ai-rating-mini.min .ai-rating-value {
+  color: #FF9010;
+  font-weight: 700;
+}
+
 /* Letterboxd theme */
 body[data-theme="letterboxd"] .ai-rating-label {
   color: #9ab;
@@ -1902,6 +1945,14 @@ body[data-theme="letterboxd"] .ai-rating-label {
 
 body[data-theme="letterboxd"] .ai-rating-value {
   color: #e5e5e5;
+}
+
+body[data-theme="letterboxd"] .ai-rating-mini.max .ai-rating-value {
+  color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .ai-rating-mini.min .ai-rating-value {
+  color: #FF9010;
 }
 
 .readers-stat-mini img {
@@ -1924,6 +1975,17 @@ body[data-theme="letterboxd"] .readers-stat-mini span {
 
 /* Mobile */
 @media (max-width: 768px) {
+  .readers-choice-legend {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+    margin-top: 0.35rem;
+  }
+
+  .readers-choice-legend-item {
+    font-size: 0.85rem;
+  }
+
   .readers-stats-inline {
     gap: 0.5rem;
     margin-right: 0.5rem;

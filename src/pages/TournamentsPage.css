@@ -848,6 +848,29 @@ body[data-theme="letterboxd"] .tournament-context-item.danger {
   min-width: 0;
 }
 
+.tournament-bench-poet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tournament-bench-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.tournament-bench-poet-name-link {
+  max-width: 100%;
+}
+
+.tournament-bench-poet-link:hover .tournament-bench-poet-name {
+  opacity: 0.85;
+}
+
 .tournament-bench-avatar {
   width: 36px;
   height: 36px;
@@ -871,6 +894,14 @@ body[data-theme="letterboxd"] .tournament-context-item.danger {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 210px;
+}
+
+.tournament-bench-poem-link:hover {
+  opacity: 0.85;
+}
+
+.tournament-bench-poem-link {
+  text-decoration: none;
 }
 
 .tournament-bench-add-btn {

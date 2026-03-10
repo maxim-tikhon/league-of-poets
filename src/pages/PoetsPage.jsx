@@ -247,6 +247,16 @@ const PoetsPage = () => {
   const [currentUser, setCurrentUser] = useState(null); // Текущий пользователь
   const [timelineTooltip, setTimelineTooltip] = useState(null); // Tooltip в отдельном слое
 
+  const formatYearsLabel = (value) => {
+    const n = Number(value) || 0;
+    const lastTwo = n % 100;
+    const lastOne = n % 10;
+    if (lastTwo >= 11 && lastTwo <= 19) return 'лет';
+    if (lastOne === 1) return 'год';
+    if (lastOne >= 2 && lastOne <= 4) return 'года';
+    return 'лет';
+  };
+
   // Получаем текущего пользователя из localStorage
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -1052,7 +1062,7 @@ const PoetsPage = () => {
                         >
                           <span className="timeline-lifespan-rank">{index + 1}.</span>
                           <span className="timeline-lifespan-name">{poet.name}</span>
-                          <span className="timeline-lifespan-years">{poet.lifespan} лет</span>
+                          <span className="timeline-lifespan-years">{poet.lifespan} {formatYearsLabel(poet.lifespan)}</span>
                         </button>
                       ))}
                     </div>
@@ -1073,7 +1083,7 @@ const PoetsPage = () => {
                         >
                           <span className="timeline-lifespan-rank">{index + 1}.</span>
                           <span className="timeline-lifespan-name">{poet.name}</span>
-                          <span className="timeline-lifespan-years">{poet.lifespan} лет</span>
+                          <span className="timeline-lifespan-years">{poet.lifespan} {formatYearsLabel(poet.lifespan)}</span>
                         </button>
                       ))}
                     </div>
@@ -1208,15 +1218,7 @@ const PoetsPage = () => {
             {timelineTooltip.birthYear} — {timelineTooltip.deathYear || 'н.в.'}
           </div>
           <div className="gantt-tooltip-lifespan">
-            {timelineTooltip.lifespan} {(() => {
-              const n = timelineTooltip.lifespan;
-              const lastTwo = n % 100;
-              const lastOne = n % 10;
-              if (lastTwo >= 11 && lastTwo <= 19) return 'лет';
-              if (lastOne === 1) return 'год';
-              if (lastOne >= 2 && lastOne <= 4) return 'года';
-              return 'лет';
-            })()}
+            {timelineTooltip.lifespan} {formatYearsLabel(timelineTooltip.lifespan)}
           </div>
         </div>
       )}
