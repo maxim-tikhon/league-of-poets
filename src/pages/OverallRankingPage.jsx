@@ -180,6 +180,23 @@ const OverallRankingPage = () => {
       memorized: poemsArray.reduce((sum, p) => sum + (p.memorized?.maxim ? 1 : 0) + (p.memorized?.oleg ? 1 : 0), 0)
     };
   }, [poets]);
+
+  const buildReadersChoiceRankings = useCallback(() => {
+    return poets
+      .map((poet) => ({
+        poet,
+        score: calculateReadersChoiceScore(poet.id),
+        stats: getPoemStats(poet.id)
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if ((a.stats?.viewed || 0) !== (b.stats?.viewed || 0)) {
+          return (a.stats?.viewed || 0) - (b.stats?.viewed || 0);
+        }
+        return String(a.poet?.name || '').localeCompare(String(b.poet?.name || ''), 'ru');
+      });
+  }, [poets, calculateReadersChoiceScore, getPoemStats]);
   
   // Подсчет AI-рейтинга для поэта (средневзвешенное по категориям)
   const calculateAIScore = useCallback((poetId) => {
@@ -934,13 +951,11 @@ const OverallRankingPage = () => {
     
     // Награда "Выбор читателей" - показываем только на вкладке "Общий балл"
     if (activeTab === 'overall') {
-      const readersRankings = poets
-        .map(poet => ({
-          id: poet.id,
-          score: calculateReadersChoiceScore(poet.id)
-        }))
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score);
+      const readersRankings = buildReadersChoiceRankings().map((item) => ({
+        id: item.poet.id,
+        score: item.score,
+        viewed: item.stats?.viewed || 0
+      }));
       
       if (readersRankings.length > 0 && readersRankings[0].id === poetId) {
         badges.push(
@@ -1166,15 +1181,7 @@ const OverallRankingPage = () => {
         // Вкладка "Выбор читателей" - показываем рейтинг по взаимодействию со стихами
         <div className="category-list">
           {(() => {
-            // Подсчитываем баллы для всех поэтов
-            const readersRankings = poets
-              .map(poet => ({
-                poet,
-                score: calculateReadersChoiceScore(poet.id),
-                stats: getPoemStats(poet.id)
-              }))
-              .filter(item => item.score > 0) // Только поэты с баллами
-              .sort((a, b) => b.score - a.score); // Сортируем по убыванию
+            const readersRankings = buildReadersChoiceRankings();
             
             if (readersRankings.length === 0) {
               return (
@@ -1184,12 +1191,25 @@ const OverallRankingPage = () => {
               );
             }
             
-            // Определяем победителя (первый в списке)
+            // Победитель: максимальный score, при равенстве — меньше viewed
             const winnerId = readersRankings[0]?.poet?.id || null;
+
+            const readersRanks = [];
+            let currentRank = 1;
+            for (let i = 0; i < readersRankings.length; i += 1) {
+              if (i > 0) {
+                const prevScore = readersRankings[i - 1].score;
+                const curScore = readersRankings[i].score;
+                if (Math.abs(curScore - prevScore) >= 0.001) {
+                  currentRank = i + 1;
+                }
+              }
+              readersRanks.push(currentRank);
+            }
             
             return readersRankings.map((item, index) => {
               const { poet, score, stats } = item;
-              const rank = index + 1;
+              const rank = readersRanks[index];
               const isWinner = index === 0;
               
               return (
@@ -1312,10 +1332,23 @@ const OverallRankingPage = () => {
             } else {
               winnerId = aiRankings[0]?.poet?.id || null;
             }
+
+            const aiRanks = [];
+            let currentRank = 1;
+            for (let i = 0; i < aiRankings.length; i += 1) {
+              if (i > 0) {
+                const prevScore = aiRankings[i - 1].aiScore;
+                const curScore = aiRankings[i].aiScore;
+                if (Math.abs(curScore - prevScore) >= 0.001) {
+                  currentRank = i + 1;
+                }
+              }
+              aiRanks.push(currentRank);
+            }
             
             return aiRankings.map((item, index) => {
               const { poet, aiScore, aiRatings } = item;
-              const rank = index + 1;
+              const rank = aiRanks[index];
               const isWinner = poet.id === winnerId;
               const isAiRatingMax = (key) => {
                 const value = Number(aiRatings?.[key]);

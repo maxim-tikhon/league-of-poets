@@ -102,9 +102,14 @@ const TournamentsPage = () => {
   }, [poets]);
 
   const filteredPoets = useMemo(() => {
+    const poetsByNewest = [...poets].sort((a, b) => {
+      const timeA = a?.addedAt ? new Date(a.addedAt).getTime() : 0;
+      const timeB = b?.addedAt ? new Date(b.addedAt).getTime() : 0;
+      return timeB - timeA;
+    });
     const query = participantQuery.trim().toLowerCase();
-    if (!query) return poets.slice(0, 10);
-    return poets
+    if (!query) return poetsByNewest.slice(0, 10);
+    return poetsByNewest
       .filter((p) => p.name?.toLowerCase().includes(query))
       .slice(0, 12);
   }, [poets, participantQuery]);
