@@ -440,6 +440,10 @@
   color: #00ac1c;
 }
 
+.btn-edit-icon.active {
+  color: #4da6ff;
+}
+
 /* === Список стихотворений === */
 
 .poems-list {

@@ -847,6 +847,12 @@ const OverallRankingPage = () => {
     return losers;
   }, [overallRankings]);
   
+  // Лучший белорусский поэт по среднему баллу
+  const belarusianWinner = useMemo(() => {
+    const scored = overallRankings.filter(item => item.poet.belarusian);
+    return scored.length > 0 ? scored[0].poet.id : null;
+  }, [overallRankings]);
+
   // Для категорий добавляем дополнительную сортировку с учетом победителей
   const categoryRankings = useMemo(() => {
     if (activeTab === 'overall') return null;
@@ -1024,6 +1030,18 @@ const OverallRankingPage = () => {
           src={`/images/badges/last.png`}
           alt="Худший поэт"
           className="winner-badge loser-badge"
+        />
+      );
+    }
+
+    // Лучший белорусский поэт - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && belarusianWinner === poetId) {
+      badges.push(
+        <img
+          key="belarus"
+          src="/images/badges/belarus.png"
+          alt="Лучший белорусский поэт"
+          className="winner-badge"
         />
       );
     }
@@ -1516,11 +1534,11 @@ const OverallRankingPage = () => {
                       <div className="scores-compact-row">
                         <div className="score-compact-item maxim">
                           <span className="score-compact-label">м</span>
-                          <span className="score-compact-value">{formatScore(maximScore)}</span>
+                          <span className="score-compact-value">{maximScore > 0 ? formatScore(maximScore) : '—'}</span>
                         </div>
                         <div className="score-compact-item oleg">
                           <span className="score-compact-label">о</span>
-                          <span className="score-compact-value">{formatScore(olegScore)}</span>
+                          <span className="score-compact-value">{olegScore > 0 ? formatScore(olegScore) : '—'}</span>
                         </div>
                         <div className="score-compact-item average">
                           <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
@@ -1576,11 +1594,11 @@ const OverallRankingPage = () => {
                         <div className="scores-compact-row expanded">
                           <div className="score-compact-item maxim">
                             <span className="score-compact-label">м</span>
-                            <span className="score-compact-value">{formatScore(maximScore)}</span>
+                            <span className="score-compact-value">{maximScore > 0 ? formatScore(maximScore) : '—'}</span>
                           </div>
                           <div className="score-compact-item oleg">
                             <span className="score-compact-label">о</span>
-                            <span className="score-compact-value">{formatScore(olegScore)}</span>
+                            <span className="score-compact-value">{olegScore > 0 ? formatScore(olegScore) : '—'}</span>
                           </div>
                           <div className="score-compact-item average">
                             <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
@@ -1600,7 +1618,8 @@ const OverallRankingPage = () => {
                       {Object.entries(CATEGORIES).map(([key, cat]) => {
                         const maximRating = ratings.maxim[poet.id]?.[key] || 0;
                         const olegRating = ratings.oleg[poet.id]?.[key] || 0;
-                        const avgRating = (maximRating + olegRating) / 2;
+                        const raterCount = (maximRating > 0 ? 1 : 0) + (olegRating > 0 ? 1 : 0);
+                        const avgRating = raterCount > 0 ? (maximRating + olegRating) / raterCount : 0;
 
                         return (
                           <div key={key} className="overall-rating-item">
@@ -1611,11 +1630,11 @@ const OverallRankingPage = () => {
                             <div className="overall-category-scores">
                               <div className="overall-category-score maxim">
                                 <span className="overall-category-score-label">м</span>
-                                <span className="overall-category-score-value">{maximRating.toFixed(1)}</span>
+                                <span className="overall-category-score-value">{maximRating > 0 ? maximRating.toFixed(1) : '—'}</span>
                               </div>
                               <div className="overall-category-score oleg">
                                 <span className="overall-category-score-label">о</span>
-                                <span className="overall-category-score-value">{olegRating.toFixed(1)}</span>
+                                <span className="overall-category-score-value">{olegRating > 0 ? olegRating.toFixed(1) : '—'}</span>
                               </div>
                               <div className="overall-category-score average">
                                 <span className="overall-category-score-value">{avgRating.toFixed(1)}</span>
@@ -1709,11 +1728,11 @@ const OverallRankingPage = () => {
                     <div className="scores-compact-row">
                       <div className="score-compact-item category maxim">
                         <span className="score-compact-label">м</span>
-                        <span className="score-compact-value">{maximRating.toFixed(1)}</span>
+                        <span className="score-compact-value">{maximRating > 0 ? maximRating.toFixed(1) : '—'}</span>
                       </div>
                       <div className="score-compact-item category oleg">
                         <span className="score-compact-label">о</span>
-                        <span className="score-compact-value">{olegRating.toFixed(1)}</span>
+                        <span className="score-compact-value">{olegRating > 0 ? olegRating.toFixed(1) : '—'}</span>
                       </div>
                       <div className="score-compact-item category average">
                         <span className="score-compact-value">{averageRating.toFixed(1)}</span>

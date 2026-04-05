@@ -4,7 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
 import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
-import { BookOpen, Scale, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Scale, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2, Flag } from 'lucide-react';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -1282,6 +1282,16 @@ Note: В конкурсе будут участвовать все выдающ�
                     title="Ссылки"
                   >
                     <Link2 size={16} />
+                  </button>
+                  <button
+                    className={`btn-edit-icon ${poet.belarusian ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updatePoet(poet.id, { belarusian: !poet.belarusian });
+                    }}
+                    title={poet.belarusian ? 'Белорусский поэт (снять)' : 'Отметить как белорусского поэта'}
+                  >
+                    <Flag size={16} />
                   </button>
                 </div>
               </div>

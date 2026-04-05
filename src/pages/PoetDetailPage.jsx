@@ -43,7 +43,7 @@ const PoetDetailPage = () => {
   const poems = poet?.poems ? Object.keys(poet.poems).map(key => ({
     id: key,
     ...poet.poems[key]
-  })).sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt)) : [];
+  })).sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt)) : [];
   
   // Общая статистика по стихам (для всех пользователей)
   const poemStats = {

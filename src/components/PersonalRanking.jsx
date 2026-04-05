@@ -257,6 +257,16 @@ const PersonalRanking = ({
     return losers;
   }, [poets, raterId, calculateScore, categoryLeaders]);
   
+  // Лучший белорусский поэт
+  const belarusianWinner = useMemo(() => {
+    const belarusianPoets = poets
+      .filter(p => p.belarusian)
+      .map(p => ({ id: p.id, score: calculateScore(raterId, p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return belarusianPoets.length > 0 ? belarusianPoets[0].id : null;
+  }, [poets, raterId, calculateScore]);
+
   // ===== ВСЯ ЛОГИКА ДУЭЛЕЙ И ПЕРЕСЧЕТА ПЕРЕНЕСЕНА НА PoetDetailPage =====
   // PersonalRanking - ТОЛЬКО для отображения данных
   
@@ -340,6 +350,18 @@ const PersonalRanking = ({
       );
     }
     
+    // Лучший белорусский поэт - показываем только на вкладке "Общий балл"
+    if (sortBy === 'overall' && belarusianWinner === poetId) {
+      badges.push(
+        <img
+          key="belarus"
+          src="/images/badges/belarus.png"
+          alt="Лучший беларуский поэт"
+          className="winner-badge"
+        />
+      );
+    }
+
     return badges.length > 0 ? <div className="winner-badges">{badges}</div> : null;
   };
 
