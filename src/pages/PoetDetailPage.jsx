@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
+import { USERS } from '../constants';
 import StarRating from '../components/StarRating';
 import BattleModal from '../components/BattleModal';
 import { generateContent } from '../ai/gemini';
@@ -46,16 +47,15 @@ const PoetDetailPage = () => {
   })).sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt)) : [];
   
   // Общая статистика по стихам (для всех пользователей)
+  const countFlag = (field) =>
+    poems.reduce(
+      (sum, p) => sum + USERS.filter((u) => p?.[field]?.[u]).length,
+      0
+    );
   const poemStats = {
-    viewed: poems.reduce((sum, p) => {
-      return sum + (p.viewed?.['maxim'] ? 1 : 0) + (p.viewed?.['oleg'] ? 1 : 0);
-    }, 0),
-    liked: poems.reduce((sum, p) => {
-      return sum + (p.liked?.['maxim'] ? 1 : 0) + (p.liked?.['oleg'] ? 1 : 0);
-    }, 0),
-    memorized: poems.reduce((sum, p) => {
-      return sum + (p.memorized?.['maxim'] ? 1 : 0) + (p.memorized?.['oleg'] ? 1 : 0);
-    }, 0)
+    viewed: countFlag('viewed'),
+    liked: countFlag('liked'),
+    memorized: countFlag('memorized')
   };
   
   // Модалка добавления стихотворения
@@ -137,24 +137,15 @@ const PoetDetailPage = () => {
   // Проверка, есть ли у поэта оценки
   const hasRatings = () => {
     if (!poet) return false;
-    const maximScore = calculateScore('maxim', poet.id);
-    const olegScore = calculateScore('oleg', poet.id);
-    return maximScore > 0 || olegScore > 0;
+    return USERS.some((u) => calculateScore(u, poet.id) > 0);
   };
-  
-  // Расчет общей средней оценки (уже в 5-балльной шкале)
+
+  // Расчет общей средней оценки (усредняется по тем, кто реально оценил)
   const getOverallAverage = () => {
     if (!poet) return 0;
-    const maximScore = calculateScore('maxim', poet.id);
-    const olegScore = calculateScore('oleg', poet.id);
-    
-    // Если оба пользователя оценили - среднее
-    if (maximScore > 0 && olegScore > 0) {
-      return (maximScore + olegScore) / 2;
-    }
-    
-    // Если только один пользователь оценил - его балл
-    return maximScore > 0 ? maximScore : olegScore;
+    const scores = USERS.map((u) => calculateScore(u, poet.id)).filter((s) => s > 0);
+    if (scores.length === 0) return 0;
+    return scores.reduce((sum, s) => sum + s, 0) / scores.length;
   };
   
   // Получить персональный общий рейтинг текущего пользователя (уже в 5-балльной шкале)

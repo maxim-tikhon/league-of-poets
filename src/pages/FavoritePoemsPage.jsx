@@ -1,26 +1,24 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePoets } from '../context/PoetsContext';
+import { USERS, USER_LABELS, USER_LABELS_GENITIVE } from '../constants';
+import TripleToggle from '../components/TripleToggle';
 import './FavoritePoemsPage.css';
 
 const FavoritePoemsPage = () => {
   const { poets, likes, isLoading } = usePoets();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [showOtherUser, setShowOtherUser] = useState(false);
+  const [activeUser, setActiveUser] = useState(null); // selected user to view
   const [activeTab, setActiveTab] = useState('poets'); // 'poets' | 'poems'
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
     setCurrentUser(user);
+    setActiveUser(user);
   }, []);
 
-  const otherUser = currentUser === 'maxim' ? 'oleg' : 'maxim';
-  const activeUser = showOtherUser ? otherUser : currentUser;
-  const activeUserLabel = activeUser === 'maxim' ? 'Максима' : 'Олега';
-  const toggleLabel = activeTab === 'poets'
-    ? (otherUser === 'maxim' ? 'Поэты Максима' : 'Поэты Олега')
-    : (otherUser === 'maxim' ? 'Стихи Максима' : 'Стихи Олега');
+  const activeUserLabel = activeUser ? USER_LABELS_GENITIVE[activeUser] : '';
 
   const favoritePoets = useMemo(() => {
     if (!activeUser || !poets?.length) return [];
@@ -81,17 +79,18 @@ const FavoritePoemsPage = () => {
           </button>
         </div>
 
-        <label className="favorite-poems-toggle ratings-toggle timeline-toggle">
-          <input
-            type="checkbox"
-            checked={showOtherUser}
-            onChange={(e) => setShowOtherUser(e.target.checked)}
-          />
-          <span className="toggle-slider"></span>
-          <span className="toggle-label">
-            {toggleLabel}
-          </span>
-        </label>
+        <TripleToggle
+          className="favorite-poems-toggle-wrap"
+          value={activeUser}
+          onChange={setActiveUser}
+          options={[
+            { value: currentUser, label: 'Мои' },
+            ...USERS.filter((u) => u !== currentUser).map((u) => ({
+              value: u,
+              label: USER_LABELS[u]
+            }))
+          ]}
+        />
       </div>
 
       {isLoading ? (

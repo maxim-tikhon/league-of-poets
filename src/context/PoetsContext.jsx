@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { ref, set, update, remove, onValue, push, get, runTransaction } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent } from '../ai/gemini';
+import { USERS } from '../constants';
+
+const emptyUserMap = () => USERS.reduce((acc, u) => ({ ...acc, [u]: {} }), {});
 
 const PoetsContext = createContext();
 
@@ -28,20 +31,11 @@ export const CATEGORIES = DEFAULT_CATEGORIES;
 
 export const PoetsProvider = ({ children }) => {
   const [poets, setPoets] = useState([]);
-  const [ratings, setRatings] = useState({
-    maxim: {},
-    oleg: {}
-  });
-  const [categoryLeaders, setCategoryLeaders] = useState({
-    maxim: {},
-    oleg: {}
-  });
+  const [ratings, setRatings] = useState(emptyUserMap());
+  const [categoryLeaders, setCategoryLeaders] = useState(emptyUserMap());
   const [overallDuelWinners, setOverallDuelWinners] = useState({});
   const [aiChoiceTiebreaker, setAIChoiceTiebreaker] = useState(null);
-  const [likes, setLikes] = useState({
-    maxim: {},
-    oleg: {}
-  });
+  const [likes, setLikes] = useState(emptyUserMap());
   const [tournaments, setTournaments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -77,12 +71,9 @@ export const PoetsProvider = ({ children }) => {
     const unsubscribe = onValue(ratingsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setRatings(data);
+        setRatings({ ...emptyUserMap(), ...data });
       } else {
-        setRatings({
-          maxim: {},
-          oleg: {}
-        });
+        setRatings(emptyUserMap());
       }
     });
 
@@ -92,16 +83,13 @@ export const PoetsProvider = ({ children }) => {
   // Подписка на изменения лидеров категорий в Firebase
   useEffect(() => {
     const leadersRef = ref(database, 'categoryLeaders');
-    
+
     const unsubscribe = onValue(leadersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setCategoryLeaders(data);
+        setCategoryLeaders({ ...emptyUserMap(), ...data });
       } else {
-        setCategoryLeaders({
-          maxim: {},
-          oleg: {}
-        });
+        setCategoryLeaders(emptyUserMap());
       }
     });
     
@@ -143,12 +131,9 @@ export const PoetsProvider = ({ children }) => {
     const unsubscribe = onValue(likesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setLikes(data);
+        setLikes({ ...emptyUserMap(), ...data });
       } else {
-        setLikes({
-          maxim: {},
-          oleg: {}
-        });
+        setLikes(emptyUserMap());
       }
     });
     
@@ -307,21 +292,18 @@ export const PoetsProvider = ({ children }) => {
     // Добавляем поэта в Firebase
     await set(ref(database, `poets/${id}`), newPoet);
     
-    // Инициализация рейтингов нулями
-    await set(ref(database, `ratings/maxim/${id}`), {
-      creativity: 0,
-      influence: 0,
-      drama: 0,
-      beauty: 0
-    });
-    
-    await set(ref(database, `ratings/oleg/${id}`), {
-      creativity: 0,
-      influence: 0,
-      drama: 0,
-      beauty: 0
-    });
-    
+    // Инициализация рейтингов нулями для всех пользователей
+    await Promise.all(
+      USERS.map((user) =>
+        set(ref(database, `ratings/${user}/${id}`), {
+          creativity: 0,
+          influence: 0,
+          drama: 0,
+          beauty: 0
+        })
+      )
+    );
+
     return { id, ...newPoet };
   };
 
@@ -331,8 +313,8 @@ export const PoetsProvider = ({ children }) => {
     const updates = {};
     let cleanedCount = 0;
     
-    // Проверяем categoryLeaders для обоих пользователей
-    ['maxim', 'oleg'].forEach(user => {
+    // Проверяем categoryLeaders для всех пользователей
+    USERS.forEach(user => {
       const userLeaders = categoryLeaders[user] || {};
       Object.keys(userLeaders).forEach(category => {
         const leaderId = userLeaders[category];
@@ -378,7 +360,7 @@ export const PoetsProvider = ({ children }) => {
     // Проверяем ratings
     const ratingsSnapshot = await get(ref(database, 'ratings'));
     const ratingsData = ratingsSnapshot.val() || {};
-    ['maxim', 'oleg'].forEach(user => {
+    USERS.forEach(user => {
       const userRatings = ratingsData[user] || {};
       Object.keys(userRatings).forEach(poetId => {
         if (!validPoetIds.includes(poetId)) {
@@ -388,11 +370,11 @@ export const PoetsProvider = ({ children }) => {
         }
       });
     });
-    
+
     // Проверяем likes
     const likesSnapshot = await get(ref(database, 'likes'));
     const likesData = likesSnapshot.val() || {};
-    ['maxim', 'oleg'].forEach(user => {
+    USERS.forEach(user => {
       const userLikes = likesData[user] || {};
       Object.keys(userLikes).forEach(poetId => {
         if (!validPoetIds.includes(poetId)) {
@@ -418,24 +400,23 @@ export const PoetsProvider = ({ children }) => {
     // Удаляем поэта
     await remove(ref(database, `poets/${poetId}`));
     
-    // Удаляем его рейтинги
-    await remove(ref(database, `ratings/maxim/${poetId}`));
-    await remove(ref(database, `ratings/oleg/${poetId}`));
-    
-    // Удаляем его лайки
-    await remove(ref(database, `likes/maxim/${poetId}`));
-    await remove(ref(database, `likes/oleg/${poetId}`));
-    
+    // Удаляем его рейтинги и лайки для всех пользователей
+    await Promise.all(
+      USERS.flatMap((user) => [
+        remove(ref(database, `ratings/${user}/${poetId}`)),
+        remove(ref(database, `likes/${user}/${poetId}`))
+      ])
+    );
+
     // Удаляем его из лидеров категорий, если он там есть (включая overall_worst)
     const updates = {};
     const allCategories = [...Object.keys(CATEGORIES), 'overall', 'overall_worst'];
     allCategories.forEach(category => {
-      if (categoryLeaders.maxim?.[category] === poetId) {
-        updates[`categoryLeaders/maxim/${category}`] = null;
-      }
-      if (categoryLeaders.oleg?.[category] === poetId) {
-        updates[`categoryLeaders/oleg/${category}`] = null;
-      }
+      USERS.forEach(user => {
+        if (categoryLeaders[user]?.[category] === poetId) {
+          updates[`categoryLeaders/${user}/${category}`] = null;
+        }
+      });
       // Удаляем из победителей дуэлей
       const duelData = overallDuelWinners[category];
       if (duelData) {
@@ -516,16 +497,19 @@ export const PoetsProvider = ({ children }) => {
         return total + (rating * CATEGORIES[cat].coefficient);
       }, 0);
       
-      // Для другого rater: score остаётся как есть
-      const otherRater = rater === 'maxim' ? 'oleg' : 'maxim';
-      const otherScore = calculateScore(otherRater, poetId);
-      
+      // Для остальных raters: score остаётся как есть
+      const otherRaters = USERS.filter((u) => u !== rater);
+      const otherScoresSum = otherRaters.reduce(
+        (sum, u) => sum + calculateScore(u, poetId),
+        0
+      );
+
       // Старые scores (до изменения)
       const oldRaterScore = calculateScore(rater, poetId);
-      const hadRatings = oldRaterScore > 0 || otherScore > 0;
-      
+      const hadRatings = oldRaterScore > 0 || otherScoresSum > 0;
+
       // Новый общий score
-      const willHaveRatings = newRaterScore > 0 || otherScore > 0;
+      const willHaveRatings = newRaterScore > 0 || otherScoresSum > 0;
       
       // Если раньше не было оценок, а теперь есть → устанавливаем firstRatedAt
       if (!hadRatings && willHaveRatings) {
@@ -589,41 +573,41 @@ export const PoetsProvider = ({ children }) => {
     return Object.keys(categoryCoefficients).every(cat => (poetRatings[cat] || 0) > 0);
   }, [ratings, categoryCoefficients]);
 
-  // Вычислить средний балл (общий рейтинг) — только полные оценки
+  // Вычислить средний балл (общий рейтинг) — усредняется по тем, кто полностью оценил
   const calculateAverageScore = useCallback((poetId) => {
-    const maximFull = hasFullRating('maxim', poetId);
-    const olegFull = hasFullRating('oleg', poetId);
-    const maximScore = maximFull ? calculateScore('maxim', poetId) : 0;
-    const olegScore = olegFull ? calculateScore('oleg', poetId) : 0;
+    const fullScores = USERS
+      .map((user) => (hasFullRating(user, poetId) ? calculateScore(user, poetId) : 0))
+      .filter((score) => score > 0);
 
-    if (maximScore > 0 && olegScore > 0) {
-      return (maximScore + olegScore) / 2;
-    }
-
-    return maximScore > 0 ? maximScore : olegScore;
+    if (fullScores.length === 0) return 0;
+    return fullScores.reduce((sum, s) => sum + s, 0) / fullScores.length;
   }, [calculateScore, hasFullRating]);
 
   // Получить рейтинги для категории
   const getCategoryRankings = useCallback((category) => {
     return poets
       .map(poet => {
-        const maximRating = ratings.maxim?.[poet.id]?.[category] || 0;
-        const olegRating = ratings.oleg?.[poet.id]?.[category] || 0;
-        const ratedByBoth = maximRating > 0 && olegRating > 0;
+        const userRatings = USERS.reduce((acc, user) => {
+          acc[user] = ratings[user]?.[poet.id]?.[category] || 0;
+          return acc;
+        }, {});
 
-        let averageRating;
-        if (ratedByBoth) {
-          averageRating = (maximRating + olegRating) / 2;
-        } else {
-          averageRating = maximRating > 0 ? maximRating : olegRating;
-        }
+        const nonZero = USERS.map((u) => userRatings[u]).filter((v) => v > 0);
+        const averageRating = nonZero.length
+          ? nonZero.reduce((sum, v) => sum + v, 0) / nonZero.length
+          : 0;
+        const ratedByAll = nonZero.length === USERS.length;
 
         return {
           poet,
-          maximRating,
-          olegRating,
+          // Legacy individual fields preserved for compatibility
+          maximRating: userRatings.maxim,
+          olegRating: userRatings.oleg,
+          lyubaRating: userRatings.lyuba,
+          userRatings,
           averageRating,
-          ratedByBoth
+          ratedByAll,
+          ratedByBoth: ratedByAll // Legacy alias
         };
       })
       .filter(item => item.averageRating > 0)
@@ -634,16 +618,22 @@ export const PoetsProvider = ({ children }) => {
   const getOverallRankings = useCallback(() => {
     return poets
       .map(poet => {
-        const maximFull = hasFullRating('maxim', poet.id);
-        const olegFull = hasFullRating('oleg', poet.id);
-        const maximScore = maximFull ? calculateScore('maxim', poet.id) : 0;
-        const olegScore = olegFull ? calculateScore('oleg', poet.id) : 0;
+        const userScores = USERS.reduce((acc, user) => {
+          const full = hasFullRating(user, poet.id);
+          acc[user] = full ? calculateScore(user, poet.id) : 0;
+          return acc;
+        }, {});
+        const fullCount = USERS.filter((u) => hasFullRating(u, poet.id)).length;
         return {
           poet,
-          maximScore,
-          olegScore,
+          // Legacy fields
+          maximScore: userScores.maxim,
+          olegScore: userScores.oleg,
+          lyubaScore: userScores.lyuba,
+          userScores,
           averageScore: calculateAverageScore(poet.id),
-          ratedByBoth: maximFull && olegFull
+          ratedByAll: fullCount === USERS.length,
+          ratedByBoth: fullCount === USERS.length // Legacy alias
         };
       })
       .filter(item => item.averageScore > 0)
@@ -661,12 +651,13 @@ export const PoetsProvider = ({ children }) => {
   // Добавить стихотворение поэту
   const addPoem = async (poetId, title, url = '') => {
     const poemId = `poem_${Date.now()}`;
+    const flagMap = USERS.reduce((acc, u) => ({ ...acc, [u]: false }), {});
     const newPoem = {
       title: title.trim(),
       url: url.trim(),
-      viewed: { maxim: false, oleg: false },
-      liked: { maxim: false, oleg: false },
-      memorized: { maxim: false, oleg: false },
+      viewed: { ...flagMap },
+      liked: { ...flagMap },
+      memorized: { ...flagMap },
       addedAt: new Date().toISOString()
     };
     
@@ -1070,19 +1061,20 @@ export const PoetsProvider = ({ children }) => {
     if (!matchData || !matchData.poetAId || !matchData.poetBId) return;
 
     const votes = matchData.votes || {};
-    if (!votes.maxim || !votes.oleg || !votes.ai) return;
+    if (USERS.some((u) => !votes[u]) || !votes.ai) return;
     if (matchData.winnerPoetId) return;
 
-    const sideVotes = [votes.maxim, votes.oleg, votes.ai]
-      .map((vote) => normalizeVoteToSide(vote, matchData.poetAId, matchData.poetBId))
+    // Победитель определяется большинством голосов людей (AI не учитывается при ничьей)
+    const humanSideVotes = USERS
+      .map((u) => normalizeVoteToSide(votes[u], matchData.poetAId, matchData.poetBId))
       .filter(Boolean);
-    if (sideVotes.length < 3) return;
+    if (humanSideVotes.length < USERS.length) return;
 
-    const counts = {};
-    sideVotes.forEach((side) => {
-      counts[side] = (counts[side] || 0) + 1;
+    const humanCounts = {};
+    humanSideVotes.forEach((side) => {
+      humanCounts[side] = (humanCounts[side] || 0) + 1;
     });
-    let winnerSide = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    let winnerSide = Object.keys(humanCounts).sort((a, b) => humanCounts[b] - humanCounts[a])[0];
     if (!winnerSide) winnerSide = normalizeVoteToSide(votes.ai, matchData.poetAId, matchData.poetBId) || 'A';
     const winnerPoetId = winnerSide === 'A' ? matchData.poetAId : matchData.poetBId;
 
@@ -1142,7 +1134,7 @@ export const PoetsProvider = ({ children }) => {
     if (!tournamentId || !match || !user || !winnerPoetId) {
       throw new Error('tournamentId, match, user and winnerPoetId are required');
     }
-    if (!['maxim', 'oleg'].includes(user)) throw new Error('Invalid user');
+    if (!USERS.includes(user)) throw new Error('Invalid user');
 
     await ensureTournamentMatch(tournamentId, match, {
       waitForAi: false,
@@ -1276,19 +1268,20 @@ export const PoetsProvider = ({ children }) => {
     if (!playIn.poetAId || !playIn.poetBId) return;
 
     const votes = playIn.votes || {};
-    if (!votes.maxim || !votes.oleg || !votes.ai) return;
+    if (USERS.some((u) => !votes[u]) || !votes.ai) return;
     if (playIn.winnerPoetId) return;
 
-    const sideVotes = [votes.maxim, votes.oleg, votes.ai]
-      .map((vote) => normalizeVoteToSide(vote, playIn.poetAId, playIn.poetBId))
+    // Победитель определяется большинством голосов людей (AI не учитывается при ничьей)
+    const humanSideVotes = USERS
+      .map((u) => normalizeVoteToSide(votes[u], playIn.poetAId, playIn.poetBId))
       .filter(Boolean);
-    if (sideVotes.length < 3) return;
+    if (humanSideVotes.length < USERS.length) return;
 
-    const counts = {};
-    sideVotes.forEach((side) => {
-      counts[side] = (counts[side] || 0) + 1;
+    const humanCounts = {};
+    humanSideVotes.forEach((side) => {
+      humanCounts[side] = (humanCounts[side] || 0) + 1;
     });
-    let winnerSide = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    let winnerSide = Object.keys(humanCounts).sort((a, b) => humanCounts[b] - humanCounts[a])[0];
     if (!winnerSide) winnerSide = normalizeVoteToSide(votes.ai, playIn.poetAId, playIn.poetBId) || 'A';
     const winnerPoetId = winnerSide === 'A' ? playIn.poetAId : playIn.poetBId;
 
@@ -1322,7 +1315,7 @@ export const PoetsProvider = ({ children }) => {
     if (!tournamentId || !user || !winnerPoetId) {
       throw new Error('tournamentId, user and winnerPoetId are required');
     }
-    if (!['maxim', 'oleg'].includes(user)) throw new Error('Invalid user');
+    if (!USERS.includes(user)) throw new Error('Invalid user');
 
     await ensureTournamentPlayIn(tournamentId, {}, {
       waitForAi: false,
@@ -1500,7 +1493,8 @@ export const PoetsProvider = ({ children }) => {
     searchWikipediaLink,
     updatePoetLinks,
     addYoutubeLink,
-    removeYoutubeLink
+    removeYoutubeLink,
+    USERS
   };
 
   return (

@@ -556,6 +556,11 @@
   background: rgba(0, 172, 28, 0.08);
 }
 
+.tournament-voter-badge[data-voter="lyuba"].voted {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.08);
+}
+
 .tournament-voter-badge[data-voter="ai"].voted {
   border-color: #40BCF4;
   background: rgba(64, 188, 244, 0.08);

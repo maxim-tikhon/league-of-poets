@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Music4, CirclePlus, CircleX, Swords, X } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { usePoets } from '../context/PoetsContext';
+import { USERS, USER_LABELS, DEFAULT_USER } from '../constants';
 import './TournamentsPage.css';
 import '../components/BattleModal.css';
 
@@ -31,7 +32,7 @@ const TournamentsPage = () => {
   const [selectedPoetId, setSelectedPoetId] = useState('');
   const [selectedPoemIds, setSelectedPoemIds] = useState([]);
   const [participantError, setParticipantError] = useState('');
-  const [currentUser, setCurrentUser] = useState('maxim');
+  const [currentUser, setCurrentUser] = useState(DEFAULT_USER);
   const [battleModal, setBattleModal] = useState(null);
   const [battleError, setBattleError] = useState('');
   const [isBattleSubmitting, setIsBattleSubmitting] = useState(false);
@@ -46,7 +47,7 @@ const TournamentsPage = () => {
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
-    if (user === 'maxim' || user === 'oleg') {
+    if (USERS.includes(user)) {
       setCurrentUser(user);
     }
   }, []);
@@ -587,7 +588,7 @@ const TournamentsPage = () => {
   const battlePoemsB = getPoemsForMatchSide(battleMatchData, 'B');
   const battleVotes = battleMatchData?.votes || {};
   const battleWinnerId = battleMatchData?.winnerPoetId || null;
-  const isBattleRevealReady = Boolean(battleVotes.maxim && battleVotes.oleg && battleVotes.ai);
+  const isBattleRevealReady = Boolean(USERS.every((u) => battleVotes[u]) && battleVotes.ai);
   const battleAiReason = battleVotes.aiReason || null;
   const isPlayInBattle = battleModal?.type === 'playIn';
   const activePlayIn = activeTournament?.playIn?.status === 'active' ? activeTournament.playIn : null;
@@ -1034,8 +1035,7 @@ const TournamentsPage = () => {
                     <p className="tournament-vote-label">Результаты голосования</p>
                     {(() => {
                       const voters = [
-                        { key: 'maxim', label: 'Максим' },
-                        { key: 'oleg', label: 'Олег' },
+                        ...USERS.map((u) => ({ key: u, label: USER_LABELS[u] })),
                         { key: 'ai', label: 'ИИ' },
                       ];
                       if (isBattleRevealReady) {

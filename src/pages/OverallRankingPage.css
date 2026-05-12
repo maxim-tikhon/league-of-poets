@@ -714,9 +714,20 @@ body[data-theme="letterboxd"] .overall-category-name {
   color: var(--gold-dark);
 }
 
+.overall-category-score.lyuba {
+  background: rgba(199, 163, 107, 0.2);
+  color: var(--gold-dark);
+}
+
 .overall-category-score.average {
   background: rgba(157, 68, 81, 0.15);
   color: var(--burgundy);
+}
+
+/* Категорийные чипы без буквенных меток — компактнее */
+.overall-category-score.no-label {
+  min-width: 2.1rem;
+  padding: 0.15rem 0.4rem;
 }
 
 /* Цвета для оценок - Letterboxd тема */
@@ -728,6 +739,11 @@ body[data-theme="letterboxd"] .overall-category-score.maxim {
 body[data-theme="letterboxd"] .overall-category-score.oleg {
   background: rgba(0, 172, 28, 0.15);
   color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .overall-category-score.lyuba {
+  background: rgba(236, 72, 153, 0.18);
+  color: #ec4899;
 }
 
 body[data-theme="letterboxd"] .overall-category-score.average {
@@ -1012,6 +1028,10 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
   background: var(--gold);
 }
 
+.score-compact-item.lyuba {
+  background: var(--gold);
+}
+
 body[data-theme="letterboxd"] .score-compact-item.maxim {
   background: #FF9010;
 }
@@ -1020,7 +1040,13 @@ body[data-theme="letterboxd"] .score-compact-item.oleg {
   background: #00ac1c;
 }
 
-body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, body[data-theme="letterboxd"] .score-compact-item.maxim .score-compact-value {
+body[data-theme="letterboxd"] .score-compact-item.lyuba {
+  background: #ec4899;
+}
+
+body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value,
+body[data-theme="letterboxd"] .score-compact-item.maxim .score-compact-value,
+body[data-theme="letterboxd"] .score-compact-item.lyuba .score-compact-value {
   color: white;
 }
 
@@ -1037,7 +1063,9 @@ body[data-theme="letterboxd"] .score-compact-item.oleg .score-compact-value, bod
   line-height: 1;
 }
 
-.score-compact-item.oleg .score-compact-value, .score-compact-item.maxim .score-compact-value {
+.score-compact-item.oleg .score-compact-value,
+.score-compact-item.maxim .score-compact-value,
+.score-compact-item.lyuba .score-compact-value {
   color: white;
 }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './UserSelector.css';
+import { USERS, USER_LABELS } from '../constants';
 
 const UserSelector = ({ onSelectUser }) => {
   const ACCESS_WORD = 'пушкин';
@@ -33,19 +34,15 @@ const UserSelector = ({ onSelectUser }) => {
         <h2 className="user-selector-subtitle">Выберите пользователя</h2>
         
         <div className="user-buttons">
-          <button
-            className={`user-btn ${selectedUser === 'maxim' ? 'selected' : ''}`}
-            onClick={() => handleSelect('maxim')}
-          >
-            <span className="user-name">Максим</span>
-          </button>
-          
-          <button
-            className={`user-btn ${selectedUser === 'oleg' ? 'selected' : ''}`}
-            onClick={() => handleSelect('oleg')}
-          >
-            <span className="user-name">Олег</span>
-          </button>
+          {USERS.map((user) => (
+            <button
+              key={user}
+              className={`user-btn user-btn-${user} ${selectedUser === user ? 'selected' : ''}`}
+              onClick={() => handleSelect(user)}
+            >
+              <span className="user-name">{USER_LABELS[user]}</span>
+            </button>
+          ))}
         </div>
 
         <div className="user-access-row">

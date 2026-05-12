@@ -9,7 +9,10 @@ import DuelGame from '../components/DuelGame';
 import Tooltip from '../components/Tooltip';
 import { generateContent } from '../ai/gemini';
 import { generateAITiebreakerPrompt, parseAITiebreaker } from '../ai/prompts';
+import { USERS, USER_LABELS, USER_INITIALS } from '../constants';
 import './OverallRankingPage.css';
+
+const emptyLeadersMap = () => USERS.reduce((acc, u) => ({ ...acc, [u]: {} }), {});
 
 const OverallRankingPage = () => {
   const location = useLocation();
@@ -59,7 +62,7 @@ const OverallRankingPage = () => {
   
   // Просто используем данные напрямую из контекста
   // Firebase уже оптимизирован и не будет создавать новые объекты если данные не изменились
-  const categoryLeaders = rawCategoryLeaders || { maxim: {}, oleg: {} };
+  const categoryLeaders = rawCategoryLeaders || emptyLeadersMap();
   const overallDuelWinners = rawOverallDuelWinners || {};
   const tournamentAwards = useMemo(() => {
     if (!Array.isArray(tournaments)) return [];
@@ -68,26 +71,15 @@ const OverallRankingPage = () => {
     );
   }, [tournaments]);
 
+  // Нобелевская премия: лайк от всех трёх пользователей.
+  // Если лауреатов будет слишком много — ужесточим (добавим порог creativity или N лайков стихов).
   const nobelWinners = useMemo(() => {
     return new Set(
       poets
-        .filter((poet) => {
-          const maximCreativity = ratings.maxim?.[poet.id]?.creativity || 0;
-          const olegCreativity = ratings.oleg?.[poet.id]?.creativity || 0;
-          if (maximCreativity < 4.5 || olegCreativity < 4.5) return false;
-
-          const likedByMaxim = Boolean(likes.maxim?.[poet.id]);
-          const likedByOleg = Boolean(likes.oleg?.[poet.id]);
-          if (!likedByMaxim || !likedByOleg) return false;
-
-          const poems = Object.values(poet.poems || {});
-          const maximPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.maxim)).length;
-          const olegPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.oleg)).length;
-          return maximPoemLikes >= 3 && olegPoemLikes >= 3;
-        })
+        .filter((poet) => USERS.every((u) => Boolean(likes[u]?.[poet.id])))
         .map((poet) => poet.id)
     );
-  }, [poets, ratings, likes]);
+  }, [poets, likes]);
   
   // Найти самого последнего оцененного поэта за последние 24 часа
   const getNewestPoet = () => {
@@ -146,38 +138,37 @@ const OverallRankingPage = () => {
   const calculateReadersChoiceScore = useCallback((poetId) => {
     const poet = poets.find(p => p.id === poetId);
     if (!poet || !poet.poems) return 0;
-    
+
     const poemsArray = Object.values(poet.poems);
-    
+
     let score = 0;
     poemsArray.forEach(poem => {
-      // Просмотры: 1 балл за каждого пользователя
-      if (poem.viewed?.maxim) score += 1;
-      if (poem.viewed?.oleg) score += 1;
-      
-      // Лайки: 3 балла за каждого пользователя
-      if (poem.liked?.maxim) score += 15;
-      if (poem.liked?.oleg) score += 15;
-      
-      // Выучено: 10 баллов за каждого пользователя
-      if (poem.memorized?.maxim) score += 50;
-      if (poem.memorized?.oleg) score += 50;
+      USERS.forEach((u) => {
+        if (poem.viewed?.[u]) score += 1;
+        if (poem.liked?.[u]) score += 15;
+        if (poem.memorized?.[u]) score += 50;
+      });
     });
-    
+
     return score;
   }, [poets]);
-  
+
   // Статистика стихов поэта (для отображения)
   const getPoemStats = useCallback((poetId) => {
     const poet = poets.find(p => p.id === poetId);
     if (!poet || !poet.poems) return { viewed: 0, liked: 0, memorized: 0 };
-    
+
     const poemsArray = Object.values(poet.poems);
-    
+    const countField = (field) =>
+      poemsArray.reduce(
+        (sum, p) => sum + USERS.filter((u) => p?.[field]?.[u]).length,
+        0
+      );
+
     return {
-      viewed: poemsArray.reduce((sum, p) => sum + (p.viewed?.maxim ? 1 : 0) + (p.viewed?.oleg ? 1 : 0), 0),
-      liked: poemsArray.reduce((sum, p) => sum + (p.liked?.maxim ? 1 : 0) + (p.liked?.oleg ? 1 : 0), 0),
-      memorized: poemsArray.reduce((sum, p) => sum + (p.memorized?.maxim ? 1 : 0) + (p.memorized?.oleg ? 1 : 0), 0)
+      viewed: countField('viewed'),
+      liked: countField('liked'),
+      memorized: countField('memorized')
     };
   }, [poets]);
 
@@ -304,92 +295,73 @@ const OverallRankingPage = () => {
   // Мемоизируем overallRankings для оптимизации (ДОЛЖНО БЫТЬ ДО useEffect)
   const overallRankings = useMemo(() => getOverallRankings(), [getOverallRankings]);
   
-  // Обнаружение конфликтов между Максимом и Олегом
+  // Обнаружение конфликтов между пользователями
   const detectConflicts = useMemo(() => {
     const conflicts = [];
-    
+
     Object.keys(CATEGORIES).forEach(category => {
-      const maximLeader = categoryLeaders.maxim?.[category];
-      const olegLeader = categoryLeaders.oleg?.[category];
-      
-      // Конфликт возникает ТОЛЬКО если:
-      // 1. У двух+ поэтов одинаковый МАКСИМАЛЬНЫЙ средний балл
-      // 2. Максим и Олег выбрали разных победителей
-      
-      // Если они выбрали одного и того же - нет конфликта
-      if (!maximLeader || !olegLeader || maximLeader === olegLeader) {
-        return;
-      }
-      
-      // Получаем рейтинги для этой категории (из кэша)
+      // Собираем уникальные ID-лидеров от всех пользователей
+      const userPicks = USERS
+        .map((u) => categoryLeaders[u]?.[category])
+        .filter(Boolean);
+      const distinctPicks = [...new Set(userPicks)];
+
+      // Если все согласны или кто-то ещё не выбрал — нет конфликта
+      if (distinctPicks.length < 2) return;
+
       const categoryRankings = allCategoryRankings[category];
-      
       if (categoryRankings.length === 0) return;
-      
-      // Находим максимальный средний балл
+
       const maxScore = categoryRankings[0].averageRating;
-      
-      // Находим всех поэтов с максимальным баллом
       const topPoets = categoryRankings.filter(
         item => Math.abs(item.averageRating - maxScore) < 0.01
       );
-      
-      // Конфликт только если >= 2 поэтов с максимальным баллом
-      if (topPoets.length < 2) {
-        return;
+      if (topPoets.length < 2) return;
+
+      // Оставляем только пиков, реально находящихся в топе
+      const picksInTop = distinctPicks.filter((pid) =>
+        topPoets.some((item) => item.poet.id === pid)
+      );
+      if (picksInTop.length < 2) return;
+
+      // Для дуэли берём первые два кандидата (отсортировано для стабильности)
+      const conflictParticipants = picksInTop.slice(0, 2).sort();
+
+      // Проверяем, не была ли уже дуэль или ручное назначение между этими поэтами
+      const duelData = overallDuelWinners?.[category];
+      if (duelData) {
+        const winnerId = duelData.winner || duelData;
+        const duelParticipants = duelData.participants || [];
+        const isWinnerInTop = topPoets.some(item => item.poet.id === winnerId);
+
+        // Ручное назначение из админки: подавляем конфликт пока победитель в топе
+        if (isWinnerInTop && duelData.manual) {
+          return;
+        }
+
+        if (
+          isWinnerInTop
+          && duelParticipants.length === 2
+          && duelParticipants[0] === conflictParticipants[0]
+          && duelParticipants[1] === conflictParticipants[1]
+        ) {
+          return;
+        }
       }
-      
-      // Проверяем, что выбранные лидеры действительно в топе
-      const maximLeaderInTop = topPoets.some(item => item.poet.id === maximLeader);
-      const olegLeaderInTop = topPoets.some(item => item.poet.id === olegLeader);
-      
-      if (maximLeaderInTop && olegLeaderInTop) {
-        // Оба выбрали разных поэтов из топа
-        // Проверяем, была ли уже дуэль между ЭТИМИ ДВУМЯ поэтами
-        const duelWinner = overallDuelWinners?.[category];
-        
-        if (duelWinner) {
-          // Дуэль была. Проверяем:
-          // 1. Победитель все еще в топе
-          // 2. Текущий конфликт между теми же двумя поэтами, что и в предыдущей дуэли
-          const duelData = overallDuelWinners[category];
-          const winnerId = duelData.winner || duelData; // Для обратной совместимости
-          const duelParticipants = duelData.participants || []; // Участники предыдущей дуэли
-          
-          const isWinnerInTop = topPoets.some(item => item.poet.id === winnerId);
-          
-          if (isWinnerInTop && duelParticipants.length === 2) {
-            // Победитель все еще в топе, и мы знаем участников предыдущей дуэли
-            // Проверяем, что текущий конфликт между теми же двумя поэтами
-            const currentParticipants = [maximLeader, olegLeader].sort();
-            const isSameDuel = 
-              currentParticipants[0] === duelParticipants[0] &&
-              currentParticipants[1] === duelParticipants[1];
-            
-            if (isSameDuel) {
-              // Дуэль уже была между этими двумя поэтами - конфликта нет
-              return;
-            }
-            // Иначе - новый поэт в конфликте (один из лидеров изменился), нужна новая дуэль
-          }
-        }
-        
-        // Дуэли не было или ситуация изменилась - это КОНФЛИКТ!
-        const poet1 = poets.find(p => p.id === maximLeader);
-        const poet2 = poets.find(p => p.id === olegLeader);
-        
-        if (poet1 && poet2) {
-          conflicts.push({
-            category,
-            categoryName: CATEGORIES[category].name,
-            poet1,
-            poet2,
-            score: maxScore
-          });
-        }
+
+      const poet1 = poets.find(p => p.id === conflictParticipants[0]);
+      const poet2 = poets.find(p => p.id === conflictParticipants[1]);
+      if (poet1 && poet2) {
+        conflicts.push({
+          category,
+          categoryName: CATEGORIES[category].name,
+          poet1,
+          poet2,
+          score: maxScore
+        });
       }
     });
-    
+
     return conflicts;
   }, [poets, categoryLeaders, overallDuelWinners, allCategoryRankings]);
   
@@ -658,8 +630,8 @@ const OverallRankingPage = () => {
       beauty: []
     };
     
-    // Награды — только для поэтов, оценённых обоими
-    const confirmedOverall = overallRankings.filter(r => r.ratedByBoth);
+    // Награды — для всех поэтов с любыми оценками (хотя бы один пользователь поставил)
+    const confirmedOverall = overallRankings;
     if (confirmedOverall.length > 0) {
       const topScore = confirmedOverall[0].averageScore;
       const topPoets = confirmedOverall.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
@@ -672,132 +644,89 @@ const OverallRankingPage = () => {
       }
     }
 
-    // Победители по категориям — только оценённые обоими
+    // Помощник: выбрать победителя из топовых поэтов с учётом пиков пользователей
+    const resolveWinnerFromTop = (topPoets, leaderKey, duelKey) => {
+      const userPicksInTop = USERS
+        .map((u) => categoryLeaders[u]?.[leaderKey])
+        .filter((pid) => pid && topPoets.some((p) => p.poet.id === pid));
+      const distinctPicks = [...new Set(userPicksInTop)];
+
+      if (distinctPicks.length === 1) return [distinctPicks[0]];
+
+      if (distinctPicks.length >= 2) {
+        const duelData = overallDuelWinners?.[duelKey];
+        if (duelData) {
+          const winnerId = duelData.winner || duelData;
+          if (topPoets.some((p) => p.poet.id === winnerId)) return [winnerId];
+        }
+        return [];
+      }
+
+      // Никто из пользователей не выбрал лидера в топе
+      return [];
+    };
+
+    // Победители по категориям — все поэты с любой оценкой
     ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const rankings = allCategoryRankings[category];
-      const confirmed = rankings.filter(r => r.ratedByBoth);
+      const confirmed = rankings;
       if (confirmed.length === 0) return;
 
       const topScore = confirmed[0].averageRating;
       const topPoets = confirmed.filter(r => Math.abs(r.averageRating - topScore) < 0.01);
-      
-      // Если только один поэт с топовым баллом - он безусловный победитель
+
       if (topPoets.length === 1) {
         winners[category] = [topPoets[0].poet.id];
         return;
       }
-      
-      // Если несколько поэтов с одинаковым топовым баллом
-      // Сначала смотрим на персональных победителей
-      const maximLeader = categoryLeaders.maxim?.[category];
-      const olegLeader = categoryLeaders.oleg?.[category];
-      
-      // Проверяем, кто из лидеров находится в топе по баллам
-      const maximLeaderInTop = maximLeader && topPoets.some(p => p.poet.id === maximLeader);
-      const olegLeaderInTop = olegLeader && topPoets.some(p => p.poet.id === olegLeader);
-      
-      // Если Максим и Олег оба выбрали одного и того же поэта, и он среди топовых - он победитель
-      if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
-        winners[category] = [maximLeader];
-        return;
-      }
-      
-      // Если только у Максима есть лидер в топе - он победитель
-      if (maximLeaderInTop && !olegLeaderInTop) {
-        winners[category] = [maximLeader];
-        return;
-      }
-      
-      // Если только у Олега есть лидер в топе - он победитель
-      if (olegLeaderInTop && !maximLeaderInTop) {
-        winners[category] = [olegLeader];
-        return;
-      }
-      
-      // Если у обоих разные лидеры в топе - проверяем результат дуэли
-      if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
-        const duelData = overallDuelWinners?.[category];
-        if (duelData) {
-          const winnerId = duelData.winner || duelData; // Для обратной совместимости
-          const isWinnerInTop = topPoets.some(p => p.poet.id === winnerId);
-          if (isWinnerInTop) {
-            winners[category] = [winnerId];
-            return;
-          }
-        }
-        // Если дуэли нет - конфликт
-        winners[category] = [];
-        return;
-      }
-      
-      // Если никто не выбрал лидера - конфликт
-      winners[category] = [];
+
+      winners[category] = resolveWinnerFromTop(topPoets, category, category);
     });
     
     // Теперь определяем победителя по overall с учетом категорийных наград
     if (confirmedOverall.length > 0) {
       const topScore = confirmedOverall[0].averageScore;
       const topPoets = confirmedOverall.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
-      
+
       if (topPoets.length > 1 && winners.overall.length === 0) {
-        // Сначала проверяем персональных лидеров
-        const maximLeader = categoryLeaders.maxim?.['overall'];
-        const olegLeader = categoryLeaders.oleg?.['overall'];
-        
-        const maximLeaderInTop = maximLeader && topPoets.some(p => p.poet.id === maximLeader);
-        const olegLeaderInTop = olegLeader && topPoets.some(p => p.poet.id === olegLeader);
-        
-        // Если оба выбрали одного и того же - он победитель
-        if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
-          winners.overall = [maximLeader];
+        const userPicksInTop = USERS
+          .map((u) => categoryLeaders[u]?.['overall'])
+          .filter((pid) => pid && topPoets.some((p) => p.poet.id === pid));
+        const distinctPicks = [...new Set(userPicksInTop)];
+
+        if (distinctPicks.length === 1) {
+          winners.overall = [distinctPicks[0]];
           return winners;
         }
-        
-        // Если только у Максима есть лидер в топе - он победитель
-        if (maximLeaderInTop && !olegLeaderInTop) {
-          winners.overall = [maximLeader];
-          return winners;
-        }
-        
-        // Если только у Олега есть лидер в топе - он победитель
-        if (olegLeaderInTop && !maximLeaderInTop) {
-          winners.overall = [olegLeader];
-          return winners;
-        }
-        
-        // Если у обоих разные лидеры - проверяем дуэль
-        if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
-          const duelWinner = overallDuelWinners?.overall;
-          if (duelWinner) {
-            const isWinnerInTop = topPoets.some(p => p.poet.id === duelWinner);
-            if (isWinnerInTop) {
+
+        if (distinctPicks.length >= 2) {
+          const duelData = overallDuelWinners?.overall;
+          if (duelData) {
+            const duelWinner = duelData.winner || duelData;
+            if (topPoets.some(p => p.poet.id === duelWinner)) {
               winners.overall = [duelWinner];
               return winners;
             }
           }
-          // Если дуэли нет - конфликт
           winners.overall = [];
           return winners;
         }
-        
-        // Если никто не назначил лидера - считаем количество категорийных наград
+
+        // Никто не назначил лидера в топе — считаем количество категорийных наград
         const poetsWithBadgeCount = topPoets.map(poet => {
           const badgeCount = ['creativity', 'drama', 'influence', 'beauty'].filter(
             cat => winners[cat] && winners[cat].includes(poet.poet.id)
           ).length;
           return { id: poet.poet.id, badgeCount };
         });
-        
-        // Сортируем по количеству наград
+
         poetsWithBadgeCount.sort((a, b) => b.badgeCount - a.badgeCount);
         const maxBadges = poetsWithBadgeCount[0].badgeCount;
         const poetsWithMaxBadges = poetsWithBadgeCount.filter(p => p.badgeCount === maxBadges);
-        
-        // Если только один поэт с максимальным количеством наград - он победитель
         winners.overall = poetsWithMaxBadges.length === 1 ? [poetsWithMaxBadges[0].id] : [];
       }
     }
-    
+
     return winners;
   }, [poets, ratings, categoryLeaders, overallDuelWinners, allCategoryRankings, overallRankings]);
 
@@ -807,8 +736,8 @@ const OverallRankingPage = () => {
       overall: []
     };
     
-    // Худший только по общему баллу — только оценённые обоими
-    const confirmed = overallRankings.filter(r => r.ratedByBoth);
+    // Худший только по общему баллу — все поэты с любой оценкой
+    const confirmed = overallRankings;
     if (confirmed.length > 3) {
       const lowestScore = confirmed[confirmed.length - 1].averageScore;
       const lowestPoets = confirmed.filter(r => Math.abs(r.averageScore - lowestScore) < 0.01);
@@ -817,39 +746,32 @@ const OverallRankingPage = () => {
       if (lowestPoets.length === 1) {
         losers.overall = [lowestPoets[0].poet.id];
       } else if (lowestPoets.length > 1) {
-        // Если несколько поэтов с одинаковым минимальным баллом
-        // Сначала проверяем персональных худших
-        const maximLoser = categoryLeaders.maxim?.['overall_worst'];
-        const olegLoser = categoryLeaders.oleg?.['overall_worst'];
-        
-        const maximLoserInBottom = maximLoser && lowestPoets.some(p => p.poet.id === maximLoser);
-        const olegLoserInBottom = olegLoser && lowestPoets.some(p => p.poet.id === olegLoser);
-        
-        // Если оба выбрали одного и того же - он худший
-        if (maximLoser && olegLoser && maximLoser === olegLoser && maximLoserInBottom) {
-          losers.overall = [maximLoser];
-        } else if (maximLoserInBottom && !olegLoserInBottom) {
-          // Если только у Максима есть худший в нижних - он худший
-          losers.overall = [maximLoser];
-        } else if (olegLoserInBottom && !maximLoserInBottom) {
-          // Если только у Олега есть худший в нижних - он худший
-          losers.overall = [olegLoser];
-        } else if (maximLoserInBottom && olegLoserInBottom && maximLoser !== olegLoser) {
-          // Если у обоих разные - проверяем дуэль
+        // Несколько поэтов с одинаковым минимальным баллом — собираем пиков пользователей
+        const userPicksInBottom = USERS
+          .map((u) => categoryLeaders[u]?.['overall_worst'])
+          .filter((pid) => pid && lowestPoets.some((p) => p.poet.id === pid));
+        const distinctPicks = [...new Set(userPicksInBottom)];
+
+        if (distinctPicks.length === 1) {
+          losers.overall = [distinctPicks[0]];
+        } else if (distinctPicks.length >= 2) {
           const duelLoser = overallDuelWinners?.overall_worst;
-          if (duelLoser && lowestPoets.some(p => p.poet.id === duelLoser)) {
-            losers.overall = [duelLoser];
+          if (duelLoser) {
+            const winnerId = duelLoser.winner || duelLoser;
+            if (lowestPoets.some(p => p.poet.id === winnerId)) {
+              losers.overall = [winnerId];
+            }
           }
         }
       }
     }
     
     return losers;
-  }, [overallRankings]);
+  }, [overallRankings, categoryLeaders, overallDuelWinners]);
   
-  // Лучший белорусский поэт — только оценённые обоими
+  // Лучший белорусский поэт — все белорусы с любой оценкой
   const belarusianWinner = useMemo(() => {
-    const scored = overallRankings.filter(item => item.poet.belarusian && item.ratedByBoth);
+    const scored = overallRankings.filter(item => item.poet.belarusian);
     return scored.length > 0 ? scored[0].poet.id : null;
   }, [overallRankings]);
 
@@ -1108,11 +1030,10 @@ const OverallRankingPage = () => {
         </h1>
       </div> */}
       
-      {/* Блок конфликтов */}
+      {/* Блок конфликтов — список ничьих, разрешается вручную из админки.
+          Дуэль-игра отключена для 3 пользователей (использовали при двух игроках). */}
       {detectConflicts.length > 0 && (
         <div className="conflicts-block">
-          {/* <h3 className="conflicts-title">Критики не сошлись во мнении — пусть судьба решит.</h3> */}
-
           <div className="conflicts-list">
             {detectConflicts.map((conflict) => (
               <div key={conflict.category} className="conflict-item" data-category={conflict.category}>
@@ -1122,12 +1043,6 @@ const OverallRankingPage = () => {
                     {conflict.poet1.name} VS {conflict.poet2.name}
                   </span>
                 </div>
-                <button
-                  className="start-game-btn"
-                  onClick={() => startDuelGame(conflict)}
-                >
-                  Дуэль
-                </button>
               </div>
             ))}
           </div>
@@ -1474,7 +1389,7 @@ const OverallRankingPage = () => {
             }
             
             return displayRankings.map((item, index) => {
-            const { poet, maximScore, olegScore, averageScore, ratedByBoth } = item;
+            const { poet, userScores = {}, averageScore, ratedByBoth } = item;
             const rank = ranks[index] || index + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
@@ -1503,7 +1418,7 @@ const OverallRankingPage = () => {
                   key={poet.id}
                   {...cardProps}
                   data-poet-id={poet.id}
-                  className={`overall-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''} expandable`}
+                  className={`overall-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} expandable`}
                   onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
                 >
                   {(!isAnimating || showScore) ? (
@@ -1532,14 +1447,12 @@ const OverallRankingPage = () => {
                     
                     {(!isAnimating || showScore) ? (
                       <div className="scores-compact-row">
-                        <div className="score-compact-item maxim">
-                          <span className="score-compact-label">м</span>
-                          <span className="score-compact-value">{maximScore > 0 ? formatScore(maximScore) : '—'}</span>
-                        </div>
-                        <div className="score-compact-item oleg">
-                          <span className="score-compact-label">о</span>
-                          <span className="score-compact-value">{olegScore > 0 ? formatScore(olegScore) : '—'}</span>
-                        </div>
+                        {USERS.map((u) => (
+                          <div key={u} className={`score-compact-item ${u}`}>
+                            <span className="score-compact-label">{USER_INITIALS[u]}</span>
+                            <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
+                          </div>
+                        ))}
                         <div className="score-compact-item average">
                           <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
                         </div>
@@ -1560,7 +1473,7 @@ const OverallRankingPage = () => {
                 key={poet.id}
                 {...cardProps}
                 data-poet-id={poet.id}
-                className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''}`}
+                className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
                 onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
               >
                 {/* Место (#1, #2, etc) */}
@@ -1592,14 +1505,12 @@ const OverallRankingPage = () => {
                       
                       {(!isAnimating || showScore) ? (
                         <div className="scores-compact-row expanded">
-                          <div className="score-compact-item maxim">
-                            <span className="score-compact-label">м</span>
-                            <span className="score-compact-value">{maximScore > 0 ? formatScore(maximScore) : '—'}</span>
-                          </div>
-                          <div className="score-compact-item oleg">
-                            <span className="score-compact-label">о</span>
-                            <span className="score-compact-value">{olegScore > 0 ? formatScore(olegScore) : '—'}</span>
-                          </div>
+                          {USERS.map((u) => (
+                            <div key={u} className={`score-compact-item ${u}`}>
+                              <span className="score-compact-label">{USER_INITIALS[u]}</span>
+                              <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
+                            </div>
+                          ))}
                           <div className="score-compact-item average">
                             <span className="score-compact-value">{formatAverageScore(averageScore)}</span>
                           </div>
@@ -1616,26 +1527,26 @@ const OverallRankingPage = () => {
                   {(!isAnimating || showScore) ? (
                     <div className="overall-ratings-grid">
                       {Object.entries(CATEGORIES).map(([key, cat]) => {
-                        const maximRating = ratings.maxim[poet.id]?.[key] || 0;
-                        const olegRating = ratings.oleg[poet.id]?.[key] || 0;
-                        const raterCount = (maximRating > 0 ? 1 : 0) + (olegRating > 0 ? 1 : 0);
-                        const avgRating = raterCount > 0 ? (maximRating + olegRating) / raterCount : 0;
+                        const userCatRatings = USERS.reduce((acc, u) => {
+                          acc[u] = ratings[u]?.[poet.id]?.[key] || 0;
+                          return acc;
+                        }, {});
+                        const nonZero = USERS.map((u) => userCatRatings[u]).filter((v) => v > 0);
+                        const avgRating = nonZero.length
+                          ? nonZero.reduce((s, v) => s + v, 0) / nonZero.length
+                          : 0;
 
                         return (
                           <div key={key} className="overall-rating-item">
                             <div className="overall-rating-label">
                               <span className="overall-category-name">{cat.name}</span>
-                              {/* <span className="overall-category-coefficient">×{cat.coefficient}</span> */}
                             </div>
                             <div className="overall-category-scores">
-                              <div className="overall-category-score maxim">
-                                <span className="overall-category-score-label">м</span>
-                                <span className="overall-category-score-value">{maximRating > 0 ? maximRating.toFixed(1) : '—'}</span>
-                              </div>
-                              <div className="overall-category-score oleg">
-                                <span className="overall-category-score-label">о</span>
-                                <span className="overall-category-score-value">{olegRating > 0 ? olegRating.toFixed(1) : '—'}</span>
-                              </div>
+                              {USERS.map((u) => (
+                                <div key={u} className={`overall-category-score ${u} no-label`}>
+                                  <span className="overall-category-score-value">{userCatRatings[u] > 0 ? userCatRatings[u].toFixed(1) : '—'}</span>
+                                </div>
+                              ))}
                               <div className="overall-category-score average">
                                 <span className="overall-category-score-value">{avgRating.toFixed(1)}</span>
                               </div>
@@ -1676,7 +1587,7 @@ const OverallRankingPage = () => {
             }
             
             return displayRankings.map((item, index) => {
-            const { poet, maximRating, olegRating, averageRating, ratedByBoth } = item;
+            const { poet, userRatings = {}, averageRating, ratedByBoth } = item;
             const rankIndex = originalIndex >= 0 && index === Math.round(animationStep) ? originalIndex : index;
             const rank = ranks[rankIndex] || rankIndex + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
@@ -1702,7 +1613,7 @@ const OverallRankingPage = () => {
               <CategoryCardComponent 
                 key={poet.id}
                 {...categoryCardProps}
-                className={`category-rank-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''}`}
+                className={`category-rank-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
               >
                 {(!isAnimating || showScore) ? (
                   <span className="category-rank-number compact">#{rank}</span>
@@ -1726,14 +1637,12 @@ const OverallRankingPage = () => {
                   
                   {(!isAnimating || showScore) ? (
                     <div className="scores-compact-row">
-                      <div className="score-compact-item category maxim">
-                        <span className="score-compact-label">м</span>
-                        <span className="score-compact-value">{maximRating > 0 ? maximRating.toFixed(1) : '—'}</span>
-                      </div>
-                      <div className="score-compact-item category oleg">
-                        <span className="score-compact-label">о</span>
-                        <span className="score-compact-value">{olegRating > 0 ? olegRating.toFixed(1) : '—'}</span>
-                      </div>
+                      {USERS.map((u) => (
+                        <div key={u} className={`score-compact-item category ${u}`}>
+                          <span className="score-compact-label">{USER_INITIALS[u]}</span>
+                          <span className="score-compact-value">{(userRatings[u] || 0) > 0 ? userRatings[u].toFixed(1) : '—'}</span>
+                        </div>
+                      ))}
                       <div className="score-compact-item category average">
                         <span className="score-compact-value">{averageRating.toFixed(1)}</span>
                       </div>
@@ -1752,17 +1661,9 @@ const OverallRankingPage = () => {
       )}
       
       
-      {/* Игра для разрешения конфликта */}
-      {gameConflict && currentUser && (
-        <DuelGame
-          poet1={gameConflict.poet1}
-          poet2={gameConflict.poet2}
-          category={gameConflict.categoryName}
-          currentUser={currentUser}
-          onGameEnd={handleGameEnd}
-          onClose={() => setGameConflict(null)}
-        />
-      )}
+      {/* Дуэль-игра отключена с переходом на 3 пользователей.
+          Конфликты разрешаются через ручное назначение в админке (категория «Общий»).
+          Код DuelGame оставлен на случай возврата к игре. */}
     </div>
   );
 };

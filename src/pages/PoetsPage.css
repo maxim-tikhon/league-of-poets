@@ -68,26 +68,37 @@
 }
 
 .btn-add-poet {
-  font-family: 'Inter', sans-serif; /* Современный UI шрифт */
-  background: var(--gold);
-  color: var(--ink);
-  border: 2px solid var(--gold);
+  font-family: 'Inter', sans-serif;
+  background: transparent;
+  color: var(--gold-dark);
+  border: 1px solid rgba(199, 163, 107, 0.45);
   border-radius: 6px;
-  padding: 0.5rem;
-  font-size: 0.95rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  /* transition: all 0.3s ease; */
   white-space: nowrap;
   margin-left: auto;
-  /* box-shadow: 0 2px 8px rgba(199, 163, 107, 0.2); */
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
 .btn-add-poet:hover {
-  background: var(--gold-dark);
+  background: rgba(199, 163, 107, 0.08);
   border-color: var(--gold-dark);
-  /* transform: translateY(-2px); */
-  /* box-shadow: 0 4px 16px rgba(199, 163, 107, 0.35); */
+  color: var(--gold-dark);
+}
+
+/* Letterboxd: зелёный акцент вместо золотого */
+body[data-theme="letterboxd"] .btn-add-poet {
+  color: #00ac1c;
+  border-color: rgba(0, 172, 28, 0.45);
+  background: transparent;
+}
+
+body[data-theme="letterboxd"] .btn-add-poet:hover {
+  background: rgba(0, 172, 28, 0.1);
+  border-color: #00ac1c;
+  color: #00ac1c;
 }
 
 /* Toggle для показа оценок */

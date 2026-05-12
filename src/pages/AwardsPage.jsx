@@ -1,313 +1,201 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
+import { USERS, USER_LABELS, USER_LABELS_GENITIVE, DEFAULT_USER } from '../constants';
 import './OverallRankingPage.css'; // Для стилей наград
 import './AwardsPage.css';
 
 const AwardsPage = () => {
-  const { 
+  const {
     poets,
     ratings,
     likes,
     calculateScore,
     calculateAverageScore,
+    hasFullRating,
     categoryLeaders,
     overallDuelWinners,
     aiChoiceTiebreaker,
     tournaments
   } = usePoets();
-  
-  // Получаем текущего пользователя
-  const currentUser = localStorage.getItem('currentUser') || 'maxim';
-  const otherUser = currentUser === 'maxim' ? 'oleg' : 'maxim';
-  
-  const [activeTab, setActiveTab] = useState('overall'); // 'overall', 'my', 'other'
 
-  // ============ ОБЩИЕ НАГРАДЫ (логика из OverallRankingPage) ============
-  
-  // Подсчет баллов "Выбор читателей" для поэта
+  const currentUser = localStorage.getItem('currentUser') || DEFAULT_USER;
+  const otherUsers = USERS.filter((u) => u !== currentUser);
+
+  // activeTab: 'overall' | 'my' | <user-key for each other user>
+  const [activeTab, setActiveTab] = useState('overall');
+
+  // ============ ОБЩИЕ НАГРАДЫ ============
+
   const calculateReadersChoiceScore = (poetId) => {
     const poet = poets.find(p => p.id === poetId);
     if (!poet || !poet.poems) return 0;
-    
+
     const poemsArray = Object.values(poet.poems);
-    
     let score = 0;
     poemsArray.forEach(poem => {
-      if (poem.viewed?.maxim) score += 1;
-      if (poem.viewed?.oleg) score += 1;
-      if (poem.liked?.maxim) score += 15;
-      if (poem.liked?.oleg) score += 15;
-      if (poem.memorized?.maxim) score += 50;
-      if (poem.memorized?.oleg) score += 50;
+      USERS.forEach((u) => {
+        if (poem.viewed?.[u]) score += 1;
+        if (poem.liked?.[u]) score += 15;
+        if (poem.memorized?.[u]) score += 50;
+      });
     });
-    
     return score;
   };
 
-  // Подсчет AI-рейтинга для поэта
   const calculateAIScore = (poetId) => {
     const poet = poets.find(p => p.id === poetId);
     if (!poet || !poet.aiRatings) return 0;
-    
+
     const aiRatings = poet.aiRatings;
-    
-    const score = 
+    const score =
       (aiRatings.creativity || 0) * CATEGORIES.creativity.coefficient +
       (aiRatings.influence || 0) * CATEGORIES.influence.coefficient +
       (aiRatings.drama || 0) * CATEGORIES.drama.coefficient +
       (aiRatings.beauty || 0) * CATEGORIES.beauty.coefficient;
-    
-    const totalCoefficient = 
+
+    const totalCoefficient =
       CATEGORIES.creativity.coefficient +
       CATEGORIES.influence.coefficient +
       CATEGORIES.drama.coefficient +
       CATEGORIES.beauty.coefficient;
-    
+
     return totalCoefficient > 0 ? score / totalCoefficient : 0;
   };
 
-  // Победители категорий для ОБЩЕГО рейтинга
+  // Помощник: разрешение победителя из топовых поэтов с учётом пиков пользователей
+  const resolveTopWinner = (topPoets, leaderKey, duelKey) => {
+    const userPicksInTop = USERS
+      .map((u) => categoryLeaders[u]?.[leaderKey])
+      .filter((pid) => pid && topPoets.some((p) => p.id === pid));
+    const distinctPicks = [...new Set(userPicksInTop)];
+
+    if (distinctPicks.length === 1) return [distinctPicks[0]];
+
+    if (distinctPicks.length >= 2) {
+      const duelData = overallDuelWinners?.[duelKey];
+      if (duelData) {
+        const winnerId = duelData.winner || duelData;
+        if (topPoets.some((p) => p.id === winnerId)) return [winnerId];
+      }
+      return [];
+    }
+    return [];
+  };
+
   const overallCategoryWinners = useMemo(() => {
     const winners = {};
-    
+
     ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const rankedPoets = poets
         .map(poet => {
-          const maximRating = ratings.maxim?.[poet.id]?.[category] || 0;
-          const olegRating = ratings.oleg?.[poet.id]?.[category] || 0;
-          if (maximRating <= 0 || olegRating <= 0) return null;
-          return { id: poet.id, rating: (maximRating + olegRating) / 2 };
+          const userRatings = USERS
+            .map((u) => ratings[u]?.[poet.id]?.[category] || 0)
+            .filter((r) => r > 0);
+          if (userRatings.length === 0) return null;
+          const avg = userRatings.reduce((s, r) => s + r, 0) / userRatings.length;
+          return { id: poet.id, rating: avg };
         })
         .filter(item => item && item.rating > 0)
         .sort((a, b) => b.rating - a.rating);
-      
+
       if (rankedPoets.length === 0) {
         winners[category] = [];
         return;
       }
-      
+
       const topRating = rankedPoets[0].rating;
       const topPoets = rankedPoets.filter(p => Math.abs(p.rating - topRating) < 0.01);
-      
+
       if (topPoets.length === 1) {
         winners[category] = [topPoets[0].id];
       } else {
-        // Сначала проверяем персональных лидеров
-        const maximLeader = categoryLeaders.maxim?.[category];
-        const olegLeader = categoryLeaders.oleg?.[category];
-        
-        const maximLeaderInTop = maximLeader && topPoets.some(p => p.id === maximLeader);
-        const olegLeaderInTop = olegLeader && topPoets.some(p => p.id === olegLeader);
-        
-        // Если оба выбрали одного и того же - он победитель
-        if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
-          winners[category] = [maximLeader];
-          return;
-        }
-        
-        // Если только у Максима есть лидер в топе - он победитель
-        if (maximLeaderInTop && !olegLeaderInTop) {
-          winners[category] = [maximLeader];
-          return;
-        }
-        
-        // Если только у Олега есть лидер в топе - он победитель
-        if (olegLeaderInTop && !maximLeaderInTop) {
-          winners[category] = [olegLeader];
-          return;
-        }
-        
-        // Если у обоих разные лидеры - проверяем дуэль
-        if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
-          const duelData = overallDuelWinners?.[category];
-          if (duelData) {
-            const winnerId = duelData.winner || duelData;
-            const isWinnerInTop = topPoets.some(p => p.id === winnerId);
-            if (isWinnerInTop) {
-              winners[category] = [winnerId];
-              return;
-            }
-          }
-        }
-        
-        winners[category] = [];
+        winners[category] = resolveTopWinner(topPoets, category, category);
       }
     });
-    
-    // Overall (лучший поэт) — только оценённые обоими
+
+    // Overall (лучший поэт) — все поэты с любой оценкой
     const overallRankings = poets
-      .filter(poet => {
-        const m = calculateScore('maxim', poet.id);
-        const o = calculateScore('oleg', poet.id);
-        return m > 0 && o > 0;
-      })
       .map(poet => ({ id: poet.id, score: calculateAverageScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
-    
+
     if (overallRankings.length > 0) {
       const topScore = overallRankings[0].score;
       const topPoets = overallRankings.filter(r => Math.abs(r.score - topScore) < 0.01);
-      
+
       if (topPoets.length === 1) {
         winners.overall = [topPoets[0].id];
       } else {
-        // Сначала проверяем персональных лидеров
-        const maximLeader = categoryLeaders.maxim?.['overall'];
-        const olegLeader = categoryLeaders.oleg?.['overall'];
-        
-        const maximLeaderInTop = maximLeader && topPoets.some(p => p.id === maximLeader);
-        const olegLeaderInTop = olegLeader && topPoets.some(p => p.id === olegLeader);
-        
-        // Если оба выбрали одного и того же - он победитель
-        if (maximLeader && olegLeader && maximLeader === olegLeader && maximLeaderInTop) {
-          winners.overall = [maximLeader];
-        } else if (maximLeaderInTop && !olegLeaderInTop) {
-          // Если только у Максима есть лидер в топе - он победитель
-          winners.overall = [maximLeader];
-        } else if (olegLeaderInTop && !maximLeaderInTop) {
-          // Если только у Олега есть лидер в топе - он победитель
-          winners.overall = [olegLeader];
-        } else if (maximLeaderInTop && olegLeaderInTop && maximLeader !== olegLeader) {
-          // Если у обоих разные лидеры - проверяем дуэль
-          const duelWinner = overallDuelWinners?.overall;
-          if (duelWinner && topPoets.some(p => p.id === duelWinner)) {
-            winners.overall = [duelWinner];
-          } else {
-            winners.overall = [];
-          }
-        } else {
-          winners.overall = [];
-        }
+        winners.overall = resolveTopWinner(topPoets, 'overall', 'overall');
       }
     } else {
       winners.overall = [];
     }
-    
-    return winners;
-  }, [poets, ratings, calculateAverageScore, overallDuelWinners, categoryLeaders]);
 
-  // Худший поэт для ОБЩЕГО рейтинга — только оценённые обоими
+    return winners;
+  }, [poets, ratings, calculateAverageScore, hasFullRating, overallDuelWinners, categoryLeaders]);
+
   const overallLoser = useMemo(() => {
     const overallRankings = poets
-      .filter(poet => {
-        const m = calculateScore('maxim', poet.id);
-        const o = calculateScore('oleg', poet.id);
-        return m > 0 && o > 0;
-      })
       .map(poet => ({ id: poet.id, score: calculateAverageScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
-    
+
     if (overallRankings.length <= 3) return [];
-    
+
     const lowestScore = overallRankings[overallRankings.length - 1].score;
     const lowestPoets = overallRankings.filter(r => Math.abs(r.score - lowestScore) < 0.01);
-    
-    if (lowestPoets.length === 1) {
-      return [lowestPoets[0].id];
-    }
-    
-    // Сначала проверяем персональных худших
-    const maximLoser = categoryLeaders.maxim?.['overall_worst'];
-    const olegLoser = categoryLeaders.oleg?.['overall_worst'];
-    
-    const maximLoserInBottom = maximLoser && lowestPoets.some(p => p.id === maximLoser);
-    const olegLoserInBottom = olegLoser && lowestPoets.some(p => p.id === olegLoser);
-    
-    // Если оба выбрали одного и того же - он худший
-    if (maximLoser && olegLoser && maximLoser === olegLoser && maximLoserInBottom) {
-      return [maximLoser];
-    }
-    
-    // Если только у Максима есть худший в нижних - он худший
-    if (maximLoserInBottom && !olegLoserInBottom) {
-      return [maximLoser];
-    }
-    
-    // Если только у Олега есть худший в нижних - он худший
-    if (olegLoserInBottom && !maximLoserInBottom) {
-      return [olegLoser];
-    }
-    
-    // Если у обоих разные - проверяем дуэль
-    if (maximLoserInBottom && olegLoserInBottom && maximLoser !== olegLoser) {
-      const duelLoser = overallDuelWinners?.overall_worst;
-      if (duelLoser && lowestPoets.some(p => p.id === duelLoser)) {
-        return [duelLoser];
-      }
-    }
-    
-    return [];
-  }, [poets, calculateAverageScore, overallDuelWinners]);
 
-  // Выбор читателей
+    if (lowestPoets.length === 1) return [lowestPoets[0].id];
+
+    return resolveTopWinner(lowestPoets, 'overall_worst', 'overall_worst');
+  }, [poets, hasFullRating, calculateAverageScore, overallDuelWinners, categoryLeaders]);
+
   const readersChoiceWinner = useMemo(() => {
     const readersRankings = poets
       .map(poet => ({ id: poet.id, score: calculateReadersChoiceScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
-    
+
     return readersRankings.length > 0 ? [readersRankings[0].id] : [];
   }, [poets]);
 
-  // Выбор ИИ
   const aiChoiceWinner = useMemo(() => {
     if (aiChoiceTiebreaker && aiChoiceTiebreaker.winner) {
       return [aiChoiceTiebreaker.winner];
     }
-    
+
     const aiRankings = poets
       .map(poet => ({ id: poet.id, score: calculateAIScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
-    
+
     return aiRankings.length > 0 ? [aiRankings[0].id] : [];
   }, [poets, aiChoiceTiebreaker]);
 
-  // Нобелевская премия (может быть у нескольких поэтов)
+  // Нобелевская премия: лайк от всех трёх пользователей.
+  // Если лауреатов будет слишком много — ужесточим.
   const nobelWinners = useMemo(() => {
     return poets
-      .filter((poet) => {
-        const maximCreativity = ratings.maxim?.[poet.id]?.creativity || 0;
-        const olegCreativity = ratings.oleg?.[poet.id]?.creativity || 0;
-        if (maximCreativity < 4.5 || olegCreativity < 4.5) return false;
-
-        const likedByMaxim = Boolean(likes.maxim?.[poet.id]);
-        const likedByOleg = Boolean(likes.oleg?.[poet.id]);
-        if (!likedByMaxim || !likedByOleg) return false;
-
-        const poems = Object.values(poet.poems || {});
-        const maximPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.maxim)).length;
-        const olegPoemLikes = poems.filter((poem) => Boolean(poem?.liked?.oleg)).length;
-
-        return maximPoemLikes >= 3 && olegPoemLikes >= 3;
-      })
+      .filter((poet) => USERS.every((u) => Boolean(likes[u]?.[poet.id])))
       .map((poet) => poet.id);
-  }, [poets, ratings, likes]);
+  }, [poets, likes]);
 
-  // Лучший белорусский поэт (общий рейтинг) — только оценённые обоими
   const overallBelarusianWinner = useMemo(() => {
     const scored = poets
-      .filter(p => {
-        if (!p.belarusian) return false;
-        const m = calculateScore('maxim', p.id);
-        const o = calculateScore('oleg', p.id);
-        return m > 0 && o > 0;
-      })
+      .filter(p => p.belarusian)
       .map(p => ({ id: p.id, score: calculateAverageScore(p.id) }))
       .filter(p => p.score > 0)
       .sort((a, b) => b.score - a.score);
     return scored.length > 0 ? [scored[0].id] : [];
-  }, [poets, calculateScore, calculateAverageScore]);
+  }, [poets, calculateAverageScore]);
 
-  // ============ ПЕРСОНАЛЬНЫЕ НАГРАДЫ (логика из PersonalRanking) ============
-  
+  // ============ ПЕРСОНАЛЬНЫЕ НАГРАДЫ ============
+
   const getPersonalWinners = (rater) => {
     const winners = {};
-    
-    // Категории
+
     ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
       const poetsWithRatings = poets
         .map(poet => ({
@@ -316,17 +204,16 @@ const AwardsPage = () => {
         }))
         .filter(p => p.rating > 0)
         .sort((a, b) => b.rating - a.rating);
-      
+
       if (poetsWithRatings.length === 0) {
         winners[category] = [];
         return;
       }
-      
+
       const topRating = poetsWithRatings[0].rating;
       const topPoets = poetsWithRatings.filter(p => Math.abs(p.rating - topRating) < 0.01);
-      
       const explicitLeader = categoryLeaders[rater]?.[category];
-      
+
       if (explicitLeader && topPoets.some(p => p.id === explicitLeader)) {
         winners[category] = [explicitLeader];
       } else if (topPoets.length === 1) {
@@ -335,19 +222,17 @@ const AwardsPage = () => {
         winners[category] = [];
       }
     });
-    
-    // Overall (лучший)
+
     const poetsWithScores = poets
       .map(poet => ({ id: poet.id, score: calculateScore(rater, poet.id) }))
       .filter(p => p.score > 0)
       .sort((a, b) => b.score - a.score);
-    
+
     if (poetsWithScores.length > 0) {
       const topScore = poetsWithScores[0].score;
       const topPoets = poetsWithScores.filter(p => Math.abs(p.score - topScore) < 0.01);
-      
       const explicitLeader = categoryLeaders[rater]?.['overall'];
-      
+
       if (explicitLeader && topPoets.some(p => p.id === explicitLeader)) {
         winners.overall = [explicitLeader];
       } else if (topPoets.length === 1) {
@@ -358,7 +243,7 @@ const AwardsPage = () => {
     } else {
       winners.overall = [];
     }
-    
+
     return winners;
   };
 
@@ -367,22 +252,17 @@ const AwardsPage = () => {
       .map(poet => ({ id: poet.id, score: calculateScore(rater, poet.id) }))
       .filter(p => p.score > 0)
       .sort((a, b) => a.score - b.score);
-    
+
     if (poetsWithScores.length <= 3) return [];
-    
+
     const lowestScore = poetsWithScores[0].score;
     const lowestPoets = poetsWithScores.filter(p => Math.abs(p.score - lowestScore) < 0.01);
-    
     const explicitLoser = categoryLeaders[rater]?.['overall_worst'];
-    
+
     if (explicitLoser && lowestPoets.some(p => p.id === explicitLoser)) {
       return [explicitLoser];
     }
-    
-    if (lowestPoets.length === 1) {
-      return [lowestPoets[0].id];
-    }
-    
+    if (lowestPoets.length === 1) return [lowestPoets[0].id];
     return [];
   };
 
@@ -395,17 +275,21 @@ const AwardsPage = () => {
     return scored.length > 0 ? [scored[0].id] : [];
   };
 
-  const maximWinners = useMemo(() => getPersonalWinners('maxim'), [poets, ratings, categoryLeaders, calculateScore]);
-  const olegWinners = useMemo(() => getPersonalWinners('oleg'), [poets, ratings, categoryLeaders, calculateScore]);
-  const maximLoser = useMemo(() => getPersonalLoser('maxim'), [poets, ratings, categoryLeaders, calculateScore]);
-  const olegLoser = useMemo(() => getPersonalLoser('oleg'), [poets, ratings, categoryLeaders, calculateScore]);
-  const maximBelarusianWinner = useMemo(() => getPersonalBelarusianWinner('maxim'), [poets, calculateScore]);
-  const olegBelarusianWinner = useMemo(() => getPersonalBelarusianWinner('oleg'), [poets, calculateScore]);
+  const personalAwardsByUser = useMemo(() => {
+    return USERS.reduce((acc, u) => {
+      acc[u] = {
+        winners: getPersonalWinners(u),
+        loser: getPersonalLoser(u),
+        belarusian: getPersonalBelarusianWinner(u)
+      };
+      return acc;
+    }, {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poets, ratings, categoryLeaders, calculateScore]);
 
-  // Рендер карточки награды
   const renderAwardCard = (award, winners) => {
     if (winners.length === 0) return null;
-    
+
     return winners.map(poetId => {
       const poet = poets.find(p => p.id === poetId);
       if (!poet) return null;
@@ -413,25 +297,25 @@ const AwardsPage = () => {
       const bottomTitle = isTournamentAward && award.winnerPoemTitle
         ? award.winnerPoemTitle
         : (award.winnerPoemTitle ? `${poet.name} — ${award.winnerPoemTitle}` : poet.name);
-      
+
       return (
         <div key={`${award.key}-${poetId}`} className="award-item-wrapper">
           <Link to={`/poet/${poetId}`} className="award-winner-card">
             <div className="award-winner-composition">
               <div className="award-badge-section">
-                <img 
-                  src={`/images/badges/${award.badge}`} 
+                <img
+                  src={`/images/badges/${award.badge}`}
                   alt={award.name}
                   className="award-badge-large-img"
                 />
               </div>
               <div className="award-poet-section">
                 {poet.imageUrl && (
-                  <img 
-                    src={poet.imageUrl} 
-                    alt={poet.name} 
+                  <img
+                    src={poet.imageUrl}
+                    alt={poet.name}
                     className="award-winner-avatar"
-                    style={{ 
+                    style={{
                       objectPosition: `center ${poet.imagePositionY !== undefined ? poet.imagePositionY : 25}%`
                     }}
                   />
@@ -450,7 +334,6 @@ const AwardsPage = () => {
     });
   };
 
-  // Конфигурация наград для общего рейтинга
   const overallAwards = [
     { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
     { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
@@ -464,7 +347,6 @@ const AwardsPage = () => {
     { key: 'last', name: 'Худший поэт', badge: 'last.png' }
   ];
 
-  // Конфигурация наград для персонального рейтинга
   const personalAwards = [
     { key: 'overall', name: 'Лучший поэт', badge: 'overall.png' },
     { key: 'creativity', name: CATEGORIES.creativity.name, badge: 'creativity.png' },
@@ -509,7 +391,6 @@ const AwardsPage = () => {
       });
   }, [tournaments, poets]);
 
-  // Получение победителей для текущей вкладки
   const getWinnersForAward = (awardKey) => {
     if (activeTab === 'overall') {
       if (awardKey === 'last') return overallLoser;
@@ -518,21 +399,15 @@ const AwardsPage = () => {
       if (awardKey === 'ai-choice') return aiChoiceWinner;
       if (awardKey === 'belarus') return overallBelarusianWinner;
       return overallCategoryWinners[awardKey] || [];
-    } else if (activeTab === 'my') {
-      const winners = currentUser === 'maxim' ? maximWinners : olegWinners;
-      const loser = currentUser === 'maxim' ? maximLoser : olegLoser;
-      const belarusianWinner = currentUser === 'maxim' ? maximBelarusianWinner : olegBelarusianWinner;
-      if (awardKey === 'last') return loser;
-      if (awardKey === 'belarus') return belarusianWinner;
-      return winners[awardKey] || [];
-    } else {
-      const winners = otherUser === 'maxim' ? maximWinners : olegWinners;
-      const loser = otherUser === 'maxim' ? maximLoser : olegLoser;
-      const belarusianWinner = otherUser === 'maxim' ? maximBelarusianWinner : olegBelarusianWinner;
-      if (awardKey === 'last') return loser;
-      if (awardKey === 'belarus') return belarusianWinner;
-      return winners[awardKey] || [];
     }
+
+    // Personal tabs: 'my' OR a specific other-user key
+    const ratingUser = activeTab === 'my' ? currentUser : activeTab;
+    const data = personalAwardsByUser[ratingUser];
+    if (!data) return [];
+    if (awardKey === 'last') return data.loser;
+    if (awardKey === 'belarus') return data.belarusian;
+    return data.winners[awardKey] || [];
   };
 
   const currentAwards = activeTab === 'overall'
@@ -544,42 +419,40 @@ const AwardsPage = () => {
         : [...otherOverallAwards, ...tournamentAwards];
     })()
     : personalAwards;
-  
-  // Имя другого пользователя для вкладки (родительный падеж)
-  const otherUserNameGenitive = otherUser === 'maxim' ? 'Максима' : 'Олега';
 
   return (
     <div className="awards-page">
 
-      {/* Вкладки */}
       <div className="tabs">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'overall' ? 'active' : ''}`}
           onClick={() => setActiveTab('overall')}
         >
           Общие
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'my' ? 'active' : ''}`}
           onClick={() => setActiveTab('my')}
         >
           Мои
         </button>
-        <button 
-          className={`tab-btn ${activeTab === 'other' ? 'active' : ''}`}
-          onClick={() => setActiveTab('other')}
-        >
-          {otherUserNameGenitive}
-        </button>
+        {otherUsers.map((u) => (
+          <button
+            key={u}
+            className={`tab-btn ${activeTab === u ? 'active' : ''}`}
+            onClick={() => setActiveTab(u)}
+          >
+            {USER_LABELS_GENITIVE[u]}
+          </button>
+        ))}
       </div>
 
-      {/* Список наград */}
       <div className="awards-list-new">
         <div className="award-winners">
-          {currentAwards.map(award => 
+          {currentAwards.map(award =>
             renderAwardCard(award, award.winners || getWinnersForAward(award.key))
           ).flat().filter(Boolean)}
-          
+
           {currentAwards.every(award => (award.winners || getWinnersForAward(award.key)).length === 0) && (
             <div className="no-awards-message">
               Пока нет наград для отображения

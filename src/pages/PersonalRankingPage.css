@@ -33,6 +33,11 @@
   font-weight: 500;
 }
 
+/* Тройной переключатель — справа в строке сортировки */
+.page-sorting-controls .compare-toggle-wrap {
+  margin-left: auto;
+}
+
 /* Тоггл для режима сравнения */
 .page-sorting-controls .compare-toggle {
   display: flex;

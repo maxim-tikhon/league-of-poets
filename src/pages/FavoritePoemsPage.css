@@ -14,7 +14,8 @@
   width: 100%;
 }
 
-.favorite-poems-toggle {
+.favorite-poems-toggle,
+.favorite-poems-toggle-wrap {
   display: flex;
   align-items: center;
   gap: 0.5rem;

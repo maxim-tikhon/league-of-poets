@@ -117,12 +117,29 @@
   color: #00ac1c;
 }
 
+.h2h-legend .legend-lyuba {
+  color: #ec4899;
+}
+
 .h2h-stat-duo-item.maxim .h2h-stat-value {
   color: #ff9010;
 }
 
 .h2h-stat-duo-item.oleg .h2h-stat-value {
   color: #00ac1c;
+}
+
+.h2h-stat-duo-item.lyuba .h2h-stat-value {
+  color: #ec4899;
+}
+
+/* Трио блок (три цифры) */
+.h2h-combined-trio {
+  gap: 0.4rem;
+}
+
+.h2h-combined-trio .h2h-stat-duo-item .h2h-stat-value {
+  font-size: 1.85rem;
 }
 
 .h2h-combined-section .h2h-stat-hint {
@@ -160,6 +177,10 @@
 
 .h2h-stat-duo-item.oleg .h2h-stat-value {
   color: #00ac1c;
+}
+
+.h2h-stat-duo-item.lyuba .h2h-stat-value {
+  color: #ec4899;
 }
 
 .h2h-stat-duo-item .h2h-stat-hint {
@@ -220,6 +241,10 @@
 
 .h2h-stat-value.oleg-value {
   color: #00ac1c;
+}
+
+.h2h-stat-value.lyuba-value {
+  color: #ec4899;
 }
 
 /* Спорные поэты внутри карточки */
@@ -439,6 +464,10 @@
   background: #00ac1c;
 }
 
+.h2h-mini-bar.lyuba .h2h-mini-fill {
+  background: #ec4899;
+}
+
 .h2h-mini-value {
   font-size: 0.75rem;
   font-weight: 500;
@@ -452,6 +481,10 @@
 
 .h2h-mini-bar.oleg .h2h-mini-value {
   color: #00ac1c;
+}
+
+.h2h-mini-bar.lyuba .h2h-mini-value {
+  color: #ec4899;
 }
 
 .h2h-mini-bar.ai .h2h-mini-fill {
@@ -682,6 +715,14 @@ body[data-theme="letterboxd"] .h2h-stat-duo-item.maxim .h2h-stat-value {
 
 body[data-theme="letterboxd"] .h2h-stat-duo-item.oleg .h2h-stat-value {
   color: #00ac1c;
+}
+
+body[data-theme="letterboxd"] .h2h-stat-duo-item.lyuba .h2h-stat-value {
+  color: #ec4899;
+}
+
+.h2h-ai-row {
+  margin-top: 1rem;
 }
 
 body[data-theme="letterboxd"] .h2h-section-card {
