@@ -1092,6 +1092,18 @@ const OverallRankingPage = () => {
           Выбор ИИ
         </button>
 
+        {/* Легенда цветов пользователей — только на оценочных вкладках */}
+        {activeTab !== 'readers-choice' && activeTab !== 'ai-choice' && (
+          <div className="readers-choice-legend rating-users-legend">
+            {USERS.map((u) => (
+              <span key={u} className={`readers-choice-legend-item rating-users-legend-item ${u}`}>
+                <span className="rating-users-legend-dot" />
+                {USER_LABELS[u]}
+              </span>
+            ))}
+          </div>
+        )}
+
         {activeTab === 'readers-choice' && (
           <div className="readers-choice-legend" aria-label="Легенда баллов выбор читателей">
             <div className="readers-choice-legend-item">
@@ -1449,7 +1461,6 @@ const OverallRankingPage = () => {
                       <div className="scores-compact-row">
                         {USERS.map((u) => (
                           <div key={u} className={`score-compact-item ${u}`}>
-                            <span className="score-compact-label">{USER_INITIALS[u]}</span>
                             <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
                           </div>
                         ))}
@@ -1507,7 +1518,6 @@ const OverallRankingPage = () => {
                         <div className="scores-compact-row expanded">
                           {USERS.map((u) => (
                             <div key={u} className={`score-compact-item ${u}`}>
-                              <span className="score-compact-label">{USER_INITIALS[u]}</span>
                               <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
                             </div>
                           ))}
@@ -1543,7 +1553,7 @@ const OverallRankingPage = () => {
                             </div>
                             <div className="overall-category-scores">
                               {USERS.map((u) => (
-                                <div key={u} className={`overall-category-score ${u} no-label`}>
+                                <div key={u} className={`overall-category-score ${u}`}>
                                   <span className="overall-category-score-value">{userCatRatings[u] > 0 ? userCatRatings[u].toFixed(1) : '—'}</span>
                                 </div>
                               ))}
@@ -1639,7 +1649,6 @@ const OverallRankingPage = () => {
                     <div className="scores-compact-row">
                       {USERS.map((u) => (
                         <div key={u} className={`score-compact-item category ${u}`}>
-                          <span className="score-compact-label">{USER_INITIALS[u]}</span>
                           <span className="score-compact-value">{(userRatings[u] || 0) > 0 ? userRatings[u].toFixed(1) : '—'}</span>
                         </div>
                       ))}
