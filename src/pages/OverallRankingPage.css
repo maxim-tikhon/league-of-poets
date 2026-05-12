@@ -872,6 +872,12 @@ body[data-theme="letterboxd"] .category-rank-card.compact.new-poet {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
+/* Поэт оценён только одним пользователем */
+.overall-card.single-rater,
+.category-rank-card.single-rater {
+  opacity: 0.5;
+}
+
 /* Больше размер для некомпактного режима */
 .overall-card:not(.compact) .winner-badge,
 .category-rank-card:not(.compact) .winner-badge {

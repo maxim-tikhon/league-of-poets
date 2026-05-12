@@ -895,7 +895,7 @@ const AdminPage = () => {
   // Открыть модалку AI-рейтинга
   const handleEditAIRating = (poet) => {
     setSelectedPoet(poet);
-    setEditAIRatings(poet.aiRatings || { creativity: 0, drama: 0, influence: 0, beauty: 0 });
+    setEditAIRatings(poet.aiRatings || { creativity: '', drama: '', influence: '', beauty: '' });
     setShowAIRatingModal(true);
   };
   
@@ -1126,7 +1126,13 @@ Note: В конкурсе будут участвовать все выдающ�
     if (!selectedPoet) return;
     
     try {
-      await set(ref(database, `poets/${selectedPoet.id}/aiRatings`), editAIRatings);
+      const ratingsToSave = {
+        creativity: parseFloat(editAIRatings.creativity) || 0,
+        drama: parseFloat(editAIRatings.drama) || 0,
+        influence: parseFloat(editAIRatings.influence) || 0,
+        beauty: parseFloat(editAIRatings.beauty) || 0,
+      };
+      await set(ref(database, `poets/${selectedPoet.id}/aiRatings`), ratingsToSave);
       closeAIRatingModal();
     } catch (err) {
       console.error('Ошибка сохранения AI-рейтинга:', err);
@@ -2120,7 +2126,7 @@ Note: В конкурсе будут участвовать все выдающ�
                     max="5"
                     step="0.5"
                     value={editAIRatings.creativity}
-                    onChange={(e) => setEditAIRatings({ ...editAIRatings, creativity: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditAIRatings({ ...editAIRatings, creativity: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                     disabled={isGeneratingAIRating}
                   />
                 </div>
@@ -2133,7 +2139,7 @@ Note: В конкурсе будут участвовать все выдающ�
                     max="5"
                     step="0.5"
                     value={editAIRatings.influence}
-                    onChange={(e) => setEditAIRatings({ ...editAIRatings, influence: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditAIRatings({ ...editAIRatings, influence: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                     disabled={isGeneratingAIRating}
                   />
                 </div>
@@ -2146,7 +2152,7 @@ Note: В конкурсе будут участвовать все выдающ�
                     max="5"
                     step="0.5"
                     value={editAIRatings.drama}
-                    onChange={(e) => setEditAIRatings({ ...editAIRatings, drama: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditAIRatings({ ...editAIRatings, drama: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                     disabled={isGeneratingAIRating}
                   />
                 </div>
@@ -2159,7 +2165,7 @@ Note: В конкурсе будут участвовать все выдающ�
                     max="5"
                     step="0.5"
                     value={editAIRatings.beauty}
-                    onChange={(e) => setEditAIRatings({ ...editAIRatings, beauty: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditAIRatings({ ...editAIRatings, beauty: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                     disabled={isGeneratingAIRating}
                   />
                 </div>

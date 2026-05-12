@@ -17,7 +17,7 @@ const PersonalRanking = ({
   hideControls = false
 }) => {
   const location = useLocation();
-  const { poets, ratings, categoryLeaders, isLoading, updateRating, setCategoryLeader, calculateScore, likes, toggleLike } = usePoets();
+  const { poets, ratings, categoryLeaders, isLoading, updateRating, setCategoryLeader, calculateScore, hasFullRating, likes, toggleLike } = usePoets();
   
   // Используем внешнее состояние сортировки если передано, иначе внутреннее
   const [internalSortBy, setInternalSortBy] = useState('overall');
@@ -75,7 +75,11 @@ const PersonalRanking = ({
           score
         };
       })
-      .filter(item => item.score > 0); // Показываем только поэтов с оценками
+      .filter(item => {
+        if (sortBy === 'overall') return item.score > 0 && hasFullRating(raterId, item.poet.id);
+        if (Object.keys(CATEGORIES).includes(sortBy)) return (item.ratings[sortBy] || 0) > 0;
+        return item.score > 0;
+      });
 
     return poetsWithScores.sort((a, b) => {
       let aValue, bValue;
@@ -542,7 +546,7 @@ const PersonalRanking = ({
                       className="poet-name-link"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <h3 className="poet-name compact">{compareMode ? shortenName(poet.name) : poet.name}</h3>
+                      <h3 className="poet-name compact">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
                     </Link>
                     {renderLike(poet.id, true)}
                   </div>
@@ -592,7 +596,7 @@ const PersonalRanking = ({
                         className="poet-name-link"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <h3 className="poet-name">{compareMode ? shortenName(poet.name) : poet.name}</h3>
+                        <h3 className="poet-name">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
                       </Link>
                       {renderLike(poet.id, false)}
                     </div>

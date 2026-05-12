@@ -582,59 +582,73 @@ export const PoetsProvider = ({ children }) => {
     return score;
   }, [ratings, poets, categoryCoefficients]);
 
-  // Вычислить средний балл (общий рейтинг)
+  // Проверить, что пользователь полностью оценил поэта (все 4 категории)
+  const hasFullRating = useCallback((rater, poetId) => {
+    const poetRatings = ratings[rater]?.[poetId];
+    if (!poetRatings) return false;
+    return Object.keys(categoryCoefficients).every(cat => (poetRatings[cat] || 0) > 0);
+  }, [ratings, categoryCoefficients]);
+
+  // Вычислить средний балл (общий рейтинг) — только полные оценки
   const calculateAverageScore = useCallback((poetId) => {
-    const maximScore = calculateScore('maxim', poetId);
-    const olegScore = calculateScore('oleg', poetId);
-    
-    // Если оба пользователя оценили - среднее
+    const maximFull = hasFullRating('maxim', poetId);
+    const olegFull = hasFullRating('oleg', poetId);
+    const maximScore = maximFull ? calculateScore('maxim', poetId) : 0;
+    const olegScore = olegFull ? calculateScore('oleg', poetId) : 0;
+
     if (maximScore > 0 && olegScore > 0) {
       return (maximScore + olegScore) / 2;
     }
-    
-    // Если только один пользователь оценил - его балл
+
     return maximScore > 0 ? maximScore : olegScore;
-  }, [calculateScore]);
+  }, [calculateScore, hasFullRating]);
 
   // Получить рейтинги для категории
   const getCategoryRankings = useCallback((category) => {
     return poets
       .map(poet => {
-        const maximRating = ratings.maxim[poet.id]?.[category] || 0;
-        const olegRating = ratings.oleg[poet.id]?.[category] || 0;
-        
-        // Если оба пользователя оценили - среднее
+        const maximRating = ratings.maxim?.[poet.id]?.[category] || 0;
+        const olegRating = ratings.oleg?.[poet.id]?.[category] || 0;
+        const ratedByBoth = maximRating > 0 && olegRating > 0;
+
         let averageRating;
-        if (maximRating > 0 && olegRating > 0) {
+        if (ratedByBoth) {
           averageRating = (maximRating + olegRating) / 2;
         } else {
-          // Если только один пользователь оценил - его оценка
           averageRating = maximRating > 0 ? maximRating : olegRating;
         }
-        
+
         return {
           poet,
           maximRating,
           olegRating,
-          averageRating
+          averageRating,
+          ratedByBoth
         };
       })
-      .filter(item => item.averageRating > 0) // Показываем только поэтов с оценками
+      .filter(item => item.averageRating > 0)
       .sort((a, b) => b.averageRating - a.averageRating);
   }, [poets, ratings]);
 
   // Получить общие рейтинги
   const getOverallRankings = useCallback(() => {
     return poets
-      .map(poet => ({
-        poet,
-        maximScore: calculateScore('maxim', poet.id),
-        olegScore: calculateScore('oleg', poet.id),
-        averageScore: calculateAverageScore(poet.id)
-      }))
-      .filter(item => item.averageScore > 0) // Показываем только поэтов с оценками
+      .map(poet => {
+        const maximFull = hasFullRating('maxim', poet.id);
+        const olegFull = hasFullRating('oleg', poet.id);
+        const maximScore = maximFull ? calculateScore('maxim', poet.id) : 0;
+        const olegScore = olegFull ? calculateScore('oleg', poet.id) : 0;
+        return {
+          poet,
+          maximScore,
+          olegScore,
+          averageScore: calculateAverageScore(poet.id),
+          ratedByBoth: maximFull && olegFull
+        };
+      })
+      .filter(item => item.averageScore > 0)
       .sort((a, b) => b.averageScore - a.averageScore);
-  }, [poets, calculateScore, calculateAverageScore]);
+  }, [poets, calculateScore, calculateAverageScore, hasFullRating]);
 
   // Переключить лайк поэта
   const toggleLike = async (user, poetId) => {
@@ -1475,6 +1489,7 @@ export const PoetsProvider = ({ children }) => {
     submitTournamentPlayInVote,
     promoteTournamentWinnerByBye,
     calculateScore,
+    hasFullRating,
     calculateAverageScore,
     CATEGORIES,
     categoryCoefficients,

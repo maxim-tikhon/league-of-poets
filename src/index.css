@@ -107,3 +107,15 @@ button:disabled {
   background: var(--ink-light);
 }
 
+/* Флаг Беларуси рядом с именем */
+.blr-flag {
+  width: 18px;
+  height: 14px;
+  margin-left: 0.4rem;
+  vertical-align: baseline;
+  position: relative;
+  top: 1px;
+  display: inline;
+  border-radius: 3px;
+}
+

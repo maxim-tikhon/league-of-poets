@@ -76,17 +76,10 @@ const AwardsPage = () => {
         .map(poet => {
           const maximRating = ratings.maxim?.[poet.id]?.[category] || 0;
           const olegRating = ratings.oleg?.[poet.id]?.[category] || 0;
-          let averageRating = 0;
-          
-          if (maximRating > 0 && olegRating > 0) {
-            averageRating = (maximRating + olegRating) / 2;
-          } else {
-            averageRating = maximRating > 0 ? maximRating : olegRating;
-          }
-          
-          return { id: poet.id, rating: averageRating };
+          if (maximRating <= 0 || olegRating <= 0) return null;
+          return { id: poet.id, rating: (maximRating + olegRating) / 2 };
         })
-        .filter(item => item.rating > 0)
+        .filter(item => item && item.rating > 0)
         .sort((a, b) => b.rating - a.rating);
       
       if (rankedPoets.length === 0) {
@@ -142,8 +135,13 @@ const AwardsPage = () => {
       }
     });
     
-    // Overall (лучший поэт)
+    // Overall (лучший поэт) — только оценённые обоими
     const overallRankings = poets
+      .filter(poet => {
+        const m = calculateScore('maxim', poet.id);
+        const o = calculateScore('oleg', poet.id);
+        return m > 0 && o > 0;
+      })
       .map(poet => ({ id: poet.id, score: calculateAverageScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -190,9 +188,14 @@ const AwardsPage = () => {
     return winners;
   }, [poets, ratings, calculateAverageScore, overallDuelWinners, categoryLeaders]);
 
-  // Худший поэт для ОБЩЕГО рейтинга
+  // Худший поэт для ОБЩЕГО рейтинга — только оценённые обоими
   const overallLoser = useMemo(() => {
     const overallRankings = poets
+      .filter(poet => {
+        const m = calculateScore('maxim', poet.id);
+        const o = calculateScore('oleg', poet.id);
+        return m > 0 && o > 0;
+      })
       .map(poet => ({ id: poet.id, score: calculateAverageScore(poet.id) }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -284,15 +287,20 @@ const AwardsPage = () => {
       .map((poet) => poet.id);
   }, [poets, ratings, likes]);
 
-  // Лучший белорусский поэт (общий рейтинг)
+  // Лучший белорусский поэт (общий рейтинг) — только оценённые обоими
   const overallBelarusianWinner = useMemo(() => {
     const scored = poets
-      .filter(p => p.belarusian)
+      .filter(p => {
+        if (!p.belarusian) return false;
+        const m = calculateScore('maxim', p.id);
+        const o = calculateScore('oleg', p.id);
+        return m > 0 && o > 0;
+      })
       .map(p => ({ id: p.id, score: calculateAverageScore(p.id) }))
       .filter(p => p.score > 0)
       .sort((a, b) => b.score - a.score);
     return scored.length > 0 ? [scored[0].id] : [];
-  }, [poets, calculateAverageScore]);
+  }, [poets, calculateScore, calculateAverageScore]);
 
   // ============ ПЕРСОНАЛЬНЫЕ НАГРАДЫ (логика из PersonalRanking) ============
   

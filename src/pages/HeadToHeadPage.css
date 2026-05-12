@@ -20,12 +20,16 @@
   gap: 1rem;
 }
 
+/* .h2h-stats-cards.category-cards {
+  grid-template-columns: repeat(5, 1fr);
+} */
+
 .h2h-stats-cards.three-cols {
   grid-template-columns: repeat(3, 1fr);
 }
 
 .h2h-stats-cards.category-cards {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 /* Объединённые блоки обзора */
@@ -438,7 +442,7 @@
 .h2h-mini-value {
   font-size: 0.75rem;
   font-weight: 500;
-  width: 28px;
+  width: 36px;
   text-align: right;
 }
 
@@ -460,6 +464,41 @@
 
 .h2h-mini-bar.ai .h2h-mini-value {
   color: #3b82f6;
+}
+
+/* Кнопка сохранения */
+.h2h-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #789;
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+}
+
+.h2h-save-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.h2h-save-btn:hover {
+  background: rgba(0, 172, 28, 0.15);
+  color: #00ac1c;
+}
+
+.h2h-save-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.h2h-save-btn.success {
+  color: #00ac1c;
 }
 
 /* Разделитель перед графиками */
@@ -595,6 +634,9 @@
 @media (max-width: 900px) {
   .h2h-stats-cards {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .h2h-stats-cards.category-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

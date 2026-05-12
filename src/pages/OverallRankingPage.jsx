@@ -658,12 +658,12 @@ const OverallRankingPage = () => {
       beauty: []
     };
     
-    // Победитель по общему баллу определяется по максимальному баллу,
-    // а при равенстве - по количеству категорийных наград
-    if (overallRankings.length > 0) {
-      const topScore = overallRankings[0].averageScore;
-      const topPoets = overallRankings.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
-      
+    // Награды — только для поэтов, оценённых обоими
+    const confirmedOverall = overallRankings.filter(r => r.ratedByBoth);
+    if (confirmedOverall.length > 0) {
+      const topScore = confirmedOverall[0].averageScore;
+      const topPoets = confirmedOverall.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
+
       if (topPoets.length === 1) {
         winners.overall = [topPoets[0].poet.id];
       } else {
@@ -671,15 +671,15 @@ const OverallRankingPage = () => {
         // (сначала нужно определить победителей по категориям, поэтому это в конце)
       }
     }
-    
-    // Победители по категориям
+
+    // Победители по категориям — только оценённые обоими
     ['creativity', 'drama', 'influence', 'beauty'].forEach(category => {
-      // Находим поэтов с максимальным средним баллом (используем кэш)
       const rankings = allCategoryRankings[category];
-      if (rankings.length === 0) return;
-      
-      const topScore = rankings[0].averageRating;
-      const topPoets = rankings.filter(r => Math.abs(r.averageRating - topScore) < 0.01);
+      const confirmed = rankings.filter(r => r.ratedByBoth);
+      if (confirmed.length === 0) return;
+
+      const topScore = confirmed[0].averageRating;
+      const topPoets = confirmed.filter(r => Math.abs(r.averageRating - topScore) < 0.01);
       
       // Если только один поэт с топовым баллом - он безусловный победитель
       if (topPoets.length === 1) {
@@ -735,9 +735,9 @@ const OverallRankingPage = () => {
     });
     
     // Теперь определяем победителя по overall с учетом категорийных наград
-    if (overallRankings.length > 0) {
-      const topScore = overallRankings[0].averageScore;
-      const topPoets = overallRankings.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
+    if (confirmedOverall.length > 0) {
+      const topScore = confirmedOverall[0].averageScore;
+      const topPoets = confirmedOverall.filter(r => Math.abs(r.averageScore - topScore) < 0.01);
       
       if (topPoets.length > 1 && winners.overall.length === 0) {
         // Сначала проверяем персональных лидеров
@@ -807,11 +807,11 @@ const OverallRankingPage = () => {
       overall: []
     };
     
-    // Худший только по общему баллу (с минимальным средним баллом)
-    // Награда выдается только если в рейтинге больше 3 поэтов
-    if (overallRankings.length > 3) {
-      const lowestScore = overallRankings[overallRankings.length - 1].averageScore;
-      const lowestPoets = overallRankings.filter(r => Math.abs(r.averageScore - lowestScore) < 0.01);
+    // Худший только по общему баллу — только оценённые обоими
+    const confirmed = overallRankings.filter(r => r.ratedByBoth);
+    if (confirmed.length > 3) {
+      const lowestScore = confirmed[confirmed.length - 1].averageScore;
+      const lowestPoets = confirmed.filter(r => Math.abs(r.averageScore - lowestScore) < 0.01);
       
       // Если только один поэт с минимальным баллом - он худший
       if (lowestPoets.length === 1) {
@@ -847,9 +847,9 @@ const OverallRankingPage = () => {
     return losers;
   }, [overallRankings]);
   
-  // Лучший белорусский поэт по среднему баллу
+  // Лучший белорусский поэт — только оценённые обоими
   const belarusianWinner = useMemo(() => {
-    const scored = overallRankings.filter(item => item.poet.belarusian);
+    const scored = overallRankings.filter(item => item.poet.belarusian && item.ratedByBoth);
     return scored.length > 0 ? scored[0].poet.id : null;
   }, [overallRankings]);
 
@@ -1250,7 +1250,7 @@ const OverallRankingPage = () => {
                   )}
                   
                   <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                    <h3 className="category-poet-name compact">{poet.name}</h3>
+                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1404,7 +1404,7 @@ const OverallRankingPage = () => {
                   )}
                   
                   <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                    <h3 className="category-poet-name compact">{poet.name}</h3>
+                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1474,7 +1474,7 @@ const OverallRankingPage = () => {
             }
             
             return displayRankings.map((item, index) => {
-            const { poet, maximScore, olegScore, averageScore } = item;
+            const { poet, maximScore, olegScore, averageScore, ratedByBoth } = item;
             const rank = ranks[index] || index + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
             const isAnimating = animatingPoet === poet.id;
@@ -1503,7 +1503,7 @@ const OverallRankingPage = () => {
                   key={poet.id}
                   {...cardProps}
                   data-poet-id={poet.id}
-                  className={`overall-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} expandable`}
+                  className={`overall-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''} expandable`}
                   onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
                 >
                   {(!isAnimating || showScore) ? (
@@ -1523,7 +1523,7 @@ const OverallRankingPage = () => {
                     </div>
                   )}
                   <Link to={`/poet/${poet.id}`} className="overall-poet-name-link">
-                    <h2 className="overall-poet-name compact">{poet.name}</h2>
+                    <h2 className="overall-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h2>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1560,7 +1560,7 @@ const OverallRankingPage = () => {
                 key={poet.id}
                 {...cardProps}
                 data-poet-id={poet.id}
-                className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
+                className={`overall-card expanded ${rank <= 3 ? 'top-three' : ''} ${rank === 1 ? 'first-place' : ''} ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''}`}
                 onClick={() => !isAnimating && toggleCardExpansion(poet.id)}
               >
                 {/* Место (#1, #2, etc) */}
@@ -1584,7 +1584,7 @@ const OverallRankingPage = () => {
                   {/* Первая строка: имя, награды, оценки */}
                   <div className="overall-card-header">
                     <Link to={`/poet/${poet.id}`} className="overall-poet-name-link" onClick={(e) => e.stopPropagation()}>
-                      <h2 className="overall-poet-name">{poet.name}</h2>
+                      <h2 className="overall-poet-name">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h2>
                     </Link>
                     
                     <div className="overall-header-right-section">
@@ -1676,7 +1676,7 @@ const OverallRankingPage = () => {
             }
             
             return displayRankings.map((item, index) => {
-            const { poet, maximRating, olegRating, averageRating } = item;
+            const { poet, maximRating, olegRating, averageRating, ratedByBoth } = item;
             const rankIndex = originalIndex >= 0 && index === Math.round(animationStep) ? originalIndex : index;
             const rank = ranks[rankIndex] || rankIndex + 1; // fallback если ranks пустой
             const isNew = isNewestPoet(poet);
@@ -1702,7 +1702,7 @@ const OverallRankingPage = () => {
               <CategoryCardComponent 
                 key={poet.id}
                 {...categoryCardProps}
-                className={`category-rank-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''}`}
+                className={`category-rank-card compact ${isNew ? 'new-poet' : ''} ${isAnimating ? 'animating' : ''} ${!ratedByBoth ? 'single-rater' : ''}`}
               >
                 {(!isAnimating || showScore) ? (
                   <span className="category-rank-number compact">#{rank}</span>
@@ -1717,7 +1717,7 @@ const OverallRankingPage = () => {
                   </div>
                 )}
                 <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                  <h3 className="category-poet-name compact">{poet.name}</h3>
+                  <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
                 </Link>
                 
                 <div className="overall-card-right-section">

@@ -1,13 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ref, set } from 'firebase/database';
+import { database } from '../firebase/config';
+import { Save, Check } from 'lucide-react';
 import { usePoets, CATEGORIES } from '../context/PoetsContext';
 import './HeadToHeadPage.css';
 
 const STRICT_COMPARE_EPS = 0.001;
 
 const HeadToHeadPage = () => {
-  const { poets, ratings, calculateScore, likes } = usePoets();
+  const { poets, ratings, calculateScore, likes, categoryCoefficients } = usePoets();
   const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Расчет AI балла для поэта
   const calculateAIScore = (poet) => {
@@ -139,20 +144,34 @@ const HeadToHeadPage = () => {
         const olegAvg = olegCatTotal / catCount;
         const aiAvg = aiCatCount > 0 ? aiCatTotal / aiCatCount : 0;
         // Сравниваем на той же точности, что и показываем пользователю (1 знак после запятой)
-        const maximDisplayAvg = Number(maximAvg.toFixed(1));
-        const olegDisplayAvg = Number(olegAvg.toFixed(1));
-        const displayDiff = maximDisplayAvg - olegDisplayAvg;
-        const winner = displayDiff < -STRICT_COMPARE_EPS ? 'maxim' : (displayDiff > STRICT_COMPARE_EPS ? 'oleg' : 'tie');
+        const exactDiff = maximAvg - olegAvg;
+        const winner = exactDiff < -STRICT_COMPARE_EPS ? 'maxim' : (exactDiff > STRICT_COMPARE_EPS ? 'oleg' : 'tie');
         categoryAverages[key] = {
           maxim: maximAvg,
           oleg: olegAvg,
           ai: aiAvg,
-          difference: Math.abs(displayDiff),
-          signedDiff: displayDiff, // положительное = Максим выше, отрицательное = Олег выше (на отображаемой точности)
+          difference: Math.abs(exactDiff),
+          signedDiff: exactDiff,
           winner
         };
       }
     });
+
+    // Взвешенная общая средняя
+    const totalCoeff = Object.values(categoryCoefficients).reduce((s, c) => s + c.coefficient, 0);
+    let weightedMaxim = 0;
+    let weightedOleg = 0;
+    Object.keys(categoryCoefficients).forEach(key => {
+      const catAvg = categoryAverages[key];
+      if (catAvg) {
+        const coeff = categoryCoefficients[key].coefficient;
+        weightedMaxim += catAvg.maxim * coeff;
+        weightedOleg += catAvg.oleg * coeff;
+      }
+    });
+    const overallMaxim = totalCoeff > 0 ? weightedMaxim / totalCoeff : 0;
+    const overallOleg = totalCoeff > 0 ? weightedOleg / totalCoeff : 0;
+    const overallSignedDiff = overallMaxim - overallOleg;
 
     // Группировка по строгости (кто ставит НИЖЕ - тот строже)
     // signedDiff = maximAvg - olegAvg (на отображаемой точности)
@@ -220,6 +239,9 @@ const HeadToHeadPage = () => {
       topControversialMO,
       topControversialMaximAI,
       topControversialOlegAI,
+      overallMaxim,
+      overallOleg,
+      overallSignedDiff,
       stricterJudge: maximAverage < olegAverage ? 'maxim' : 'oleg',
       // Общая статистика
       totalPoets: poets.length,
@@ -270,7 +292,39 @@ const HeadToHeadPage = () => {
         };
       })()
     };
-  }, [poets, ratings, calculateScore, likes]);
+  }, [poets, ratings, calculateScore, likes, categoryCoefficients]);
+
+  const handleSaveStats = async () => {
+    if (!statistics || saving) return;
+    setSaving(true);
+    setSaveSuccess(false);
+    try {
+      const data = {};
+      Object.keys(CATEGORIES).forEach(key => {
+        const catAvg = statistics.categoryAverages[key];
+        if (catAvg) {
+          data[key] = {
+            maximAvg: Number(catAvg.maxim.toFixed(2)),
+            olegAvg: Number(catAvg.oleg.toFixed(2)),
+            signedDiff: Number(catAvg.signedDiff.toFixed(2)),
+          };
+        }
+      });
+      data.overall = {
+        maximAvg: Number(statistics.overallMaxim.toFixed(2)),
+        olegAvg: Number(statistics.overallOleg.toFixed(2)),
+        signedDiff: Number(statistics.overallSignedDiff.toFixed(2)),
+      };
+      data.savedAt = new Date().toISOString();
+      await set(ref(database, 'stats/categoryDiffs'), data);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save stats:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!statistics) {
     return (
@@ -376,7 +430,17 @@ const HeadToHeadPage = () => {
 
       {/* Секция 1: Категории и оценки */}
       <div className="h2h-section">
-        <h2 className="h2h-section-title">Категории и оценки</h2>
+        <h2 className="h2h-section-title">
+          Категории и оценки
+          {/* <button
+            className={`h2h-save-btn ${saveSuccess ? 'success' : ''}`}
+            onClick={handleSaveStats}
+            disabled={saving}
+            title="Сохранить разницу в базу"
+          >
+            {saving ? '...' : saveSuccess ? <Check size={14} /> : <Save size={14} />}
+          </button> */}
+        </h2>
         
         {/* Карточки категорий с графиками */}
         <div className="h2h-stats-cards category-cards">
@@ -407,19 +471,54 @@ const HeadToHeadPage = () => {
                     <div className="h2h-mini-track">
                       <div className="h2h-mini-fill" style={{ width: `${maximPercent}%` }}></div>
                     </div>
-                    <span className="h2h-mini-value">{catAvg.maxim.toFixed(1)}</span>
+                    <span className="h2h-mini-value">{catAvg.maxim.toFixed(2)}</span>
                   </div>
                   <div className="h2h-mini-bar oleg">
                     <span className="h2h-mini-label">О</span>
                     <div className="h2h-mini-track">
                       <div className="h2h-mini-fill" style={{ width: `${olegPercent}%` }}></div>
                     </div>
-                    <span className="h2h-mini-value">{catAvg.oleg.toFixed(1)}</span>
+                    <span className="h2h-mini-value">{catAvg.oleg.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
             );
           })}
+          {/* 5-й блок: общая взвешенная (скрыт)
+          {(() => {
+            const overallStricter = statistics.overallSignedDiff < -STRICT_COMPARE_EPS ? 'Максим' :
+                                    statistics.overallSignedDiff > STRICT_COMPARE_EPS ? 'Олег' : null;
+            const isMaxim = overallStricter === 'Максим';
+            const isOleg = overallStricter === 'Олег';
+            const maximPct = (statistics.overallMaxim / 5) * 100;
+            const olegPct = (statistics.overallOleg / 5) * 100;
+            return (
+              <div className="h2h-stat-card with-bars">
+                <div className="h2h-stat-label">Общая</div>
+                <div className={`h2h-stat-value ${isMaxim ? 'maxim-value' : ''} ${isOleg ? 'oleg-value' : ''}`}>
+                  {overallStricter || '—'}
+                </div>
+                <div className="h2h-stat-hint">строже</div>
+                <div className="h2h-bars-separator"></div>
+                <div className="h2h-mini-bars">
+                  <div className="h2h-mini-bar maxim">
+                    <span className="h2h-mini-label">М</span>
+                    <div className="h2h-mini-track">
+                      <div className="h2h-mini-fill" style={{ width: `${maximPct}%` }}></div>
+                    </div>
+                    <span className="h2h-mini-value">{statistics.overallMaxim.toFixed(2)}</span>
+                  </div>
+                  <div className="h2h-mini-bar oleg">
+                    <span className="h2h-mini-label">О</span>
+                    <div className="h2h-mini-track">
+                      <div className="h2h-mini-fill" style={{ width: `${olegPct}%` }}></div>
+                    </div>
+                    <span className="h2h-mini-value">{statistics.overallOleg.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()} */}
         </div>
       </div>
 

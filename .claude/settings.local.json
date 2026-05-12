@@ -3,7 +3,9 @@
     "allow": [
       "Bash(ls -la /Users/maximtikhon/Projects/league-of-poets/.cursor* /Users/maximtikhon/Projects/league-of-poets/cursor*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
