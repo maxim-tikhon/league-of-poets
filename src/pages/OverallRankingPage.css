@@ -1100,6 +1100,25 @@ body[data-theme="letterboxd"] .score-compact-item.lyuba .score-compact-value {
 .rating-users-legend-item.lyuba .rating-users-legend-dot   { background: #ec4899; }
 .rating-users-legend-item.average .rating-users-legend-dot { background: #40BCF4; }
 
+.rating-users-legend-item.clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s ease;
+}
+
+.rating-users-legend-item.clickable:hover {
+  opacity: 0.75;
+}
+
+.rating-users-legend-item.excluded {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.rating-users-legend-item.excluded .rating-users-legend-dot {
+  opacity: 0.55;
+}
+
 body[data-theme="letterboxd"] .rating-users-legend-item {
   color: #9ab;
 }

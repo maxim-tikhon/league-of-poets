@@ -18,21 +18,25 @@ const OverallRankingPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const poetsContext = usePoets();
-  const { 
-    poets, 
-    ratings, 
+  const {
+    poets,
+    ratings,
     likes,
-    categoryLeaders: rawCategoryLeaders, 
-    overallDuelWinners: rawOverallDuelWinners, 
+    categoryLeaders: rawCategoryLeaders,
+    overallDuelWinners: rawOverallDuelWinners,
     aiChoiceTiebreaker,
     tournaments,
-    isLoading, 
-    getOverallRankings, 
-    getCategoryRankings, 
+    categoryCoefficients,
+    isLoading,
+    getOverallRankings,
+    getCategoryRankings,
     setOverallDuelWinner,
     setAIChoiceWinner,
     calculateAverageScore
   } = poetsContext;
+
+  // Админ (Максим) может исключать пользователей из расчёта общего/средних баллов
+  const [excludedUsers, setExcludedUsers] = useState(new Set());
   
   const [activeTab, setActiveTab] = useState('overall'); // 'overall' or category key
   const [expandedCards, setExpandedCards] = useState(new Set()); // ID развернутых карточек для overall
@@ -59,6 +63,39 @@ const OverallRankingPage = () => {
   
   // Получаем текущего пользователя из localStorage
   const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'maxim';
+
+  // Список активных оценщиков (без исключённых админом)
+  const activeUsers = useMemo(
+    () => USERS.filter((u) => !excludedUsers.has(u)),
+    [excludedUsers]
+  );
+
+  const toggleUserExclusion = useCallback((user) => {
+    if (!isAdmin) return;
+    setExcludedUsers((prev) => {
+      const next = new Set(prev);
+      if (next.has(user)) next.delete(user);
+      else next.add(user);
+      return next;
+    });
+  }, [isAdmin]);
+
+  // Локальные версии калькуляторов с учётом исключённых пользователей
+  const localHasFullRating = useCallback((rater, poetId) => {
+    const poetRatings = ratings[rater]?.[poetId];
+    if (!poetRatings) return false;
+    return Object.keys(categoryCoefficients).every((cat) => (poetRatings[cat] || 0) > 0);
+  }, [ratings, categoryCoefficients]);
+
+  const localCalculateScore = useCallback((rater, poetId) => {
+    const poetRatings = ratings[rater]?.[poetId];
+    if (!poetRatings) return 0;
+    return Object.keys(categoryCoefficients).reduce((total, category) => {
+      const rating = poetRatings[category] || 0;
+      return total + rating * categoryCoefficients[category].coefficient;
+    }, 0);
+  }, [ratings, categoryCoefficients]);
   
   // Просто используем данные напрямую из контекста
   // Firebase уже оптимизирован и не будет создавать новые объекты если данные не изменились
@@ -287,13 +324,70 @@ const OverallRankingPage = () => {
   const allCategoryRankings = useMemo(() => {
     const rankings = {};
     Object.keys(CATEGORIES).forEach(category => {
-      rankings[category] = getCategoryRankings(category);
+      if (excludedUsers.size === 0) {
+        rankings[category] = getCategoryRankings(category);
+        return;
+      }
+      rankings[category] = poets
+        .map((poet) => {
+          const userRatings = USERS.reduce((acc, u) => {
+            acc[u] = ratings[u]?.[poet.id]?.[category] || 0;
+            return acc;
+          }, {});
+          const activeNonZero = activeUsers
+            .map((u) => userRatings[u])
+            .filter((v) => v > 0);
+          const averageRating = activeNonZero.length
+            ? activeNonZero.reduce((s, v) => s + v, 0) / activeNonZero.length
+            : 0;
+          const ratedByAll = activeUsers.length > 0 && activeNonZero.length === activeUsers.length;
+          return {
+            poet,
+            maximRating: userRatings.maxim,
+            olegRating: userRatings.oleg,
+            lyubaRating: userRatings.lyuba,
+            userRatings,
+            averageRating,
+            ratedByAll,
+            ratedByBoth: ratedByAll
+          };
+        })
+        .filter((item) => item.averageRating > 0)
+        .sort((a, b) => b.averageRating - a.averageRating);
     });
     return rankings;
-  }, [poets, ratings, getCategoryRankings]); // Добавили poets и ratings для явности
-  
+  }, [poets, ratings, getCategoryRankings, excludedUsers, activeUsers]);
+
   // Мемоизируем overallRankings для оптимизации (ДОЛЖНО БЫТЬ ДО useEffect)
-  const overallRankings = useMemo(() => getOverallRankings(), [getOverallRankings]);
+  const overallRankings = useMemo(() => {
+    if (excludedUsers.size === 0) return getOverallRankings();
+    return poets
+      .map((poet) => {
+        const userScores = USERS.reduce((acc, u) => {
+          acc[u] = localHasFullRating(u, poet.id) ? localCalculateScore(u, poet.id) : 0;
+          return acc;
+        }, {});
+        const activeScores = activeUsers
+          .filter((u) => localHasFullRating(u, poet.id))
+          .map((u) => localCalculateScore(u, poet.id));
+        const averageScore = activeScores.length
+          ? activeScores.reduce((s, v) => s + v, 0) / activeScores.length
+          : 0;
+        const ratedByAll = activeUsers.length > 0 && activeScores.length === activeUsers.length;
+        return {
+          poet,
+          maximScore: userScores.maxim,
+          olegScore: userScores.oleg,
+          lyubaScore: userScores.lyuba,
+          userScores,
+          averageScore,
+          ratedByAll,
+          ratedByBoth: ratedByAll
+        };
+      })
+      .filter((item) => item.averageScore > 0)
+      .sort((a, b) => b.averageScore - a.averageScore);
+  }, [getOverallRankings, excludedUsers, poets, activeUsers, localHasFullRating, localCalculateScore]);
   
   // Обнаружение конфликтов между пользователями
   const detectConflicts = useMemo(() => {
@@ -1092,15 +1186,38 @@ const OverallRankingPage = () => {
           Выбор ИИ
         </button>
 
-        {/* Легенда цветов пользователей — только на оценочных вкладках */}
+        {/* Легенда цветов пользователей — только на оценочных вкладках.
+            Админ (Максим) может кликом по имени исключить пользователя из расчётов. */}
         {activeTab !== 'readers-choice' && activeTab !== 'ai-choice' && (
           <div className="readers-choice-legend rating-users-legend">
-            {USERS.map((u) => (
-              <span key={u} className={`readers-choice-legend-item rating-users-legend-item ${u}`}>
-                <span className="rating-users-legend-dot" />
-                {USER_LABELS[u]}
-              </span>
-            ))}
+            {USERS.map((u) => {
+              const excluded = excludedUsers.has(u);
+              const className = [
+                'readers-choice-legend-item',
+                'rating-users-legend-item',
+                u,
+                excluded ? 'excluded' : '',
+                isAdmin ? 'clickable' : ''
+              ].filter(Boolean).join(' ');
+              return (
+                <span
+                  key={u}
+                  className={className}
+                  onClick={isAdmin ? () => toggleUserExclusion(u) : undefined}
+                  role={isAdmin ? 'button' : undefined}
+                  tabIndex={isAdmin ? 0 : undefined}
+                  onKeyDown={isAdmin ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleUserExclusion(u);
+                    }
+                  } : undefined}
+                >
+                  <span className="rating-users-legend-dot" />
+                  {USER_LABELS[u]}
+                </span>
+              );
+            })}
           </div>
         )}
 
@@ -1459,7 +1576,7 @@ const OverallRankingPage = () => {
                     
                     {(!isAnimating || showScore) ? (
                       <div className="scores-compact-row">
-                        {USERS.map((u) => (
+                        {activeUsers.map((u) => (
                           <div key={u} className={`score-compact-item ${u}`}>
                             <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
                           </div>
@@ -1477,7 +1594,7 @@ const OverallRankingPage = () => {
                 </CardComponent>
               );
             }
-            
+
             // Развернутый вид
             return (
               <CardComponent 
@@ -1516,7 +1633,7 @@ const OverallRankingPage = () => {
                       
                       {(!isAnimating || showScore) ? (
                         <div className="scores-compact-row expanded">
-                          {USERS.map((u) => (
+                          {activeUsers.map((u) => (
                             <div key={u} className={`score-compact-item ${u}`}>
                               <span className="score-compact-value">{(userScores[u] || 0) > 0 ? formatScore(userScores[u]) : '—'}</span>
                             </div>
@@ -1541,9 +1658,9 @@ const OverallRankingPage = () => {
                           acc[u] = ratings[u]?.[poet.id]?.[key] || 0;
                           return acc;
                         }, {});
-                        const nonZero = USERS.map((u) => userCatRatings[u]).filter((v) => v > 0);
-                        const avgRating = nonZero.length
-                          ? nonZero.reduce((s, v) => s + v, 0) / nonZero.length
+                        const activeNonZero = activeUsers.map((u) => userCatRatings[u]).filter((v) => v > 0);
+                        const avgRating = activeNonZero.length
+                          ? activeNonZero.reduce((s, v) => s + v, 0) / activeNonZero.length
                           : 0;
 
                         return (
@@ -1552,7 +1669,7 @@ const OverallRankingPage = () => {
                               <span className="overall-category-name">{cat.name}</span>
                             </div>
                             <div className="overall-category-scores">
-                              {USERS.map((u) => (
+                              {activeUsers.map((u) => (
                                 <div key={u} className={`overall-category-score ${u}`}>
                                   <span className="overall-category-score-value">{userCatRatings[u] > 0 ? userCatRatings[u].toFixed(1) : '—'}</span>
                                 </div>
@@ -1647,7 +1764,7 @@ const OverallRankingPage = () => {
                   
                   {(!isAnimating || showScore) ? (
                     <div className="scores-compact-row">
-                      {USERS.map((u) => (
+                      {activeUsers.map((u) => (
                         <div key={u} className={`score-compact-item category ${u}`}>
                           <span className="score-compact-value">{(userRatings[u] || 0) > 0 ? userRatings[u].toFixed(1) : '—'}</span>
                         </div>
