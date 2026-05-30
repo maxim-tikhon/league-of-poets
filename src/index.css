@@ -107,7 +107,7 @@ button:disabled {
   background: var(--ink-light);
 }
 
-/* Флаг Беларуси рядом с именем */
+/* Иконки-флаги рядом с именем поэта (Беларусь / Музыкант / Зарубежный) */
 .blr-flag {
   width: 18px;
   height: 14px;
@@ -115,7 +115,9 @@ button:disabled {
   vertical-align: baseline;
   position: relative;
   top: 1px;
-  display: inline;
+  display: inline-block;
   border-radius: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 

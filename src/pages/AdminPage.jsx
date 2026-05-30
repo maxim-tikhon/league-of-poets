@@ -4,7 +4,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { generateContent, generateAIRatingByCat } from '../ai/gemini';
 import { generatePoetLifeStoryPrompt, generatePoetInfluencePrompt, generatePoetDramaPrompt, generatePoetBeautyPrompt, generateAIRatingCreativityPrompt, generateAIRatingMoralPrompt, generateAIRatingDramaPrompt, generateAIRatingBeautyPrompt } from '../ai/prompts';
-import { BookOpen, Scale, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2, Flag } from 'lucide-react';
+import { BookOpen, Scale, HeartCrack, Flower2, Bot, Camera, Link2, Plus, Trash2, Tags } from 'lucide-react';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -382,6 +382,10 @@ const AdminPage = () => {
   const [newOtherTitle, setNewOtherTitle] = useState('');
   const [newOtherUrl, setNewOtherUrl] = useState('');
   
+  // Состояния для модалки атрибутов поэта (флаги: белорус / музыкант)
+  const [showAttrModal, setShowAttrModal] = useState(false);
+  const [attrPoetId, setAttrPoetId] = useState(null);
+
   // Состояния для ручного назначения победителей
   const [showAssignLeaderModal, setShowAssignLeaderModal] = useState(false);
   const [assignUser, setAssignUser] = useState('maxim'); // maxim | oleg | lyuba | '__overall__'
@@ -1308,14 +1312,15 @@ Note: В конкурсе будут участвовать все выдающ�
                     <Link2 size={16} />
                   </button>
                   <button
-                    className={`btn-edit-icon ${poet.belarusian ? 'active' : ''}`}
+                    className={`btn-edit-icon ${(poet.belarusian || poet.musician || poet.foreign) ? 'active' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      updatePoet(poet.id, { belarusian: !poet.belarusian });
+                      setAttrPoetId(poet.id);
+                      setShowAttrModal(true);
                     }}
-                    title={poet.belarusian ? 'Белорусский поэт (снять)' : 'Отметить как белорусского поэта'}
+                    title="Атрибуты поэта"
                   >
-                    <Flag size={16} />
+                    <Tags size={16} />
                   </button>
                 </div>
               </div>
@@ -2549,6 +2554,50 @@ Note: В конкурсе будут участвовать все выдающ�
           </div>
         </div>
       )}
+
+      {/* Модалка атрибутов поэта (флаги) */}
+      {showAttrModal && attrPoetId && (() => {
+        const attrPoet = poets.find(p => p.id === attrPoetId);
+        if (!attrPoet) return null;
+        const closeAttr = () => {
+          setShowAttrModal(false);
+          setAttrPoetId(null);
+        };
+        return (
+          <div className="modal-overlay" onClick={closeAttr}>
+            <div className="modal-content bio-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={closeAttr} title="Закрыть">✕</button>
+              <h2 className="modal-title">Атрибуты: {attrPoet.name}</h2>
+              <div className="bio-modal-content">
+                <label className="attr-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={!!attrPoet.belarusian}
+                    onChange={(e) => updatePoet(attrPoet.id, { belarusian: e.target.checked })}
+                  />
+                  <span>Белорусский поэт</span>
+                </label>
+                <label className="attr-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={!!attrPoet.musician}
+                    onChange={(e) => updatePoet(attrPoet.id, { musician: e.target.checked })}
+                  />
+                  <span>Поэт-исполнитель (музыкант)</span>
+                </label>
+                <label className="attr-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={!!attrPoet.foreign}
+                    onChange={(e) => updatePoet(attrPoet.id, { foreign: e.target.checked })}
+                  />
+                  <span>Зарубежный поэт</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

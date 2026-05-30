@@ -1190,7 +1190,7 @@ const PoetDetailPage = () => {
               <div className="poet-bio-section">
             {/* Имя поэта */}
             <div className="poet-header-inline">
-              <h1 className="poet-detail-name">{poet.name}</h1>
+              <h1 className="poet-detail-name">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h1>
             </div>
             
             {/* Досье */}

@@ -65,6 +65,14 @@
   text-align: left;
 }
 
+.poet-detail-name .blr-flag {
+  width: 28px;
+  height: 22px;
+  margin-left: 0.5rem;
+  top: 2px;
+  border-radius: 4px;
+}
+
 /* Общая оценка с tooltip */
 .rating-overall-container {
   display: flex;

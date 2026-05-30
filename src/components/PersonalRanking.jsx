@@ -271,6 +271,26 @@ const PersonalRanking = ({
     return belarusianPoets.length > 0 ? belarusianPoets[0].id : null;
   }, [poets, raterId, calculateScore]);
 
+  // Лучший поэт-исполнитель
+  const musicianWinner = useMemo(() => {
+    const musicianPoets = poets
+      .filter(p => p.musician)
+      .map(p => ({ id: p.id, score: calculateScore(raterId, p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return musicianPoets.length > 0 ? musicianPoets[0].id : null;
+  }, [poets, raterId, calculateScore]);
+
+  // Лучший зарубежный поэт
+  const foreignWinner = useMemo(() => {
+    const foreignPoets = poets
+      .filter(p => p.foreign)
+      .map(p => ({ id: p.id, score: calculateScore(raterId, p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return foreignPoets.length > 0 ? foreignPoets[0].id : null;
+  }, [poets, raterId, calculateScore]);
+
   // ===== ВСЯ ЛОГИКА ДУЭЛЕЙ И ПЕРЕСЧЕТА ПЕРЕНЕСЕНА НА PoetDetailPage =====
   // PersonalRanking - ТОЛЬКО для отображения данных
   
@@ -361,6 +381,30 @@ const PersonalRanking = ({
           key="belarus"
           src="/images/badges/belarus.png"
           alt="Лучший беларуский поэт"
+          className="winner-badge"
+        />
+      );
+    }
+
+    // Лучший поэт-исполнитель - показываем только на вкладке "Общий балл"
+    if (sortBy === 'overall' && musicianWinner === poetId) {
+      badges.push(
+        <img
+          key="musician"
+          src="/images/badges/musician.png"
+          alt="Лучший поэт-исполнитель"
+          className="winner-badge"
+        />
+      );
+    }
+
+    // Лучший зарубежный поэт - показываем только на вкладке "Общий балл"
+    if (sortBy === 'overall' && foreignWinner === poetId) {
+      badges.push(
+        <img
+          key="foreign"
+          src="/images/badges/world.png"
+          alt="Лучший зарубежный поэт"
           className="winner-badge"
         />
       );
@@ -546,7 +590,7 @@ const PersonalRanking = ({
                       className="poet-name-link"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <h3 className="poet-name compact">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
+                      <h3 className="poet-name compact">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h3>
                     </Link>
                     {renderLike(poet.id, true)}
                   </div>
@@ -596,7 +640,7 @@ const PersonalRanking = ({
                         className="poet-name-link"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <h3 className="poet-name">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
+                        <h3 className="poet-name">{compareMode ? shortenName(poet.name) : poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h3>
                       </Link>
                       {renderLike(poet.id, false)}
                     </div>

@@ -869,6 +869,18 @@ const OverallRankingPage = () => {
     return scored.length > 0 ? scored[0].poet.id : null;
   }, [overallRankings]);
 
+  // Лучший поэт-исполнитель — все музыканты с любой оценкой
+  const musicianWinner = useMemo(() => {
+    const scored = overallRankings.filter(item => item.poet.musician);
+    return scored.length > 0 ? scored[0].poet.id : null;
+  }, [overallRankings]);
+
+  // Лучший зарубежный поэт — все зарубежные с любой оценкой
+  const foreignWinner = useMemo(() => {
+    const scored = overallRankings.filter(item => item.poet.foreign);
+    return scored.length > 0 ? scored[0].poet.id : null;
+  }, [overallRankings]);
+
   // Для категорий добавляем дополнительную сортировку с учетом победителей
   const categoryRankings = useMemo(() => {
     if (activeTab === 'overall') return null;
@@ -1057,6 +1069,30 @@ const OverallRankingPage = () => {
           key="belarus"
           src="/images/badges/belarus.png"
           alt="Лучший белорусский поэт"
+          className="winner-badge"
+        />
+      );
+    }
+
+    // Лучший поэт-исполнитель - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && musicianWinner === poetId) {
+      badges.push(
+        <img
+          key="musician"
+          src="/images/badges/musician.png"
+          alt="Лучший поэт-исполнитель"
+          className="winner-badge"
+        />
+      );
+    }
+
+    // Лучший зарубежный поэт - показываем только на вкладке "Общий балл"
+    if (activeTab === 'overall' && foreignWinner === poetId) {
+      badges.push(
+        <img
+          key="foreign"
+          src="/images/badges/world.png"
+          alt="Лучший зарубежный поэт"
           className="winner-badge"
         />
       );
@@ -1294,7 +1330,7 @@ const OverallRankingPage = () => {
                   )}
                   
                   <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
+                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h3>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1448,7 +1484,7 @@ const OverallRankingPage = () => {
                   )}
                   
                   <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
+                    <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h3>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1567,7 +1603,7 @@ const OverallRankingPage = () => {
                     </div>
                   )}
                   <Link to={`/poet/${poet.id}`} className="overall-poet-name-link">
-                    <h2 className="overall-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h2>
+                    <h2 className="overall-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h2>
                   </Link>
                   
                   <div className="overall-card-right-section">
@@ -1625,7 +1661,7 @@ const OverallRankingPage = () => {
                   {/* Первая строка: имя, награды, оценки */}
                   <div className="overall-card-header">
                     <Link to={`/poet/${poet.id}`} className="overall-poet-name-link" onClick={(e) => e.stopPropagation()}>
-                      <h2 className="overall-poet-name">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h2>
+                      <h2 className="overall-poet-name">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h2>
                     </Link>
                     
                     <div className="overall-header-right-section">
@@ -1755,7 +1791,7 @@ const OverallRankingPage = () => {
                   </div>
                 )}
                 <Link to={`/poet/${poet.id}`} className="category-poet-name-link">
-                  <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}</h3>
+                  <h3 className="category-poet-name compact">{poet.name}{poet.belarusian && <img src="/images/blr.png" alt="BY" className="blr-flag" />}{poet.musician && <img src="/images/music.png" alt="Музыкант" className="blr-flag" />}{poet.foreign && <img src="/images/world.png" alt="Зарубежный" className="blr-flag" />}</h3>
                 </Link>
                 
                 <div className="overall-card-right-section">

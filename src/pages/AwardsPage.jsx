@@ -191,6 +191,24 @@ const AwardsPage = () => {
     return scored.length > 0 ? [scored[0].id] : [];
   }, [poets, calculateAverageScore]);
 
+  const overallMusicianWinner = useMemo(() => {
+    const scored = poets
+      .filter(p => p.musician)
+      .map(p => ({ id: p.id, score: calculateAverageScore(p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return scored.length > 0 ? [scored[0].id] : [];
+  }, [poets, calculateAverageScore]);
+
+  const overallForeignWinner = useMemo(() => {
+    const scored = poets
+      .filter(p => p.foreign)
+      .map(p => ({ id: p.id, score: calculateAverageScore(p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return scored.length > 0 ? [scored[0].id] : [];
+  }, [poets, calculateAverageScore]);
+
   // ============ ПЕРСОНАЛЬНЫЕ НАГРАДЫ ============
 
   const getPersonalWinners = (rater) => {
@@ -275,12 +293,32 @@ const AwardsPage = () => {
     return scored.length > 0 ? [scored[0].id] : [];
   };
 
+  const getPersonalMusicianWinner = (rater) => {
+    const scored = poets
+      .filter(p => p.musician)
+      .map(p => ({ id: p.id, score: calculateScore(rater, p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return scored.length > 0 ? [scored[0].id] : [];
+  };
+
+  const getPersonalForeignWinner = (rater) => {
+    const scored = poets
+      .filter(p => p.foreign)
+      .map(p => ({ id: p.id, score: calculateScore(rater, p.id) }))
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return scored.length > 0 ? [scored[0].id] : [];
+  };
+
   const personalAwardsByUser = useMemo(() => {
     return USERS.reduce((acc, u) => {
       acc[u] = {
         winners: getPersonalWinners(u),
         loser: getPersonalLoser(u),
-        belarusian: getPersonalBelarusianWinner(u)
+        belarusian: getPersonalBelarusianWinner(u),
+        musician: getPersonalMusicianWinner(u),
+        foreign: getPersonalForeignWinner(u)
       };
       return acc;
     }, {});
@@ -341,6 +379,8 @@ const AwardsPage = () => {
     { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
     { key: 'belarus', name: 'Лучший беларуский поэт', badge: 'belarus.png' },
+    { key: 'musician', name: 'Лучший поэт-исполнитель', badge: 'musician.png' },
+    { key: 'foreign', name: 'Лучший зарубежный поэт', badge: 'world.png' },
     { key: 'nobel', name: 'Нобелевская премия', badge: 'nobel.png' },
     { key: 'readers-choice', name: 'Выбор читателей', badge: 'readers-choice.png' },
     { key: 'ai-choice', name: 'Выбор ИИ', badge: 'ai-choice.png' },
@@ -354,6 +394,8 @@ const AwardsPage = () => {
     { key: 'influence', name: CATEGORIES.influence.name, badge: 'influence.png' },
     { key: 'beauty', name: CATEGORIES.beauty.name, badge: 'beauty.png' },
     { key: 'belarus', name: 'Лучший беларуский поэт', badge: 'belarus.png' },
+    { key: 'musician', name: 'Лучший поэт-исполнитель', badge: 'musician.png' },
+    { key: 'foreign', name: 'Лучший зарубежный поэт', badge: 'world.png' },
     { key: 'last', name: 'Худший поэт', badge: 'last.png' }
   ];
 
@@ -398,6 +440,8 @@ const AwardsPage = () => {
       if (awardKey === 'readers-choice') return readersChoiceWinner;
       if (awardKey === 'ai-choice') return aiChoiceWinner;
       if (awardKey === 'belarus') return overallBelarusianWinner;
+      if (awardKey === 'musician') return overallMusicianWinner;
+      if (awardKey === 'foreign') return overallForeignWinner;
       return overallCategoryWinners[awardKey] || [];
     }
 
@@ -407,6 +451,8 @@ const AwardsPage = () => {
     if (!data) return [];
     if (awardKey === 'last') return data.loser;
     if (awardKey === 'belarus') return data.belarusian;
+    if (awardKey === 'musician') return data.musician;
+    if (awardKey === 'foreign') return data.foreign;
     return data.winners[awardKey] || [];
   };
 
